@@ -1,4 +1,4 @@
-# Ma cave
+# Ma cave partagée
 
 Une appli pour tenir sa cave à vin à plusieurs : les bouteilles, celles à boire en premier, qui a débouché quoi, les avis de chacun et quelques statistiques. Elle fonctionne sur téléphone, tablette et ordinateur, même hors connexion. En option, Claude lit les étiquettes, conseille en magasin et estime la valeur des bouteilles.
 
