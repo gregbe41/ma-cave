@@ -47,11 +47,9 @@ Compte environ 20 minutes, lecture des étiquettes comprise.
    - le **code secret des appareils**, par exemple `1a2b-3c4d-5e6f-7a8b` ;
    - le **code de la routine de lecture**, qui ne permet que de lire les étiquettes en attente et de compléter les fiches.
 
-Dans le Sheet, les onglets Vins, Mouvements, Corbeille, Personnes et Lectures IA apparaissent. Un dossier « Ma cave – étiquettes » est créé dans ton Drive.
+Dans le Sheet, les onglets Vins, Mouvements, Corbeille, Personnes, Avis, Conseils et Lectures IA apparaissent. Un dossier « Ma cave – étiquettes » est créé dans ton Drive.
 
-> **Ce que tu autorises.** L'écran de Google doit lister trois accès : les feuilles de calcul **dans lesquelles l'application est installée** (ce Sheet seulement), les fichiers Google Drive **que tu utilises avec cette application** (ceux que le script crée : le dossier des étiquettes et les photos), et la connexion à un service externe (l'API Claude, pour la lecture immédiate facultative). Coche les trois. Si l'écran parle de « tous tes fichiers Google Drive » ou de « toutes tes feuilles de calcul », c'est que l'étape 2.5 manque : clique sur Annuler et refais-la.
->
-> **Tu avais déjà accordé l'accès complet avec la version précédente du script ?** Retire-le sur [myaccount.google.com/connections](https://myaccount.google.com/connections) : ouvre « Ma cave – serveur », puis **Supprimer tous les accès**. Exécute ensuite `installer` à nouveau ; Google ne demandera plus que les accès limités.
+> **Ce que tu autorises.** L'écran de Google doit lister trois accès : les feuilles de calcul **dans lesquelles l'application est installée** (ce Sheet seulement), les fichiers Google Drive **que tu utilises avec cette application** (ceux que le script crée : le dossier des étiquettes et les photos), et la connexion à un service externe (l'API Claude, pour la lecture immédiate facultative). Coche les trois. S'il manque la ligne sur Google Drive, c'est que l'étape 2.5 manque : `installer` s'arrête alors avec un message qui le dit. Refais l'étape 2.5, puis relance `installer`.
 
 Pour retrouver les codes plus tard : **Paramètres du projet** (roue dentée dans la colonne de gauche) › **Propriétés du script**, lignes `SECRET` et `SECRET_ROUTINE`.
 
