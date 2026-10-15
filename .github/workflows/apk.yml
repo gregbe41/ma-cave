@@ -1,0 +1,63 @@
+# Construit l'APK générique de Ma cave (vierge : chacun le relie à sa propre cave) et le joint à la version.
+# Se lance à chaque étiquette de version (git tag v1.2.0 && git push origin v1.2.0), ou à la main depuis l'onglet Actions.
+# Le secret ANDROID_KEYSTORE_B64 contient la clé qui signe les APK déjà installés : sans elle, l'APK publié ne pourrait
+# pas mettre à jour l'appli des téléphones.
+name: APK Android
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: android-app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Clé de signature
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Le secret ANDROID_KEYSTORE_B64 manque (Settings › Secrets and variables › Actions)."
+            exit 1
+          fi
+          mkdir -p ~/.android
+          echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+
+      - name: Dépendances
+        working-directory: android-app
+        run: npm ci
+
+      - name: APK générique
+        working-directory: android-app
+        run: node scripts/apk.js generique
+
+      - name: Joindre l'APK à la version
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android-app/dist/ma-cave.apk
+          generate_release_notes: true
+
+      - name: Garder l'APK (lancement à la main)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ma-cave-apk
+          path: android-app/dist/ma-cave.apk

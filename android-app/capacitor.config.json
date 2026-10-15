@@ -1,0 +1,8 @@
+{
+  "appId": "fr.macave.app",
+  "appName": "Ma cave",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#F4F6F2"
+  }
+}

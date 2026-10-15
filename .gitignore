@@ -1,0 +1,13 @@
+# Jamais sur GitHub : l'adresse et le code d'une cave, l'appli qui les embarque, les clés de signature.
+android-app/cave.local.json
+android-app/www/
+android-app/dist/
+*.keystore
+*.jks
+*.apk
+
+# Fichiers de travail
+node_modules/
+.DS_Store
+Thumbs.db
+desktop.ini
