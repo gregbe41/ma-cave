@@ -320,6 +320,13 @@ legend{padding:0;margin:0 0 8px;font-size:.88rem;font-weight:500;color:var(--mut
 .f-years span{position:absolute;top:1px;white-space:nowrap}
 .f-years .y-end{transform:translateX(-100%)}
 .f-years .y-mid{transform:translateX(-50%)}
+/* Frise commune : une échelle d'années en tête, « Aujourd'hui » marqué sur chaque barre au même endroit */
+.f-axis{padding:12px 16px 4px;border-bottom:1px solid var(--soft)}
+.f-axis-in{position:relative;display:block;height:34px;margin-left:17px;font-size:.72rem;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.f-tick{position:absolute;bottom:0;transform:translateX(-50%);white-space:nowrap}
+.f-today{position:absolute;top:0;transform:translateX(-50%);padding:0 6px;border-radius:6px;background:var(--accent);color:var(--on-accent);font-weight:700;white-space:nowrap}
+.frise.is-common .f-row{padding-bottom:14px}
+.frise.is-common .garde .g-now{top:-7px;bottom:-7px;background:var(--accent-ink)}
 
 /* ---------- Stats ---------- */
 .seg{display:inline-flex;gap:4px;border-radius:999px;padding:4px;background:var(--seg);margin:2px 0 16px;max-width:100%;overflow-x:auto;scrollbar-width:none}
@@ -414,6 +421,19 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .sheet-body:last-child{padding-bottom:calc(22px + var(--sab))}
 .sheet-foot{display:flex;gap:10px;align-items:center;padding:12px 22px calc(12px + var(--sab));border-top:1px solid var(--line)}
 .sheet-foot .spacer{flex:1}
+/* Claude et crédits */
+.cr-gauges{display:grid;gap:12px;margin:12px 0}
+.cr-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.92rem}
+.cr-row b{font:800 1.15rem var(--display)}
+.cr-row small{font:500 .82rem var(--sans);color:var(--muted)}
+.cr-bar{display:block;height:8px;margin-top:5px;border-radius:4px;background:var(--soft);overflow:hidden}
+.cr-bar i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+.cr-who-h{margin:14px 0 4px;font-weight:700}
+.cr-who{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:4px}
+.cr-who li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--soft)}
+.cr-form{display:grid;gap:4px;margin-top:10px}
+.cr-form .btn{justify-self:start;margin-top:6px}
+.cr-owner{margin-top:12px}
 /* « Ajouter des bouteilles » : le + de la barre propose le scanner, l'ajout par photos ou la saisie */
 .add-opts{display:grid;gap:10px}
 .add-opt{display:grid;gap:2px;text-align:left;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:none;color:var(--ink)}
@@ -872,6 +892,11 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
         </details>
       </div>
 
+      <div class="set" id="credits-set" hidden>
+        <h2>Claude et crédits</h2>
+        <div id="credits-box"></div>
+      </div>
+
       <div class="set">
         <h2>Personnes</h2>
         <p>Chaque bouteille est au nom de quelqu'un, qui n'est pas forcément la personne qui l'a ajoutée. Cette liste est commune à tous les appareils de la cave. Pour ne voir que les bouteilles d'une personne, utilise « Bouteilles de » dans l'onglet Cave.</p>
@@ -1198,7 +1223,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
    ========================================================= */
 const LS_DATA = 'macave:data', LS_SET = 'macave:settings', LS_TOKEN = 'macave:token';
 // L'appli publique (GitHub Pages), son dépôt, et la version du script Google qui va avec cette page.
-const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 15;
+const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 16;
 const API_VERSION = 1;
 
 const COLORS = [
@@ -2108,6 +2133,24 @@ const BOIRE_TABS = [
   ['none', 'Sans date', 'Sans fenêtre de garde', "Indique « boire à partir de » et « boire jusqu'en » dans leur fiche pour les placer sur une frise."],
 ];
 
+/** Échelle commune d'une liste « À boire » : les années qui couvrent les fenêtres de garde, sans remonter ni avancer trop loin. */
+function friseScale(ws) {
+  const y = thisYear(), dated = ws.filter(w => gardeStatus(w).key !== 'none');
+  if (!dated.length) return null;
+  let lo = Math.min(y, ...dated.map(w => w.gardeDe || w.millesime || y)), hi = Math.max(y, ...dated.map(w => w.gardeA || (w.gardeDe || y) + 4));
+  lo = Math.max(lo, y - 6);
+  hi = Math.min(Math.max(hi, y + 2), y + 14);
+  return { lo, hi };
+}
+/** Les années de l'échelle commune, et « Aujourd'hui » au-dessus. */
+function friseAxis({ lo, hi }) {
+  const y = thisYear(), span = hi - lo + 1, step = span > 14 ? 5 : span > 7 ? 2 : 1;
+  const pos = v => ((v - lo + 0.5) / span) * 100;
+  const ticks = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
+  return `<div class="f-axis" aria-hidden="true"><span class="f-axis-in"><span class="f-today" style="left:${pos(y)}%">Aujourd'hui</span>${ticks.map(v => `<span class="f-tick" style="left:${pos(v)}%">${v}</span>`).join('')}</span></div>`;
+}
+
 /** Frise d'un vin, à son échelle : sa fenêtre de garde, aujourd'hui marqué, ses années aux deux bouts. */
 function rowFrise(w) {
   if (gardeStatus(w).key === 'none') return '';
@@ -2170,6 +2213,8 @@ function renderBoire() {
     </section>`;
   }
 
+  // Une seule échelle pour toute la liste : on compare les fenêtres d'un coup d'œil.
+  const sc = UI.compact ? null : friseScale(rest);
   const row = w => {
     const st = gardeStatus(w), col = colorOf(w.couleur);
     const dot = `<span class="dot w-dot" style="--c:${col.key ? col.hex : 'transparent'};${col.key ? '' : 'box-shadow:none'}"></span>`;
@@ -2182,14 +2227,14 @@ function renderBoire() {
         <span class="f-name">${dot}<span class="f-dom">${esc(wineTitle(w))}</span><span class="f-qty">×${stockOf(w)}</span></span>
         <span class="f-det">${esc([wineSub(w), w.millesime].filter(Boolean).join(', '))}</span>
         <span class="f-st">${esc(st.label)}</span>
-        ${rowFrise(w)}
+        ${sc ? `<span class="f-bar">${gardeBar(w, sc.lo, sc.hi)}</span>` : rowFrise(w)}
       </button>`;
   };
 
   box.innerHTML = tabs
     + `<p class="tab-desc"><b>${title}</b> : ${desc.charAt(0).toLowerCase() + desc.slice(1)} ${list.length} ${plural(list.length, 'vin', 'vins')}, ${bt} ${plural(bt, 'bouteille', 'bouteilles')}.</p>`
     + featHTML
-    + (rest.length ? `<section class="frise${UI.compact ? ' is-compact' : ''}" aria-label="${title}">${rest.map(row).join('')}</section>` : '');
+    + (rest.length ? `<section class="frise${UI.compact ? ' is-compact' : sc ? ' is-common' : ''}" aria-label="${title}">${sc ? friseAxis(sc) : ''}${rest.map(row).join('')}</section>` : '');
   hydratePhotos(box);
 }
 
@@ -2376,7 +2421,79 @@ function renderReglages() {
   $('#scanner-set').hidden = !Scanner.available;
   $$('[data-scanner-set]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.scannerSet === 'on') === (lsGet('macave:scanner', true) !== false))));
   renderSyncBox();
+  renderCredits();
   renderPeopleBox();
+}
+
+/* ---------- Claude et crédits (script v16) : ce que coûte Claude, la part de chacun, les réglages du propriétaire ---------- */
+const fmtCr = n => (Math.round((n || 0) * 10) / 10).toLocaleString('fr-FR');
+const COTE_RYTHMES = [[3, 'Tous les 3 mois'], [6, 'Tous les 6 mois'], [12, 'Une fois par an'], [24, 'Tous les 2 ans']];
+const gaugeHTML = (left, max, label) => {
+  const pct = max ? Math.max(0, Math.min(100, (left / max) * 100)) : 0;
+  return `<div class="cr-gauge"><div class="cr-row"><span>${label}</span><b class="num">${fmtCr(left)} <small>sur ${fmtCr(max)}</small></b></div><span class="cr-bar"><i style="width:${pct}%"></i></span></div>`;
+};
+function renderCredits() {
+  const set = $('#credits-set');
+  if (!set) return;
+  const c = S.credits;
+  set.hidden = !(API.ready() && (S.serverVersion || 0) >= 16 && c);
+  if (set.hidden) return;
+  const owner = S.role === 'proprio';
+  let h = '';
+  if (!S.labelOn) h += '<p>Pas de clé API sur cette cave : Claude passe par la routine de nuit, qui ne coûte aucun crédit.</p>';
+  else {
+    h += `<p>Chaque appel immédiat à Claude se paie avec la clé API de la cave, en crédits : une lecture d'étiquette, 1 crédit ; un conseil en magasin, 1 par bouteille ; des vins similaires, ${fmtCr(c.couts && c.couts.suggest)}. Ce que Claude trouve pour un vin sert à toute la cave. La lecture de nuit, par la routine, ne coûte rien.</p>`;
+    h += '<div class="cr-gauges">' + gaugeHTML(c.mois, c.max.mois, 'La cave, ce mois-ci') + gaugeHTML(c.jour, c.max.jour, "Aujourd'hui");
+    if (!owner && c.part) h += gaugeHTML(c.partReste, c.part, 'Ta part du mois');
+    h += '</div>';
+    if (!owner && !c.part) h += `<p class="hint">Tu as utilisé ${fmtCr(c.moi)} ${plural(Math.ceil(c.moi), 'crédit', 'crédits')} ce mois-ci.</p>`;
+  }
+  if (owner) {
+    const who = (c.parPersonne || []).filter(x => x.credits > 0);
+    if (S.labelOn) h += who.length ? `<p class="cr-who-h">Dépense du mois</p><ul class="cr-who">${who.map(x => `<li><span>${esc(x.qui)}</span><b class="num">${fmtCr(x.credits)}</b></li>`).join('')}</ul>` : '<p class="hint">Personne n\'a encore utilisé de crédit ce mois-ci.</p>';
+    h += `<form class="cr-form" id="credits-form">
+      <div class="row2">
+        <label class="f">Crédits par mois, pour la cave<input name="mois" type="number" min="0" max="10000" inputmode="numeric" value="${c.max.mois}"></label>
+        <label class="f">Par jour, au plus<input name="jour" type="number" min="0" max="1000" inputmode="numeric" value="${c.max.jour}"></label>
+      </div>
+      <label class="f">Part de chaque membre, par mois<input name="part" type="number" min="0" max="10000" inputmode="numeric" value="${c.max.part}"><span class="hint">0 : pas de part, seule la limite de la cave compte. Toi, tu n'as que celle-ci.</span></label>
+      <label class="f">Valeur du jour : chaque vin est revu<select name="coteMois">${COTE_RYTHMES.map(([v, l]) => `<option value="${v}"${v === (S.coteMois || 12) ? ' selected' : ''}>${l}</option>`).join('')}</select><span class="hint">Par la routine de nuit, sans crédit.</span></label>
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+    </form>
+    <p class="hint">Cet appareil a le code du propriétaire. <button type="button" class="link" data-act="owner-forget">Repasser en membre</button></p>`;
+  } else {
+    h += `<details class="howto cr-owner"><summary>Tu héberges cette cave ?</summary>
+      <p>Entre ici le code du propriétaire pour régler les crédits et la part de chacun. Il est dans le script de la cave : Paramètres du projet › Propriétés du script, ligne <code>SECRET_PROPRIO</code>, ou dans le journal de la fonction « installer ». Il ne part jamais dans une invitation.</p>
+      <label class="f">Code du propriétaire<input id="owner-code" placeholder="ex. 1a2b-3c4d-5e6f-7a8b" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
+      <button type="button" class="btn" data-act="owner-save">Enregistrer</button></details>`;
+  }
+  $('#credits-box').innerHTML = h;
+}
+async function saveOwnerCode() {
+  const code = $('#owner-code').value.trim().toLowerCase();
+  if (!/^[0-9a-f]{4}(-[0-9a-f]{4}){3}$/.test(code)) { toast('Le code a la forme 1a2b-3c4d-5e6f-7a8b.'); return; }
+  try {
+    const r = await API.call('ping', { ...pageInfo(), secret: code });
+    if (r.role !== 'proprio') throw new Error("Ce code n'est pas celui du propriétaire.");
+    S.proprio = code;
+    serverInfo(r);
+    toast('Cet appareil a maintenant la main sur les crédits de la cave.');
+  } catch (e) { toast(e.code === 'auth' ? "Ce code n'est pas celui du propriétaire." : e.message); }
+  renderReglages();
+}
+async function forgetOwnerCode() {
+  S.proprio = ''; S.role = 'app'; saveSettings();
+  try { serverInfo(await API.call('ping', pageInfo())); } catch {}
+  toast('Cet appareil est de nouveau un membre de la cave.');
+  renderReglages();
+}
+async function saveCredits(form) {
+  const v = k => form.elements[k].value;
+  try {
+    serverInfo(await API.call('setCredits', { mois: v('mois'), jour: v('jour'), part: v('part'), coteMois: v('coteMois') }));
+    toast('Crédits enregistrés pour toute la cave.');
+  } catch (e) { toast(e.message); }
+  renderReglages();
 }
 
 /* ---------- Personnes ---------- */
@@ -2506,12 +2623,15 @@ function renderSyncBox() {
   h += `</div>`;
   // Style et accords des vins déjà en cave : Claude les ajoute à la routine suivante (script v12 ou plus).
   const missing = tasteMissing().length;
-  if (missing && (S.serverVersion || 0) >= 12 && claudeOn()) h += `<p class="hint">${missing} ${plural(missing, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.</p><div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Claude</button></div>`;
+  // Une action sur toute la cave : réservée au propriétaire à partir du script v16.
+  const bulkOk = (S.serverVersion || 0) < 16 || S.role === 'proprio';
+  if (missing && (S.serverVersion || 0) >= 12 && claudeOn()) h += `<p class="hint">${missing} ${plural(missing, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${bulkOk ? '' : ' Le propriétaire de la cave peut les faire compléter par Claude.'}</p>${bulkOk ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Claude</button></div>' : ''}`;
   box.innerHTML = h;
 }
 /** Vins en cave sans style ni accords, que Claude peut compléter (pas déjà en attente de lecture). */
 const tasteMissing = () => db.wines.filter(w => !w.style && !w.accords && (w.domaine || w.appellation) && !['attente', 'revoir'].includes(w.lecture));
 function fillTaste() {
+  if ((S.serverVersion || 0) >= 16 && S.role !== 'proprio') return;
   const ws = tasteMissing();
   if (!ws.length) return;
   const now = nowISO();
@@ -3067,7 +3187,7 @@ function simClaudeHTML(w, sg) {
     if (!API.ready()) body = '<p class="hint">Relie l\'appli à la cave (Réglages) pour demander aussi l\'avis de Claude.</p>';
     else if ((S.serverVersion || 0) < 15) body = '<p class="hint">L\'avis de Claude sera disponible quand le script de la cave sera passé en version 15 (Réglages).</p>';
     else if (!claudeOn()) return '';
-    else body = waiting ? wait : `<button type="button" class="btn btn-primary" data-act="sim-ask">Demander à Claude · 0,5 jeton</button>`;
+    else body = waiting ? wait : `<button type="button" class="btn btn-primary" data-act="sim-ask">Demander à Claude · 0,5 crédit</button>`;
     return `<section class="sim-sec sim-ask"><h3 class="sim-h">✦ L'avis de Claude</h3>
       <p class="sim-intro">Cinq vins à découvrir, choisis d'après ce vin${hasAvis ? ' et vos avis' : ''}. Sa réponse reste dans la fiche, pour tous.</p>${body}
       ${sg && sg.statut === 'echec' && !waiting ? `<p class="hint">La dernière demande n'a pas abouti${sg.note ? ` : ${esc(sg.note)}` : '.'}</p>` : ''}</section>`;
@@ -3078,7 +3198,23 @@ function simClaudeHTML(w, sg) {
     ${r.intro ? `<p class="sim-intro">${esc(r.intro)}</p>` : ''}
     <div class="sim-list">${r.vins.map((v, i) => simItem(`g${i}`, { ...v, src: 'claude' }, v.appellation || v.domaine, [v.appellation ? v.domaine : '', v.cuvee].filter(Boolean).join(', '),
       `<span class="sim-why">${v.lien ? `<span class="sim-tag is-acc">${esc(SIM_LIENS[v.lien] || v.lien)}</span>` : ''}${v.budget ? `<span class="sim-tag">${esc(v.budget)}</span>` : ''}</span>${v.pourquoi ? `<span class="sim-pq">${esc(v.pourquoi)}</span>` : ''}`)).join('')}</div>
-    ${waiting ? wait : suggestOn() ? '<p class="sim-more"><button type="button" class="btn" data-act="sim-ask">Redemander à Claude · 0,5 jeton</button></p>' : ''}</section>`;
+    ${waiting ? wait : suggestOn() ? redemanderHTML(w, sg) : ''}</section>`;
+}
+// Même règle que le script (v16) : on redemande au bout de 30 jours, ou dès que la fiche ou ses avis ont changé.
+const SUGG_DELAI_JOURS = 30;
+function suggestNextDate(w, sg) {
+  if ((S.serverVersion || 0) < 16 || !sg || !sg.date) return 0;
+  const since = sg.date;
+  const changed = (w.updatedAt || '') > since || db.avis.some(a => a.vinId === w.id && (a.updatedAt || '') > since);
+  const next = Date.parse(since) + SUGG_DELAI_JOURS * 864e5;
+  return changed || Date.now() >= next ? 0 : next;
+}
+function redemanderHTML(w, sg) {
+  const next = suggestNextDate(w, sg);
+  if (!next) return '<p class="sim-more"><button type="button" class="btn" data-act="sim-ask">Redemander à Claude · 0,5 crédit</button></p>';
+  const d = new Date(next).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  return `<p class="hint sim-next">Tu pourras redemander à partir du ${d}, ou dès que la fiche ou vos avis changent.</p>`
+    + (S.role === 'proprio' ? '<p class="sim-more"><button type="button" class="btn" data-act="sim-ask" data-force="1">Redemander quand même · 0,5 crédit</button></p>' : '');
 }
 
 /** « Ajouter à la cave » : le formulaire « Nouveau vin », prérempli par le catalogue ou par Claude. */
@@ -3109,7 +3245,7 @@ function cleanSuggestion(o) {
       .map(v => ({ domaine: str(v.domaine), cuvee: str(v.cuvee), appellation: str(v.appellation), couleur: colorKey(v.couleur), region: str(v.region), budget: str(v.budget), lien: str(v.lien), pourquoi: str(v.pourquoi) })) } : null,
   };
 }
-async function askSuggest(vinId) {
+async function askSuggest(vinId, force = false) {
   if (!db.wines.some(x => x.id === vinId) || SUGG.busy.has(vinId)) return;
   if (!navigator.onLine) { toast('Pas de connexion internet : réessaie une fois en ligne.'); return; }
   SUGG.busy.add(vinId);
@@ -3118,10 +3254,13 @@ async function askSuggest(vinId) {
     // Le vin et ses dernières modifications doivent être sur le serveur avant la demande.
     while (syncing) await new Promise(r => setTimeout(r, 300));
     await sync();
-    const r = await API.call('suggest', { vinId }, 150e3);
-    takeSuggestion(r.suggestion, true);
+    const r = await API.call('suggest', force ? { vinId, force: true } : { vinId }, 150e3);
+    // Déjà demandé par quelqu'un d'autre : sa réponse servira à tout le monde.
+    if (r.deja && r.message) toast(r.message);
+    if (r.suggestion) takeSuggestion(r.suggestion, !r.deja);
   } catch (e) {
-    toast(/Action inconnue/.test(e.message) ? "Le script de la cave doit d'abord passer en version 15." : `Demande non envoyée : ${e.message}`);
+    toast(/Action inconnue/.test(e.message) ? "Le script de la cave doit d'abord passer en version 15."
+      : ['recent', 'quota'].includes(e.code) ? e.message : `Demande non envoyée : ${e.message}`);
   } finally {
     SUGG.busy.delete(vinId);
     persist();
@@ -4330,7 +4469,8 @@ const API = {
     let r;
     try {
       // Corps en texte brut, sans en-tête : le navigateur n'envoie pas de requête préalable, que Google refuserait.
-      r = await fetch(S.apiUrl, { method: 'POST', body: JSON.stringify({ action, secret: S.secret, device: S.device, ...payload }), signal: ctrl.signal });
+      // Le code du propriétaire, s'il est sur cet appareil, remplace celui des membres (il ne part jamais dans une invitation).
+      r = await fetch(S.apiUrl, { method: 'POST', body: JSON.stringify({ action, secret: S.proprio || S.secret, device: S.device, ...payload }), signal: ctrl.signal });
     } catch (e) {
       throw new Error(e.name === 'AbortError' ? 'Le script met trop de temps à répondre.'
         : !navigator.onLine ? 'Pas de connexion internet.'
@@ -4339,6 +4479,12 @@ const API = {
     let j;
     try { j = await r.json(); } catch { throw new Error("Réponse inattendue du script. L'adresse doit être celle du déploiement et se terminer par /exec."); }
     if (!j.ok) {
+      // Code du propriétaire changé dans le script : l'appareil repasse en membre plutôt que de rester bloqué.
+      if (j.code === 'auth' && S.proprio && !payload.secret) {
+        S.proprio = ''; S.role = 'app'; saveSettings();
+        toast("Le code du propriétaire n'est plus reconnu : cet appareil repasse en membre de la cave.");
+        return API.call(action, payload, timeout);
+      }
       const e = new Error(j.error || 'Erreur du script.');
       e.code = j.code || '';
       e.auth = e.code === 'auth' || e.code === 'setup';
@@ -4531,6 +4677,9 @@ function serverInfo(r) {
   if ('routineOn' in r) S.routineOn = !!r.routineOn;
   if ('routineVu' in r) S.routineVu = r.routineVu || '';
   if ('version' in r) S.serverVersion = r.version || 0;
+  if ('role' in r) S.role = r.role || '';
+  if ('credits' in r) S.credits = r.credits || null;
+  if ('coteMois' in r) S.coteMois = r.coteMois || 12;
   saveSettings();
 }
 /* Claude sur cette cave : une clé API dans le script, ou une routine qui passe (lancement à la demande configuré, ou
@@ -4664,7 +4813,7 @@ async function acceptInvite() {
     if (!(await switchCave(d.u, d.s))) return false;
     return true;
   }
-  if (S.apiUrl !== d.u) Object.assign(S, { lastSync: '', sheetUrl: '', labelOn: false });
+  if (S.apiUrl !== d.u) Object.assign(S, { lastSync: '', sheetUrl: '', labelOn: false, proprio: '', role: '', credits: null });
   S.apiUrl = d.u; S.secret = d.s; saveSettings();
   return true;
 }
@@ -4683,7 +4832,7 @@ async function switchCave(u, s) {
       && !confirm(`L'envoi vers l'ancienne cave n'a pas abouti${unsent ? ` (${unsent} ${plural(unsent, 'analyse Conseil', 'analyses Conseil')} pas encore ${plural(unsent, 'partie', 'parties')})` : ''} : ce qui n'était pas encore envoyé sera perdu. Changer de cave quand même ?`)) return false;
   }
   await clearDevice();
-  Object.assign(S, { apiUrl: u, secret: s, device: '', lastSync: '', sheetUrl: '', webUrl: '', labelOn: false, routineOn: false, routineVu: '', serverVersion: 0, photoDeletes: [] });
+  Object.assign(S, { apiUrl: u, secret: s, proprio: '', role: '', credits: null, device: '', lastSync: '', sheetUrl: '', webUrl: '', labelOn: false, routineOn: false, routineVu: '', serverVersion: 0, photoDeletes: [] });
   saveSettings();
   UI.whoAsked = '';
   return true;
@@ -4770,6 +4919,8 @@ function wire() {
         case 'cs-add': addFromConseil(act.dataset.cid, +act.dataset.i); break;
         case 'clear-filters': Object.assign(UI, { color: '', region: '', accord: '', owner: '' }); lsSet('macave:owner', ''); render(); break;
         case 'fill-taste': fillTaste(); break;
+        case 'owner-save': saveOwnerCode(); break;
+        case 'owner-forget': forgetOwnerCode(); break;
         case 'cs-del': deleteConseil(act.dataset.cid); break;
         case 'cs-relaunch': relaunchConseil(act.dataset.cid); break;
         case 'bulk': openBulk(); break;
@@ -4783,7 +4934,7 @@ function wire() {
         case 'sim-tab': SIM.tab = act.dataset.tab; SIM.more = 8; renderSimilar(); break;
         case 'sim-more': SIM.more += 8; renderSimilar(); break;
         case 'sim-retry': SIM.key = ''; Catalogue.load().then(() => { SIM.key = ''; renderSimilar(); }); renderSimilar(); break;
-        case 'sim-ask': askSuggest(UI.simWine); break;
+        case 'sim-ask': askSuggest(UI.simWine, act.dataset.force === '1'); break;
         case 'sim-add': addFromSimilar(act.dataset.k); break;
         case 'cat-pick': applyCatalogue(+act.dataset.i); break;
         case 'cat-none': FORM.catDone = true; renderCatSuggest(); break;
@@ -5101,6 +5252,11 @@ function wire() {
     else if (k !== 'busy') sync({ interactive: true });
   });
 
+  document.addEventListener('submit', e => {
+    if (e.target.id !== 'credits-form') return;
+    e.preventDefault();
+    saveCredits(e.target);
+  });
   $('#save-api').addEventListener('click', async e => {
     const btn = e.currentTarget;
     const inv = parseInvite($('#api-url').value);
@@ -5113,7 +5269,7 @@ function wire() {
       if (!(await switchCave(url, secret))) return;
       render();
     } else {
-      if (url !== S.apiUrl) Object.assign(S, { lastSync: '', sheetUrl: '', labelOn: false });
+      if (url !== S.apiUrl) Object.assign(S, { lastSync: '', sheetUrl: '', labelOn: false, proprio: '', role: '', credits: null });
       Object.assign(S, { apiUrl: url, secret });
       saveSettings();
     }

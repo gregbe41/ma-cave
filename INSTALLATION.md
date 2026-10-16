@@ -43,15 +43,16 @@ Compte environ 20 minutes, lecture des étiquettes comprise.
    - **Examiner les autorisations**, puis choisis ton compte.
    - Un écran indique « Google n'a pas validé cette application ». C'est normal pour un script personnel : clique sur **Paramètres avancés**, puis sur **Accéder à Ma cave – serveur (non sécurisé)**.
    - Clique sur **Autoriser**.
-3. Le **journal d'exécution** s'affiche en bas. Note les deux codes :
-   - le **code secret des appareils**, par exemple `1a2b-3c4d-5e6f-7a8b` ;
+3. Le **journal d'exécution** s'affiche en bas. Note les trois codes :
+   - le **code secret des appareils**, par exemple `1a2b-3c4d-5e6f-7a8b`. C'est celui des membres de la cave, et celui que contiennent les invitations ;
+   - le **code du propriétaire**, à garder pour toi : sur tes appareils, il donne en plus la main sur les crédits de Claude et sur les actions qui touchent toute la cave (voir l'étape 8) ;
    - le **code de la routine de lecture**, qui ne permet que de lire les étiquettes en attente et de compléter les fiches.
 
 Dans le Sheet, les onglets Vins, Mouvements, Corbeille, Personnes, Avis, Conseils, Suggestions et Lectures IA apparaissent. Un dossier « Ma cave – étiquettes » est créé dans ton Drive.
 
 > **Ce que tu autorises.** L'écran de Google doit lister trois accès : les feuilles de calcul **dans lesquelles l'application est installée** (ce Sheet seulement), les fichiers Google Drive **que tu utilises avec cette application** (ceux que le script crée : le dossier des étiquettes et les photos), et la connexion à un service externe (l'API Claude, pour la lecture immédiate facultative). Coche les trois. S'il manque la ligne sur Google Drive, c'est que l'étape 2.5 manque : `installer` s'arrête alors avec un message qui le dit. Refais l'étape 2.5, puis relance `installer`.
 
-Pour retrouver les codes plus tard : **Paramètres du projet** (roue dentée dans la colonne de gauche) › **Propriétés du script**, lignes `SECRET` et `SECRET_ROUTINE`.
+Pour retrouver les codes plus tard : **Paramètres du projet** (roue dentée dans la colonne de gauche) › **Propriétés du script**, lignes `SECRET`, `SECRET_PROPRIO` et `SECRET_ROUTINE`.
 
 ## 4. Publier le script
 
@@ -82,6 +83,8 @@ La page ne contient aucune donnée. Sans l'adresse du script et le code secret, 
 4. L'appli demande alors **« Qui es-tu ? »** : touche ton prénom dans la liste de la cave, ou écris-le si tu es nouveau. Tu pourras le changer dans Réglages › Personnes.
 
 Si cet appareil avait déjà des vins (ancienne version, essais), ils sont envoyés dans le Sheet à cette première synchro.
+
+**Sur tes propres appareils**, ajoute ensuite le code du propriétaire : Réglages › Claude et crédits › « Tu héberges cette cave ? ». Il ne part jamais dans une invitation.
 
 **Pour inviter quelqu'un** : dans Réglages, touche **Inviter quelqu'un** et envoie le lien par message. En l'ouvrant dans son navigateur, la personne est reliée automatiquement. Dans l'appli Android, il suffit de coller ce lien dans le champ « Adresse du script ». Le lien contient le code secret : ne l'envoie qu'à des personnes de confiance.
 
@@ -120,11 +123,28 @@ Si tu préfères que l'étiquette soit lue tout de suite, pendant la saisie, le 
 2. Dans l'éditeur Apps Script : **Paramètres du projet › Propriétés du script › Ajouter une propriété du script**, nom `ANTHROPIC_API_KEY`, valeur : ta clé.
 3. Exécute la fonction **`testerCleClaude`** : le journal doit afficher « Clé valide ».
 
-Garde-fous : quotas `QUOTA_JOUR` (20 par défaut) et `QUOTA_MOIS` (100 par défaut) dans les propriétés du script, coût plafonné par lecture, une seule lecture par photo, et chaque lecture notée dans l'onglet « Lectures IA ». Si une lecture immédiate échoue, l'étiquette est lue la nuit suivante.
+### Les crédits : qui dépense quoi (depuis la version 16 du script)
 
-La même clé rend aussi l'onglet **Conseil** immédiat : une quinzaine de secondes au lieu d'une à deux minutes. Chaque bouteille analysée compte pour une lecture dans les quotas. Sans clé, quota atteint ou API en panne, c'est la routine qui répond, lancée tout de suite.
+Tout ce que Claude fait tout de suite par la clé API se compte en **crédits**. Un crédit vaut à peu près une lecture d'étiquette, soit environ 3,5 centimes. Ce que fait la routine de nuit ne coûte aucun crédit.
 
-Elle répond aussi tout de suite à **« Demander à Claude »** dans « Vins similaires » (depuis la version 15 du script) : une demande compte pour une lecture, pour un coût d'environ 2 centimes, puisqu'il n'y a pas de photo à lire. Sans clé, c'est la routine qui répond.
+| Demande | Crédits |
+|---|---|
+| Lecture d'étiquette pendant la saisie | 1 |
+| Conseil en magasin | 1 par bouteille photographiée |
+| Vins similaires (« Demander à Claude ») | 0,5 |
+
+- **Les crédits appartiennent à la cave** : une limite par mois (`QUOTA_MOIS`, 100 par défaut) et une par jour (`QUOTA_JOUR`, 20 par défaut), pour tout le monde.
+- **Chaque membre a sa part du mois** (`PART_MEMBRE`, 25 par défaut, 0 pour ne pas en mettre). Le propriétaire n'a que la limite de la cave.
+- **Ce que Claude produit pour un vin sert à toute la cave** : la lecture, le style et les accords, la valeur du jour, les vins similaires. Personne ne repaie ce qu'un autre a déjà demandé. Les vins similaires d'un même vin ne se redemandent pas avant 30 jours, sauf si sa fiche ou ses avis ont changé ; une demande déjà en cours n'est pas relancée par un autre appareil.
+- **Les actions sur toute la cave** (« Faire compléter style et accords par Claude ») sont réservées au propriétaire.
+- **Une demande qui échoue ne coûte rien.** Quand les crédits manquent, la lecture et le conseil passent à la routine de nuit.
+- Tout se règle dans l'appli, avec le code du propriétaire : **Réglages › Claude et crédits** affiche ce qui reste, la dépense du mois de chacun, et permet de changer les limites, la part de chacun et le rythme de la valeur du jour (`COTE_MOIS`). Chaque appel reste noté dans l'onglet « Lectures IA ».
+
+Si une lecture immédiate échoue, l'étiquette est lue la nuit suivante.
+
+La même clé rend aussi l'onglet **Conseil** immédiat : une quinzaine de secondes au lieu d'une à deux minutes. Chaque bouteille analysée compte pour un crédit. Sans clé, crédits épuisés ou API en panne, c'est la routine qui répond, lancée tout de suite.
+
+Elle répond aussi tout de suite à **« Demander à Claude »** dans « Vins similaires » (depuis la version 15 du script) : une demande coûte un demi-crédit, environ 2 centimes, puisqu'il n'y a pas de photo à lire. Sans clé, c'est la routine qui répond.
 
 ---
 
@@ -132,20 +152,20 @@ Elle répond aussi tout de suite à **« Demander à Claude »** dans « Vins si
 
 - **Corriger une valeur dans le Sheet** (un prix, une appellation) : fais-le directement. Le script note l'heure de modification, et ta correction l'emporte sur les appareils.
 - **Qui a rempli quoi** : la colonne « Rempli par Claude » de l'onglet Vins liste les champs dont la valeur vient de Claude. Tout le reste a été saisi à la main, et Claude n'y touche jamais. Une valeur de Claude corrigée, dans l'appli ou dans le Sheet, devient la tienne. Claude repasse sur une fiche (photo ou non) quand on y ajoute un millésime, une appellation ou un domaine, ou sur demande (« Demander l'avis de Claude » dans la fiche) : il ne met alors à jour que les champs vides et les siens.
-- **Valeur du jour** (depuis la version 13 du script) : la nuit, la routine cherche en ligne le prix actuel des bouteilles en cave, avec sa fourchette, sa source et le mois. Elle le fait pour 30 vins au plus par nuit, et revoit chaque valeur au bout d'un an. Cette recherche passe par le forfait Claude de la routine, pas par la clé API. Une valeur saisie à la main (colonne « Valeur du jour (€) » ou fiche de l'appli) n'est jamais remplacée. Vide-la pour que Claude la cherche de nouveau.
+- **Valeur du jour** (depuis la version 13 du script) : la nuit, la routine cherche en ligne le prix actuel des bouteilles en cave, avec sa fourchette, sa source et le mois. Elle le fait pour 30 vins au plus par nuit, et revoit chaque valeur au bout d'un an (ou au rythme choisi par le propriétaire depuis la version 16 : tous les 3, 6, 12 ou 24 mois). Cette recherche passe par le forfait Claude de la routine, pas par la clé API. Une valeur saisie à la main (colonne « Valeur du jour (€) » ou fiche de l'appli) n'est jamais remplacée. Vide-la pour que Claude la cherche de nouveau.
 - **Ajouter ou supprimer un vin** : passe par l'appli. Une ligne effacée à la main dans le Sheet reviendrait à la synchro suivante.
 - **N'ajoute pas de colonne** dans les onglets Vins, Mouvements, Corbeille, Personnes, Avis, Conseils et Suggestions : le script réécrit les lignes à chaque synchro.
 - **Conseils** : une ligne par analyse demandée dans l'onglet Conseil de l'appli (bouteilles vues en magasin), avec un résumé lisible. Les colonnes « Bouteilles » et « Résultat » sont réservées à l'appli : ne les modifie pas à la main.
 - **Suggestions** (depuis la version 15 du script) : une ligne par vin pour lequel quelqu'un a demandé à Claude des vins similaires, avec sa dernière réponse en résumé lisible. Elle reste dans la cave : tout le monde la retrouve dans la fiche, sans redemander. La colonne « Résultat » est réservée à l'appli.
 - **Personnes** : la liste des propriétaires de bouteilles, commune à tous les appareils. Pour ajouter quelqu'un, tu peux écrire un prénom sur une nouvelle ligne de l'onglet. Pour renommer ou réunir deux personnes (« Manu » et « Emmanuel »), passe par l'appli, dans Réglages › Personnes : elle met aussi à jour l'historique, ce que l'onglet seul ne fait pas.
-- **Couper l'accès à quelqu'un** : dans les propriétés du script, change la valeur de `SECRET`, puis renvoie une invitation aux autres appareils. Pour la routine, c'est `SECRET_ROUTINE`, à mettre à jour aussi dans la routine.
+- **Couper l'accès à quelqu'un** : dans les propriétés du script, change la valeur de `SECRET`, puis renvoie une invitation aux autres appareils. Pour la routine, c'est `SECRET_ROUTINE`, à mettre à jour aussi dans la routine. Si le code du propriétaire a fuité, change `SECRET_PROPRIO` et saisis le nouveau sur tes appareils.
 
 ## Mettre à jour le script
 
 Quand une nouvelle version de `Code.gs` arrive, l'appli le signale dans **Réglages**. La dernière version est toujours sur GitHub : [`apps-script/Code.gs`](apps-script/Code.gs).
 
 1. Remplace le contenu de `Code.gs` dans l'éditeur (et celui d'`appsscript.json` s'il a changé), puis enregistre.
-2. Exécute **`installer`** si la nouvelle version l'indique. C'est sans risque : rien n'est effacé, et les codes existants sont gardés.
+2. Exécute **`installer`** si la nouvelle version l'indique (c'est le cas pour la version 16, qui crée le code du propriétaire). C'est sans risque : rien n'est effacé, et les codes existants sont gardés.
 3. **Déployer › Gérer les déploiements**, puis l'icône crayon.
 4. Dans **Version**, choisis **Nouvelle version**, puis **Déployer**.
 
@@ -162,6 +182,6 @@ L'adresse reste la même : rien à changer sur les appareils ni dans la routine.
 | « Le script est trop ancien » | Le code a changé mais pas le déploiement | « Mettre à jour le script » ci-dessus |
 | Les fiches restent « À identifier » | La routine ne passe pas, ou ne joint pas le script | Regarde le dernier passage sur claude.ai/code/routines ; une erreur `host_not_allowed` signifie que l'étape 7a manque |
 | « Lecture échouée » sur une fiche | Photo floue ou sans étiquette | Reprends une photo, ou touche « Relancer la lecture cette nuit » |
-| « Quota de lectures atteint » | Quota de la lecture immédiate atteint | Attends le lendemain, ou augmente `QUOTA_JOUR` / `QUOTA_MOIS` |
+| « Plus de crédits Claude… » ou « Tu as utilisé ta part… » | Limite du jour, du mois ou part du membre atteinte | Attends le lendemain ou le mois suivant, ou augmente les limites dans Réglages › Claude et crédits (avec le code du propriétaire) |
 
 Les erreurs du script sont aussi visibles dans l'éditeur Apps Script, menu **Exécutions**.
