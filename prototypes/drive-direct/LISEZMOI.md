@@ -7,7 +7,9 @@ Ce prototype vérifie, avant de toucher à l'appli, que la cave peut vivre dans 
 3. Les photos partagées par lien sont-elles lisibles par les applis des autres membres ?
 4. Le propriétaire peut-il « adopter » les photos d'un invité (les recréer à son nom), puis l'invité supprimer ses originaux ?
 
-C'est une page web : la connexion Google dans l'appli Android se vérifiera dans un second temps.
+C'est une page web. Le même prototype tourne aussi dans l'APK d'essai, pour une cinquième question :
+
+5. Dans l'appli Android, la connexion Google et le sélecteur de fichiers marchent-ils ? Google les refuse dans une WebView : l'appli passe par les services Google du téléphone (voir « Dans l'appli Android », plus bas).
 
 ## Préparer le projet Google Cloud (une fois, 15 minutes)
 
@@ -25,6 +27,9 @@ C'est une page web : la connexion Google dans l'appli Android se vérifiera dans
    Note la **clé**.
 6. Sur l'accueil du projet, note le **numéro du projet** (« Project number », des chiffres seulement).
 7. Copie `config.example.js` en `config.local.js` et remplis les trois valeurs. Ce fichier n'est jamais publié.
+8. Pour l'appli Android, deux ajouts dans le même projet :
+   - **Clients › Créer un client**, type **Android** : nom du paquet `fr.macave.app.essai`, empreinte du certificat SHA-1 `74:59:60:62:67:BD:D8:B6:A1:A8:24:F2:93:93:AA:DC:6D:C6:01:02` (celle de la clé qui signe tes APK). Rien à recopier ensuite : Google reconnaît l'appli à son paquet et à sa signature. Tu peux créer tout de suite un second client Android pour `fr.macave.app`, avec la même empreinte : il servira à l'appli habituelle ;
+   - dans les restrictions de la **clé API**, ajoute le site `https://localhost/*` (l'adresse des pages dans l'appli) à côté de `http://localhost:8765/*`.
 
 ## Lancer le test
 
@@ -60,3 +65,17 @@ C'est celui que vivrait chacun dans l'appli : rien à installer, aucun identifia
 Termine par **Copier le journal** dans chaque profil, et colle les deux journaux dans la conversation.
 
 Pour recommencer : « Tout oublier sur ce navigateur », puis supprime le dossier « Ma cave (prototype) » du Drive.
+
+## Dans l'appli Android
+
+L'APK d'essai (« Ma cave v2 ») embarque ce prototype : **Réglages**, tout en bas, **Essai : une cave dans Google Drive**. La page est la même, mais « Se connecter » et les sélecteurs ouvrent les écrans Google du téléphone au lieu de ceux du navigateur (plugin GoogleDrive de l'appli, accès `drive.file` seulement).
+
+Il faut l'étape 8 ci-dessus. Puis, sur le téléphone :
+
+1. **Se connecter avec Google** : choisis ton compte, accepte l'accès aux fichiers créés ou désignés dans l'appli.
+2. **A**, puis **B** avec l'adresse Google de l'invité : le lien d'invitation est copié (il mène au prototype web, `http://localhost:8765`).
+3. Côté invité (un autre téléphone avec l'APK d'essai, ou le même après avoir changé de compte à la connexion) : colle le lien dans le champ de l'étape **C**, puis **Rejoindre** : le sélecteur de Google ne doit montrer que le fichier de la cave. Confirme, puis **D**.
+
+On peut aussi mélanger : la cave créée dans le navigateur, rejointe depuis le téléphone, ou l'inverse. **Copier le journal** ouvre la feuille de partage d'Android : envoie-le-toi, puis colle-le dans la conversation.
+
+Si « Se connecter » répond une erreur 10 (DEVELOPER_ERROR), c'est que le client Android manque ou que son empreinte SHA-1 ne correspond pas.

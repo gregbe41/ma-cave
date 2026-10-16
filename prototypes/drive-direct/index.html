@@ -60,7 +60,7 @@
     <div class="step"><b>A</b><div class="row"><input type="text" id="cave-name" placeholder="Nom de la cave, ex. Cave de Greg"><button data-act="newCave">Créer une cave</button><span class="muted">propriétaire</span></div></div>
     <div class="step"><b>B</b><div class="row"><input type="email" id="invite-email" placeholder="Adresse Google du proche"><button data-act="invite">Inviter</button><span class="muted">propriétaire : partage la cave et prépare le lien à envoyer</span></div></div>
     <p class="ids" id="invite-link"></p>
-    <div class="step"><b>C</b><div class="row"><button data-act="join">Rejoindre la cave du lien</button><span class="muted">invité, après avoir ouvert le lien : un seul geste dans le sélecteur de Google</span></div></div>
+    <div class="step"><b>C</b><div class="row"><input type="text" id="join-link" placeholder="Lien d'invitation (vide si tu l'as ouvert)"><button data-act="join">Rejoindre la cave du lien</button><span class="muted">invité, après avoir ouvert le lien : un seul geste dans le sélecteur de Google</span></div></div>
     <div class="step"><b>D</b><div class="row"><button data-act="myCaves">Mes caves</button><span class="muted">sur n'importe quel appareil connecté : les caves dont on est propriétaire, puis celles où l'on est invité</span></div></div>
     <div id="caves-list"></div>
   </section>
@@ -98,6 +98,10 @@
 
 <script>
 const C = window.PROTO_CONFIG || {};
+// Dans l'appli Android (APK d'essai), Google refuse sa connexion et son sélecteur dans la WebView : on passe par les
+// services Google du téléphone (plugin GoogleDrive de l'appli), qui rendent le même jeton drive.file.
+const NATIVE = (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && Capacitor.Plugins && Capacitor.Plugins.GoogleDrive) || null;
+const WEB_URL = C.webUrl || 'http://localhost:8765/';
 const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const API = 'https://www.googleapis.com/drive/v3', UP = 'https://www.googleapis.com/upload/drive/v3';
 const FOLDER = 'application/vnd.google-apps.folder';
@@ -151,26 +155,52 @@ async function publicBlob(id, rk) {
 async function tokenBlob(id) { return (await drive('GET', `${API}/files/${id}?alt=media`, { raw: true })).blob(); }
 
 /* ---------- Connexion et sélecteur ---------- */
-function signIn() {
+async function whoAmI() {
+  try {
+    const a = await drive('GET', `${API}/about?fields=user(emailAddress,displayName)`);
+    me = a.user.emailAddress;
+    $('#me').textContent = `Connecté : ${a.user.displayName} (${me})`;
+    log('ok', `Connecté en ${me}, avec le seul accès drive.file${NATIVE ? ', par les services Google du téléphone' : ''}`);
+  } catch (e) { log('ko', 'Connecté, mais impossible de lire le compte', e.message); }
+}
+async function signIn() {
+  if (NATIVE) {
+    try {
+      const r = await NATIVE.connect();
+      token = r.accessToken;
+      log('info', 'Accès accordés', r.scopes);
+      await whoAmI();
+    } catch (e) { log('ko', 'Connexion refusée ou impossible', `${e.code || ''} ${e.message || e}`); }
+    return;
+  }
   if (!window.google || !google.accounts) { log('ko', 'Le script de connexion Google n\'est pas chargé.'); return; }
   tokenClient = tokenClient || google.accounts.oauth2.initTokenClient({
     client_id: C.clientId, scope: SCOPE,
     callback: async r => {
       if (r.error) { log('ko', 'Connexion refusée', r); return; }
       token = r.access_token;
-      try {
-        const a = await drive('GET', `${API}/about?fields=user(emailAddress,displayName)`);
-        me = a.user.emailAddress;
-        $('#me').textContent = `Connecté : ${a.user.displayName} (${me})`;
-        log('ok', `Connecté en ${me}, avec le seul accès drive.file`);
-      } catch (e) { log('ko', 'Connecté, mais impossible de lire le compte', e.message); }
+      await whoAmI();
     },
     error_callback: e => log('ko', 'Connexion interrompue', e),
   });
   tokenClient.requestAccessToken({ prompt: 'consent' });
 }
-function gapiLoaded() { gapi.load('picker', () => { pickerReady = true; }); }
+function gapiLoaded() { if (window.gapi) gapi.load('picker', () => { pickerReady = true; }); }
+/** Sélecteur des services Google (appli Android) : rend les ID choisis et un nouveau jeton. */
+async function nativePick(opts) {
+  let r;
+  try { r = await NATIVE.pick(opts); }
+  catch (e) { throw new Error(e.code === 'cancelled' ? 'Sélection annulée.' : `Sélecteur impossible : ${e.code || ''} ${e.message || e}`); }
+  if (r.accessToken) token = r.accessToken;
+  log('info', 'Réponse du sélecteur', { choisis: r.pickedIds, parametres: r.params });
+  if (!r.pickedIds || !r.pickedIds.length) throw new Error('Rien n\'a été choisi.');
+  const id = r.pickedIds[0];
+  let name = '';
+  try { name = (await drive('GET', `${API}/files/${id}?fields=name`)).name; } catch (e) { name = '(nom illisible)'; }
+  return { id, name };
+}
 function pick(kind) {
+  if (NATIVE) return nativePick(kind === 'folder' ? { mimeTypes: FOLDER, folders: true } : { mimeTypes: 'application/json' });
   return new Promise((resolve, reject) => {
     if (!pickerReady) { reject(new Error('Le sélecteur Google n\'est pas encore chargé.')); return; }
     const view = new google.picker.DocsView(google.picker.ViewId.DOCS).setIncludeFolders(true).setOwnedByMe(false).setMode(google.picker.DocsViewMode.LIST);
@@ -210,6 +240,7 @@ function showBlobs(items) {
 
 /** Le sélecteur de Google limité à la cave du lien : l'invité n'a qu'à confirmer. */
 function pickCave(id) {
+  if (NATIVE) { log('ok', 'Sélecteur des services Google, limité au fichier de la cave du lien'); return nativePick({ fileIds: id }); }
   return new Promise((resolve, reject) => {
     if (!pickerReady) { reject(new Error('Le sélecteur Google n\'est pas encore chargé.')); return; }
     const view = new google.picker.DocsView(google.picker.ViewId.DOCS).setMode(google.picker.DocsViewMode.LIST);
@@ -224,7 +255,7 @@ function pickCave(id) {
       }).build().setVisible(true);
   });
 }
-const inviteLink = id => `${location.origin}${location.pathname}#rejoindre=${encodeURIComponent(id)}`;
+const inviteLink = id => `${NATIVE ? WEB_URL : location.origin + location.pathname}#rejoindre=${encodeURIComponent(id)}`;
 
 /* ---------- Actions ---------- */
 const A = {
@@ -246,8 +277,9 @@ const A = {
   },
 
   async join() {
-    const m = /rejoindre=([\w-]+)/.exec(location.hash), id = m ? decodeURIComponent(m[1]) : $('#cave-hint').value.trim();
-    if (!id) throw new Error('Ouvre d\'abord le lien d\'invitation dans ce profil.');
+    const typed = $('#join-link').value.trim();
+    const m = /rejoindre=([\w-]+)/.exec(typed || location.hash), id = m ? decodeURIComponent(m[1]) : (typed || $('#cave-hint').value.trim());
+    if (!id) throw new Error('Ouvre d\'abord le lien d\'invitation dans ce profil, ou colle-le dans le champ de l\'étape C.');
     try { await readCave(id); log('q', 'La cave se lit avant toute confirmation : l\'accès n\'est donc pas individuel'); }
     catch (e) { log('ok', 'Attendu : la cave ne se lit pas avant que l\'invité la confirme', e.message); }
     const doc = await pickCave(id);
@@ -410,6 +442,8 @@ document.querySelectorAll('input[name="role"]').forEach(i => i.addEventListener(
 $('#signin').addEventListener('click', signIn);
 $('#copy-log').addEventListener('click', async () => {
   const text = `Rôle : ${S.role || '?'} · ${me || 'non connecté'}\n` + [...document.querySelectorAll('#log li')].reverse().map(li => li.innerText).join('\n');
+  // Dans l'appli, la feuille de partage d'Android : la WebView n'a pas toujours le droit d'écrire dans le presse-papiers.
+  if (NATIVE && Capacitor.Plugins.Share) { try { await Capacitor.Plugins.Share.share({ title: 'Journal du prototype', text }); return; } catch (e) { /* repli sur le presse-papiers */ } }
   try { await navigator.clipboard.writeText(text); log('info', 'Journal copié : colle-le dans la conversation.'); }
   catch (e) { log('ko', 'Copie impossible : sélectionne le journal à la main.'); }
 });
@@ -422,7 +456,8 @@ document.addEventListener('click', async e => {
   catch (err) { log('ko', `Échec : ${b.textContent}`, err.message || String(err)); }
   finally { b.disabled = false; }
 });
-if (!C.clientId || !C.apiKey || !C.appId || /x{4}|…/.test(C.clientId + C.apiKey)) { $('#cfg-warn').hidden = false; $('#signin').disabled = true; }
+if (NATIVE) log('info', 'Appli Android : connexion et sélecteur par les services Google du téléphone');
+else if (!C.clientId || !C.apiKey || !C.appId || /x{4}|…/.test(C.clientId + C.apiKey)) { $('#cfg-warn').hidden = false; $('#signin').disabled = true; }
 setRole(S.role || '');
 showIds();
 </script>

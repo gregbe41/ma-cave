@@ -2,7 +2,8 @@
 //   node scripts/apk.js maison     → dist/ma-cave-maison.apk : relié d'office à la cave de cave.local.json (sur ce PC seulement, jamais publié)
 //   node scripts/apk.js generique  → dist/ma-cave.apk : vierge, publiable ; chacun le relie à sa propre cave
 //   node scripts/apk.js essai ["Ma cave v2"] → dist/ma-cave-essai.apk : comme « maison », mais s'installe À CÔTÉ de l'appli
-//                                    habituelle (identifiant fr.macave.app.essai, nom à part) pour essayer une nouvelle version
+//                                    habituelle (identifiant fr.macave.app.essai, nom à part) pour essayer une nouvelle version ;
+//                                    il embarque aussi le prototype « cave dans Google Drive » (lien en bas des Réglages)
 // « maison » et « generique » portent le même identifiant (fr.macave.app) et doivent être signés avec la même clé : on peut alors
 // installer l'un par-dessus l'autre sans rien perdre (les réglages et les données de l'appareil sont gardés).
 // L'appli d'essai a ses propres données : reliée à la même cave, elle se synchronise comme un appareil de plus.
@@ -19,7 +20,7 @@ const run = (cmd, cwd = root) => { console.log(`\n> ${cmd}`); execSync(cmd, { cw
 if (kind !== 'generique' && !fs.existsSync(path.join(root, 'cave.local.json'))) {
   console.warn(`Attention : pas de cave.local.json, cet APK « ${kind} » sera vierge comme le générique.`);
 }
-run(`node scripts/copy-web.js${kind === 'generique' ? ' --generique' : ''}`);
+run(`node scripts/copy-web.js${kind === 'generique' ? ' --generique' : kind === 'essai' ? ' --essai' : ''}`);
 run('npx cap sync android');
 if (process.platform !== 'win32') fs.chmodSync(path.join(android, 'gradlew'), 0o755);
 const props = kind === 'essai' ? ` -PmacaveSuffix=.essai "-PmacaveLabel=${label}"` : '';

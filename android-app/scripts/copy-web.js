@@ -23,6 +23,23 @@ if (!generique && fs.existsSync(conf)) {
 } else {
   console.log(generique ? "index.html copié dans www/ pour l'APK générique (aucune cave intégrée)" : 'index.html copié dans www/ (sans cave.local.json : chaque appareil se relie à la main)');
 }
+// APK d'essai (--essai) : le prototype « cave dans Google Drive » est embarqué à côté de l'appli, avec un lien en bas
+// des Réglages. Il passe par le plugin GoogleDrive (services Google du téléphone). Jamais dans les autres APK.
+const essaiDir = path.join(dir, 'essai-drive');
+fs.rmSync(essaiDir, { recursive: true, force: true });
+if (process.argv.includes('--essai')) {
+  const proto = path.join(__dirname, '..', '..', 'prototypes', 'drive-direct');
+  fs.mkdirSync(essaiDir, { recursive: true });
+  fs.copyFileSync(path.join(proto, 'index.html'), path.join(essaiDir, 'index.html'));
+  const cfg = path.join(proto, 'config.local.js');
+  if (fs.existsSync(cfg)) fs.copyFileSync(cfg, path.join(essaiDir, 'config.local.js'));
+  else fs.writeFileSync(path.join(essaiDir, 'config.local.js'), 'window.PROTO_CONFIG = {};\n');
+  const link = `<script>addEventListener('DOMContentLoaded', () => { const v = document.getElementById('v-reglages'); if (!v) return;
+  const p = document.createElement('p'); p.style.cssText = 'margin:28px 0 8px;text-align:center';
+  p.innerHTML = '<a href="essai-drive/index.html">Essai : une cave dans Google Drive</a>'; v.appendChild(p); });</script>\n`;
+  html = html.replace('</body>', link + '</body>');
+  console.log(`prototype Google Drive copié dans www/essai-drive/${fs.existsSync(cfg) ? ', avec config.local.js' : ' (sans config.local.js : pas de lecture des photos par lien)'}`);
+}
 fs.writeFileSync(path.join(dir, 'index.html'), html);
 // Le catalogue des vins français (« Vins similaires »), lu par l'appli à côté de index.html.
 const cat = path.join(__dirname, '..', '..', 'catalogue', 'lwin-france.json');
