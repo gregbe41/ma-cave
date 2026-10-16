@@ -16,7 +16,10 @@
  *
  * Propriétés du script (Paramètres du projet › Propriétés du script) :
  *   SECRET             code secret des appareils, celui des invitations (créé par « installer »)
- *   SECRET_PROPRIO     code du propriétaire de la cave : crédits et réglages en plus (créé par « installer », jamais dans une invitation)
+ *   SECRET_PROPRIO     code du propriétaire de la cave : crédits et réglages en plus. Créé tout seul et affiché dans l'onglet
+ *                      « Propriétaire » du Sheet ; jamais dans une invitation
+ *   PROPRIO_ACTIF      noté la première fois que le code du propriétaire sert : les rôles (part de chaque membre,
+ *                      actions réservées) ne s'appliquent qu'à partir de là. Avant, chacun a tous les droits, comme en v15
  *   SECRET_ROUTINE     code de la routine de lecture, limité à cette tâche (créé par « installer »)
  *   ANTHROPIC_API_KEY  clé de l'API Claude pour la lecture immédiate (facultatif)
  *   QUOTA_JOUR         crédits Claude par jour pour toute la cave (20 par défaut)
@@ -29,9 +32,10 @@
  *   ROUTINE_VU         dernier passage de la routine (noté automatiquement)
  */
 
-const VERSION = 16;
+const VERSION = 17;
 const FOLDER_TITLE = 'Ma cave – étiquettes';
 const LOG_TITLE = 'Lectures IA';
+const OWNER_TITLE = 'Propriétaire';
 const MODEL = 'claude-opus-5-5';
 const MAX_TOKENS = 3000;                         // plafonne le coût d'une lecture
 const PRICE_IN = 4 / 1e6, PRICE_OUT = 20 / 1e6;  // $ par token, Claude Opus 5.5
@@ -179,8 +183,6 @@ function installer() {
   if (!secret) { secret = newSecret(); props.setProperty('SECRET', secret); }
   let routine = props.getProperty('SECRET_ROUTINE');
   if (!routine || routine === secret) { routine = newSecret(); props.setProperty('SECRET_ROUTINE', routine); }
-  let proprio = props.getProperty('SECRET_PROPRIO');
-  if (!proprio || proprio === secret || proprio === routine) { proprio = newSecret(); props.setProperty('SECRET_PROPRIO', proprio); }
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   try {
     // La feuille vide du départ (« Feuille 1 ») devient « Vins » : on ne supprime jamais d'onglet.
@@ -197,12 +199,13 @@ function installer() {
     throw err;
   }
   const folder = photoFolder();
+  const proprio = ownerCode();
   syncDb({ db: {} });  // remet les en-têtes et les formats à jour sans rien perdre
 
   Logger.log('Installation terminée.');
   Logger.log('Code secret des appareils : ' + secret);
   Logger.log('Code de la routine de lecture : ' + routine);
-  Logger.log('Code du propriétaire (crédits et réglages, à garder pour toi) : ' + proprio);
+  Logger.log('Code du propriétaire (aussi dans l\'onglet « Propriétaire » du Sheet) : ' + proprio);
   Logger.log('Google Sheet : ' + ss.getUrl());
   Logger.log('Dossier des photos : https://drive.google.com/drive/folders/' + folder);
   Logger.log('Lecture immédiate (API Claude, facultatif) : ' + (props.getProperty('ANTHROPIC_API_KEY') ? 'clé présente.' : 'pas de clé, les étiquettes seront lues chaque nuit par la routine.'));
@@ -238,7 +241,9 @@ function doPost(e) {
   try { p = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return out({ ok: false, error: 'Requête illisible.' }); }
   try {
+    ownerCode();
     const role = checkSecret(p.secret);
+    if (role === 'proprio') ownerSeen();
     REQ = { role: role, who: str(p.device).replace(/\s+/g, ' ').slice(0, 40) || '?' };
     if (role === 'routine') noteRoutine();
     const fn = ACTIONS[p.action];
@@ -330,10 +335,52 @@ function info() {
     routineVu: props.getProperty('ROUTINE_VU') || '',
     quota: quota(false),
     role: REQ.role,
+    proprioActif: ownerDeclared(),
+    nom: SpreadsheetApp.getActiveSpreadsheet().getName(),
     credits: creditStatus(),
     coteMois: coteMois(),
   };
 }
+
+/** Le code du propriétaire : créé au premier appel s'il manque (rien à exécuter), et écrit dans l'onglet « Propriétaire »
+    du Sheet. Les membres de la cave n'ont pas accès au Sheet : seul le propriétaire peut l'y lire. */
+function ownerCode() {
+  const props = PropertiesService.getScriptProperties();
+  let code = props.getProperty('SECRET_PROPRIO');
+  const secret = props.getProperty('SECRET'), routine = props.getProperty('SECRET_ROUTINE');
+  if (code && code !== secret && code !== routine) return code;
+  if (!secret) return '';
+  // Deux appareils au même moment : un seul code, le même dans les propriétés et dans l'onglet.
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    code = props.getProperty('SECRET_PROPRIO');
+    if (code && code !== secret && code !== routine) return code;
+    const u = Utilities.getUuid().replace(/-/g, '');
+    code = [u.slice(0, 4), u.slice(4, 8), u.slice(8, 12), u.slice(12, 16)].join('-');
+    props.setProperty('SECRET_PROPRIO', code);
+  } finally {
+    lock.releaseLock();
+  }
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName(OWNER_TITLE) || ss.insertSheet(OWNER_TITLE, ss.getSheets().length);
+    sh.getRange(1, 1, 4, 2).setValues([
+      ['Code du propriétaire', code],
+      ['', ''],
+      ["À quoi il sert", "À régler les crédits de Claude et la part de chacun, et à lancer les actions sur toute la cave. Tant qu'il n'a servi sur aucun appareil, chacun a tous les droits."],
+      ['Où le saisir', "Dans l'appli, sur tes appareils seulement : Réglages › Claude et crédits › « Tu héberges cette cave ? ». Ne le donne à personne : les invitations utilisent un autre code."],
+    ]);
+    sh.getRange(1, 1, 4, 1).setFontWeight('bold');
+  } catch (err) { console.error(err); }
+  return code;
+}
+/** Le code du propriétaire vient de servir : les rôles s'appliquent désormais. */
+function ownerSeen() {
+  const props = PropertiesService.getScriptProperties();
+  if (!props.getProperty('PROPRIO_ACTIF')) props.setProperty('PROPRIO_ACTIF', nowISO());
+}
+const ownerDeclared = () => !!PropertiesService.getScriptProperties().getProperty('PROPRIO_ACTIF');
 
 /** Propriétaire : crédits de la cave (par jour, par mois), part de chaque membre, rythme de la valeur du jour. */
 function setCredits(p) {
@@ -1334,7 +1381,7 @@ function creditState(props) {
 /** Ce qui reste : pour la cave (jour, mois) et pour la personne de la demande (sa part du mois). */
 function creditStatus() {
   const L = creditLimits(), q = creditState(L.props), owner = REQ.role === 'proprio';
-  const moi = round1(q.who[REQ.who] || 0), part = owner ? 0 : L.part;
+  const moi = round1(q.who[REQ.who] || 0), part = owner || !ownerDeclared() ? 0 : L.part;
   const st = {
     jour: round1(Math.max(0, L.jour - (q.nDay || 0))), mois: round1(Math.max(0, L.mois - (q.nMonth || 0))),
     max: { jour: L.jour, mois: L.mois, part: L.part }, moi: moi, part: part, partReste: part ? round1(Math.max(0, part - moi)) : null, couts: COSTS,
@@ -1347,7 +1394,7 @@ function creditCheck(cost) {
   const L = creditLimits(), q = creditState(L.props), used = q.who[REQ.who] || 0;
   if ((q.nDay || 0) + cost > L.jour) throw userErr("Plus de crédits Claude pour aujourd'hui sur cette cave (" + L.jour + ' par jour). Réessaie demain, ou remplis la fiche à la main.', 'quota');
   if ((q.nMonth || 0) + cost > L.mois) throw userErr('Les crédits Claude de la cave sont épuisés pour ce mois (' + L.mois + '). Le propriétaire peut en ajouter dans Réglages.', 'quota');
-  if (REQ.role !== 'proprio' && L.part && used + cost > L.part) throw userErr('Tu as utilisé ta part de crédits Claude pour ce mois (' + L.part + '). Le propriétaire de la cave peut l\'augmenter dans Réglages.', 'quota');
+  if (REQ.role !== 'proprio' && L.part && ownerDeclared() && used + cost > L.part) throw userErr('Tu as utilisé ta part de crédits Claude pour ce mois (' + L.part + '). Le propriétaire de la cave peut l\'augmenter dans Réglages.', 'quota');
 }
 /** Décompte une demande réussie, pour la cave et pour la personne, et renvoie ce qui reste. */
 function creditTake(cost) {

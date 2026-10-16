@@ -421,6 +421,20 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .sheet-body:last-child{padding-bottom:calc(22px + var(--sab))}
 .sheet-foot{display:flex;gap:10px;align-items:center;padding:12px 22px calc(12px + var(--sab));border-top:1px solid var(--line)}
 .sheet-foot .spacer{flex:1}
+/* Mes caves : le nom de la cave ouverte dans l'en-tête, la liste des caves de l'appareil */
+.top-sub{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;margin-top:4px}
+.cave-btn{display:inline-flex;align-items:center;gap:2px;max-width:100%;border:0;border-radius:999px;padding:3px 6px 3px 10px;background:var(--accent-tint);color:var(--accent-ink);font-weight:700;font-size:.8rem}
+.cave-btn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cave-btn svg{flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.cv-h{margin:14px 0 6px;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cave-row{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--soft)}
+.cave-open{flex:1;min-width:0;display:grid;gap:1px;padding:12px 0;border:0;background:none;color:var(--ink);text-align:left}
+.cv-name{font:700 1.1rem var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv-sub{font-size:.85rem;color:var(--muted)}
+.cave-row.is-cur .cv-name{color:var(--accent-ink)}
+.cave-del{flex:none;font-size:.9rem}
+.caves-add{margin-top:18px;display:grid;gap:8px}
+.caves-add .btn{justify-self:start}
 /* Claude et crédits */
 .cr-gauges{display:grid;gap:12px;margin:12px 0}
 .cr-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.92rem}
@@ -781,7 +795,10 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
       <div class="top-id">
         <p class="top-kicker" id="top-kicker" hidden></p>
         <h1 class="top-title" id="top-title">Ma cave</h1>
-        <button class="sync" id="sync-pill" data-k="off"><span class="sync-dot"></span><span class="sync-txt">Synchro non configurée</span></button>
+        <div class="top-sub">
+          <button type="button" class="cave-btn" id="cave-btn" data-act="caves" hidden aria-label="Mes caves"><span id="cave-btn-name">Ma cave</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button>
+          <button class="sync" id="sync-pill" data-k="off"><span class="sync-dot"></span><span class="sync-txt">Synchro non configurée</span></button>
+        </div>
       </div>
       <button class="btn btn-primary add-desk" data-act="new">Ajouter un vin</button>
       <button type="button" class="top-btn who-btn" id="who-btn" data-act="who" hidden></button>
@@ -1195,6 +1212,21 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
   </div>
 </dialog>
 
+<dialog class="sheet" id="dlg-caves" aria-labelledby="caves-title">
+  <div class="sheet-wrap">
+    <div class="sheet-head"><h2 id="caves-title">Mes caves</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body">
+      <div class="caves-list" id="caves-list"></div>
+      <div class="caves-add">
+        <h3 class="cv-h">Rejoindre une autre cave</h3>
+        <p class="hint">Ouvre le lien d'invitation reçu, ou colle-le ici. La cave ouverte reste sur cet appareil : tu pourras y revenir à tout moment.</p>
+        <label class="f">Lien d'invitation<input id="caves-link" placeholder="https://…#rejoindre=…" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
+        <button type="button" class="btn btn-primary" data-act="caves-join">Rejoindre</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
 <dialog class="sheet" id="dlg-who" aria-labelledby="who-title">
   <form class="sheet-wrap" id="who-form" novalidate>
     <div class="sheet-head"><h2 id="who-title">Qui es-tu ?</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
@@ -1223,7 +1255,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
    ========================================================= */
 const LS_DATA = 'macave:data', LS_SET = 'macave:settings', LS_TOKEN = 'macave:token';
 // L'appli publique (GitHub Pages), son dépôt, et la version du script Google qui va avec cette page.
-const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 16;
+const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 17;
 const API_VERSION = 1;
 
 const COLORS = [
@@ -1410,7 +1442,8 @@ function toast(msg) {
    Données locales
    ========================================================= */
 let db = { wines: [], moves: [], trash: [], people: [], avis: [], conseils: [], suggestions: [] };
-let S = { apiUrl: '', secret: '', device: '', sheetUrl: '', webUrl: '', labelOn: false, lastSync: '', photoDeletes: [] };
+const S_DEFAULTS = { apiUrl: '', secret: '', device: '', sheetUrl: '', webUrl: '', labelOn: false, lastSync: '', photoDeletes: [] };
+let S = { ...S_DEFAULTS, photoDeletes: [] };
 let STOCK = new Map(), BY_OWNER = new Map();
 const photoIds = new Set();
 const UI = { view: 'cave', q: '', color: '', sort: 'nom', showEmpty: false, period: '12m', openWine: null, owner: lsGet('macave:owner', ''), lastOwner: null, whoAsked: '', review: false, region: '', taster: '', filtersOpen: false, openConseil: null,
@@ -1829,6 +1862,7 @@ function render() {
   updateConseilBadge();
   updateSyncUI();
   renderWho();
+  renderCaveBtn();
 }
 
 /* La personne de cet appareil, en initiale dans l'en-tête : la toucher permet d'en changer. */
@@ -2462,8 +2496,10 @@ function renderCredits() {
     </form>
     <p class="hint">Cet appareil a le code du propriétaire. <button type="button" class="link" data-act="owner-forget">Repasser en membre</button></p>`;
   } else {
+    if (!S.proprioActif) h += '<p class="hint">Personne ne s\'est encore déclaré propriétaire : chacun utilise les crédits de la cave, sans part fixe.</p>';
     h += `<details class="howto cr-owner"><summary>Tu héberges cette cave ?</summary>
-      <p>Entre ici le code du propriétaire pour régler les crédits et la part de chacun. Il est dans le script de la cave : Paramètres du projet › Propriétés du script, ligne <code>SECRET_PROPRIO</code>, ou dans le journal de la fonction « installer ». Il ne part jamais dans une invitation.</p>
+      <p>Entre ici le code du propriétaire pour régler les crédits et la part de chacun. Il est dans ton Google Sheet, onglet « Propriétaire ». Il ne part jamais dans une invitation.${/^https:\/\/docs\.google\.com\//.test(S.sheetUrl) ? ` <a href="${esc(S.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a>` : ''}</p>`;
+    h += `
       <label class="f">Code du propriétaire<input id="owner-code" placeholder="ex. 1a2b-3c4d-5e6f-7a8b" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
       <button type="button" class="btn" data-act="owner-save">Enregistrer</button></details>`;
   }
@@ -2624,7 +2660,8 @@ function renderSyncBox() {
   // Style et accords des vins déjà en cave : Claude les ajoute à la routine suivante (script v12 ou plus).
   const missing = tasteMissing().length;
   // Une action sur toute la cave : réservée au propriétaire à partir du script v16.
-  const bulkOk = (S.serverVersion || 0) < 16 || S.role === 'proprio';
+  // Tant que le propriétaire ne s'est déclaré sur aucun appareil, chacun a tous les droits (script v17).
+  const bulkOk = (S.serverVersion || 0) < 16 || S.role === 'proprio' || !S.proprioActif;
   if (missing && (S.serverVersion || 0) >= 12 && claudeOn()) h += `<p class="hint">${missing} ${plural(missing, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${bulkOk ? '' : ' Le propriétaire de la cave peut les faire compléter par Claude.'}</p>${bulkOk ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Claude</button></div>' : ''}`;
   box.innerHTML = h;
 }
@@ -4620,7 +4657,8 @@ async function pullPhotos() {
   let recs;
   try { recs = await Photos.all(); } catch { return false; }
   const byId = new Map(recs.map(r => [r.id, r]));
-  const ids = new Set(db.wines.map(w => w.id));
+  // Les photos des autres caves de l'appareil ne sont pas des orphelines.
+  const ids = new Set([...db.wines.map(w => w.id), ...otherCaveIds()]);
   const todo = [];
   for (const w of db.wines) {
     const r = byId.get(w.id);
@@ -4678,9 +4716,12 @@ function serverInfo(r) {
   if ('routineVu' in r) S.routineVu = r.routineVu || '';
   if ('version' in r) S.serverVersion = r.version || 0;
   if ('role' in r) S.role = r.role || '';
+  if ('proprioActif' in r) S.proprioActif = !!r.proprioActif;
+  if (r.nom) S.nom = r.nom;
   if ('credits' in r) S.credits = r.credits || null;
   if ('coteMois' in r) S.coteMois = r.coteMois || 12;
   saveSettings();
+  rememberCave();
 }
 /* Claude sur cette cave : une clé API dans le script, ou une routine qui passe (lancement à la demande configuré, ou
    passage noté depuis moins de 8 jours). Un script antérieur à la v14 ne le dit pas : on suppose qu'il y a une routine.
@@ -4734,6 +4775,7 @@ async function sync({ interactive = false } = {}) {
   if (syncing) { syncAgain = true; return; }
   syncing = true; setSync('busy');
   let more = false;
+  const forCave = S.apiUrl;
   try {
     const sent = await pushPhotos() || [];
     registerPeople();
@@ -4741,6 +4783,8 @@ async function sync({ interactive = false } = {}) {
     // Un conseil pas encore envoyé (photos en route) n'existe que sur cet appareil.
     const conseils = db.conseils.filter(c => c.statut !== 'envoi');
     const r = await API.call('sync', { db: { wines: db.wines, moves: db.moves, trash: db.trash, people: db.people, avis: db.avis, conseils }, ...pageInfo() });
+    // Garde-fou : on a changé de cave pendant l'envoi ; la réponse appartient à l'autre cave.
+    if (S.apiUrl !== forCave) return;
     mergeInto(r.db || {});
     serverInfo(r);
     more = await pullPhotos();
@@ -4768,7 +4812,7 @@ async function sync({ interactive = false } = {}) {
    ========================================================= */
 async function invite() {
   let code;
-  try { code = encodeURIComponent(btoa(JSON.stringify({ u: S.apiUrl, s: S.secret }))); }
+  try { code = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify({ u: S.apiUrl, s: S.secret, n: S.nom || '' }))))); }
   catch { toast("Impossible de créer le lien d'invitation."); return; }
   // Dans l'appli Android, la page n'a pas d'adresse publique : on utilise celle de l'appli web, connue du script.
   const base = Native.on ? S.webUrl || PUBLIC_URL : location.origin + location.pathname;
@@ -4790,7 +4834,7 @@ async function invite() {
 function parseInvite(text) {
   const m = String(text || '').match(/rejoindre=([A-Za-z0-9%+/=_-]+)/);
   if (!m) return null;
-  try { const d = JSON.parse(atob(decodeURIComponent(m[1]))); return d && d.u && d.s ? d : null; } catch { return null; }
+  try { const d = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1]))))); return d && d.u && d.s ? d : null; } catch { return null; }
 }
 
 /* Appli Android installée à la main chez les proches : l'adresse du script et le code des appareils sont intégrés
@@ -4808,45 +4852,155 @@ async function acceptInvite() {
   history.replaceState(null, '', location.pathname + location.search);
   if (!d) { toast("Ce lien d'invitation est illisible."); return false; }
   if (S.apiUrl === d.u && S.secret === d.s) return false;
-  if (S.apiUrl && S.apiUrl !== d.u) {
-    if (!confirm(SWITCH_MSG)) return false;
-    if (!(await switchCave(d.u, d.s))) return false;
-    return true;
-  }
-  if (S.apiUrl !== d.u) Object.assign(S, { lastSync: '', sheetUrl: '', labelOn: false, proprio: '', role: '', credits: null });
-  S.apiUrl = d.u; S.secret = d.s; saveSettings();
-  return true;
+  return (await addCave(d.u, d.s, d.n)) !== 'no';
 }
 
-/* Changer de cave sur un appareil déjà relié : les vins ne passent jamais d'une cave à l'autre. Ce qui restait à envoyer
-   part d'abord vers l'ancienne cave ; puis l'appareil est vidé (vins, historique, photos, personne) et se remplit avec la
-   nouvelle. Les réglages d'affichage restent. */
-const SWITCH_MSG = "Cet appareil est relié à une autre cave. Le relier à celle-ci ?\n\nL'ancienne cave ne change pas : ses vins restent dans son Google Sheet. Cet appareil est vidé, puis rempli avec la nouvelle cave.";
-async function switchCave(u, s) {
-  const wait = async () => { for (let i = 0; i < 120 && syncing; i++) await new Promise(r => setTimeout(r, 500)); };
-  if (API.ready() && (db.wines.length || db.moves.length || db.conseils.length || db.avis.length)) {
-    await wait();
-    if (navigator.onLine) { await sync(); await wait(); }
-    const unsent = db.conseils.filter(c => c.statut === 'envoi').length;
-    if ((syncState.k !== 'ok' || unsent)
-      && !confirm(`L'envoi vers l'ancienne cave n'a pas abouti${unsent ? ` (${unsent} ${plural(unsent, 'analyse Conseil', 'analyses Conseil')} pas encore ${plural(unsent, 'partie', 'parties')})` : ''} : ce qui n'était pas encore envoyé sera perdu. Changer de cave quand même ?`)) return false;
-  }
-  await clearDevice();
-  Object.assign(S, { apiUrl: u, secret: s, proprio: '', role: '', credits: null, device: '', lastSync: '', sheetUrl: '', webUrl: '', labelOn: false, routineOn: false, routineVu: '', serverVersion: 0, photoDeletes: [] });
-  saveSettings();
-  UI.whoAsked = '';
+/* =========================================================
+   Mes caves : plusieurs caves sur un appareil. La cave ouverte vit dans macave:data et macave:settings, comme avant ;
+   les autres sont mises de côté (macave:cave:<clé>), avec leurs réglages dans la liste macave:caves. Rien ne passe d'une
+   cave à l'autre, et ce qui n'était pas encore envoyé attend dans sa cave. Les photos partagent une seule base : leurs
+   identifiants sont propres à chaque vin et à chaque conseil.
+   ========================================================= */
+const LS_CAVES = 'macave:caves';
+const CAVE_FIELDS = ['apiUrl', 'secret', 'proprio', 'role', 'proprioActif', 'credits', 'coteMois', 'device', 'lastSync', 'sheetUrl', 'webUrl', 'labelOn', 'routineOn', 'routineVu', 'serverVersion', 'photoDeletes', 'nom'];
+const caveKey = u => 'c' + [...String(u)].reduce((h, c) => (Math.imul(h, 33) + c.charCodeAt(0)) >>> 0, 5381).toString(36);
+let CAVES = lsGet(LS_CAVES, []);
+const saveCaves = () => lsSet(LS_CAVES, CAVES);
+const curKey = () => (S.apiUrl ? caveKey(S.apiUrl) : '');
+const caveName = e => (e && e.nom) || 'Ma cave';
+const emptyDb = () => ({ wines: [], moves: [], trash: [], people: [], avis: [], conseils: [], suggestions: [] });
+function caveCounts(d) {
+  const st = new Map();
+  (d.moves || []).forEach(m => st.set(m.vinId, (st.get(m.vinId) || 0) + (m.type === 'entree' ? 1 : -1) * (m.qte || 0)));
+  const ws = (d.wines || []).filter(w => (st.get(w.id) || 0) > 0);
+  return { vins: ws.length, bouteilles: ws.reduce((a, w) => a + st.get(w.id), 0) };
+}
+/** La cave ouverte dans la liste : ses réglages et son résumé, à jour. */
+function rememberCave() {
+  if (!S.apiUrl) return;
+  const key = curKey();
+  let e = CAVES.find(c => c.key === key);
+  if (!e) { e = { key }; CAVES.push(e); }
+  CAVE_FIELDS.forEach(k => { e[k] = S[k]; });
+  Object.assign(e, caveCounts(db), { vu: nowISO() });
+  saveCaves();
+}
+/** Met de côté la cave ouverte : ses données, ce qu'on y a déjà vu, le filtre « Bouteilles de ». */
+function stashCave() {
+  if (!S.apiUrl) return true;
+  rememberCave();
+  return lsSet('macave:cave:' + curKey(), { db, vus: [...seenConseils], owner: UI.owner });
+}
+/** Attend la fin de la synchro en cours, puis tente d'envoyer ce qui reste (sans bloquer si l'appareil est hors ligne).
+    Faux si une synchro tourne encore (photos longues à partir) : on ne change pas de cave en plein envoi. */
+async function quietSync() {
+  const wait = async () => { for (let i = 0; i < 120 && syncing; i++) await new Promise(r => setTimeout(r, 500)); return !syncing; };
+  if (!(await wait())) return false;
+  if (API.ready() && navigator.onLine) { try { await sync(); } catch {} return wait(); }
   return true;
 }
-/** Vide l'appareil : données, photos, choix liés à la cave (propriétaire filtré, analyses vues). */
-async function clearDevice() {
-  db = { wines: [], moves: [], trash: [], people: [], avis: [], conseils: [], suggestions: [] };
-  persist();
-  photoIds.clear();
-  Photos.urls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
-  Photos.urls.clear();
-  try { await Promise.all((await Photos.keys()).map(k => Photos.del(k))); } catch {}
-  UI.owner = ''; lsSet('macave:owner', '');
-  seenConseils.clear(); lsSet('macave:conseils-vus', []);
+const BUSY_MSG = 'La synchronisation est encore en cours : réessaie dans un instant.';
+/** Ouvre une autre cave de l'appareil ; celle qu'on quitte garde tout, y compris ce qui n'est pas encore envoyé. */
+async function openCave(key) {
+  const e = CAVES.find(c => c.key === key);
+  if (!e || key === curKey()) return false;
+  if (!S.apiUrl && db.wines.length && !confirm("Les vins de cet appareil ne sont reliés à aucune cave : ils seront effacés. Ouvrir quand même l'autre cave ?")) return false;
+  if (!(await quietSync())) { toast(BUSY_MSG); return false; }
+  if (!stashCave()) return false;  // stockage plein : on reste sur la cave ouverte, rien n'est perdu
+  const st = lsGet('macave:cave:' + key, {});
+  db = { ...emptyDb(), ...(st.db || {}) };
+  S = { ...S_DEFAULTS, photoDeletes: [] };
+  CAVE_FIELDS.forEach(k => { if (e[k] !== undefined) S[k] = e[k]; });
+  if (!Array.isArray(S.photoDeletes)) S.photoDeletes = [];
+  seenConseils.clear(); (st.vus || []).forEach(v => seenConseils.add(v)); lsSet('macave:conseils-vus', [...seenConseils]);
+  UI.owner = st.owner || ''; lsSet('macave:owner', UI.owner);
+  persist(); saveSettings();
+  try { localStorage.removeItem('macave:cave:' + key); } catch {}
+  enterCave();
+  toast(`« ${caveName(S)} » est ouverte.`);
+  return true;
+}
+/** Une cave de plus sur l'appareil (lien d'invitation, ou adresse et code) : la cave ouverte est mise de côté, rien n'est
+    effacé ni mélangé. Un appareil encore sans cave garde ses vins : ils rejoignent la nouvelle à la première synchro.
+    Renvoie 'same', 'known' ou 'new', ou 'no' si l'on reste sur la cave ouverte (la raison a déjà été dite). */
+async function addCave(u, secret, nom) {
+  const key = caveKey(u);
+  if (key === curKey()) { if (secret && secret !== S.secret) { S.secret = secret; saveSettings(); } return 'same'; }
+  const known = CAVES.find(c => c.key === key);
+  if (known) { if (secret) known.secret = secret; saveCaves(); return (await openCave(key)) ? 'known' : 'no'; }
+  if (S.apiUrl) {
+    if (!(await quietSync())) { toast(BUSY_MSG); return 'no'; }
+    if (!stashCave()) return 'no';
+    db = emptyDb(); persist();
+    seenConseils.clear(); lsSet('macave:conseils-vus', []);
+    UI.owner = ''; lsSet('macave:owner', '');
+    S = { ...S_DEFAULTS, photoDeletes: [] };
+  }
+  Object.assign(S, { apiUrl: u, secret, nom: nom || '' });
+  saveSettings();
+  rememberCave();
+  enterCave();
+  return 'new';
+}
+/** Après un changement de cave : on repart de l'accueil, « Qui es-tu ? » sera demandé si besoin. */
+function enterCave() {
+  Object.assign(UI, { whoAsked: '', openWine: null, openConseil: null, review: false, q: '', color: '', region: '', accord: '', idea: 0 });
+  $$('dialog[open]').forEach(d => d.close());
+  if ($('#q')) $('#q').value = '';
+  setView('cave');
+  if (API.ready()) sync();
+}
+/** Retire une autre cave de l'appareil : ses données locales et ses photos. Son Google Sheet ne change pas. */
+async function removeCave(key) {
+  const e = CAVES.find(c => c.key === key);
+  if (!e || key === curKey()) return;
+  const st = lsGet('macave:cave:' + key, {}), d = st.db || {};
+  const since = e.lastSync || '';
+  const unsent = [...(d.wines || []), ...(d.moves || []), ...(d.avis || [])].some(x => (x.updatedAt || '') > since);
+  if (!confirm(`Retirer « ${caveName(e)} » de cet appareil ?${unsent ? ' Des modifications faites ici ne sont pas encore parties : elles seront perdues.' : ''} Ses vins restent dans son Google Sheet : tu pourras la rejoindre de nouveau avec un lien d'invitation.`)) return;
+  const ids = [...(d.wines || []).map(w => w.id), ...(d.conseils || []).flatMap(c => (c.bouteilles || []).map((_, i) => scanKey(c.id, i)))];
+  for (const id of ids) { try { await Photos.del(id); photoIds.delete(id); Photos.forget(id); } catch {} }
+  try { localStorage.removeItem('macave:cave:' + key); } catch {}
+  CAVES = CAVES.filter(c => c.key !== key);
+  saveCaves();
+  renderCaves();
+}
+function otherCaveIds() {
+  const cur = curKey(), ids = [];
+  CAVES.forEach(c => { if (c.key !== cur) ((lsGet('macave:cave:' + c.key, {}).db || {}).wines || []).forEach(w => ids.push(w.id)); });
+  return ids;
+}
+function renderCaveBtn() {
+  const b = $('#cave-btn');
+  if (!b) return;
+  b.hidden = !S.apiUrl && !CAVES.length;
+  $('#cave-btn-name').textContent = caveName(S);
+}
+/** « Mes caves » : celles où l'on est propriétaire, celles où l'on participe (quand le propriétaire s'est déclaré), les autres. */
+function renderCaves() {
+  rememberCave();
+  const cur = curKey();
+  const row = e => {
+    const role = e.role === 'proprio' ? 'propriétaire' : e.proprioActif ? 'participant' : '';
+    const sub = [`${fmtNum(e.bouteilles || 0)} ${plural(e.bouteilles || 0, 'bouteille', 'bouteilles')}`, role, e.key === cur ? 'ouverte' : ''].filter(Boolean).join(' · ');
+    return `<div class="cave-row${e.key === cur ? ' is-cur' : ''}"><button type="button" class="cave-open" data-cave="${e.key}"><span class="cv-name">${esc(caveName(e))}</span><span class="cv-sub">${esc(sub)}</span></button>${e.key === cur ? '' : `<button type="button" class="link cave-del" data-cave-del="${e.key}">Retirer</button>`}</div>`;
+  };
+  const sorted = CAVES.slice().sort((a, b) => (b.key === cur) - (a.key === cur) || (b.vu || '').localeCompare(a.vu || ''));
+  const owned = sorted.filter(e => e.role === 'proprio'), joined = sorted.filter(e => e.role !== 'proprio' && e.proprioActif), other = sorted.filter(e => e.role !== 'proprio' && !e.proprioActif);
+  const groups = [['Où tu es propriétaire', owned], ['Où tu participes', joined], [owned.length || joined.length ? 'Autres caves' : '', other]].filter(([, l]) => l.length);
+  $('#caves-list').innerHTML = groups.map(([t, l]) => `${t ? `<h3 class="cv-h">${t}</h3>` : ''}${l.map(row).join('')}`).join('') || '<p class="hint">Aucune cave sur cet appareil pour l\'instant.</p>';
+}
+function openCaves() {
+  renderCaves();
+  $('#caves-link').value = '';
+  $('#dlg-caves').showModal();
+}
+async function joinFromMenu() {
+  const d = parseInvite($('#caves-link').value);
+  if (!d) { toast("Ce lien d'invitation est illisible : colle-le en entier."); return; }
+  const r = await addCave(d.u, d.s, d.n);
+  if (r === 'no') return;
+  toast(r === 'same' ? 'Cette cave est déjà ouverte.' : r === 'known' ? 'Cette cave était déjà sur cet appareil : elle est ouverte.' : 'Cave ajoutée à « Mes caves ». Synchronisation…');
 }
 
 /* =========================================================
@@ -4896,6 +5050,8 @@ function wire() {
       switch (act.dataset.act) {
         case 'new': openWineForm(); break;
         case 'add-menu': openAddMenu(); break;
+        case 'caves': openCaves(); break;
+        case 'caves-join': joinFromMenu(); break;
         case 'edit': openWineForm(id); break;
         case 'in': openMove(id, 'entree'); break;
         case 'out': openMove(id, 'sortie'); break;
@@ -4962,6 +5118,10 @@ function wire() {
     if (chip) { UI.color = chip.dataset.color; render(); return; }
     const bt = e.target.closest('[data-btab]');
     if (bt) { UI.boireTab = bt.dataset.btab; renderBoire(); return; }
+    const cv = e.target.closest('[data-cave]');
+    if (cv) { openCave(cv.dataset.cave); return; }
+    const cd = e.target.closest('[data-cave-del]');
+    if (cd) { removeCave(cd.dataset.caveDel); return; }
     const vm = e.target.closest('[data-view-mode]');
     if (vm) { UI.compact = vm.dataset.viewMode === 'compact'; lsSet('macave:compact', UI.compact); render(); return; }
     const per = e.target.closest('[data-period]');
@@ -5265,11 +5425,13 @@ function wire() {
     if (url && !/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) { toast("L'adresse doit commencer par https://script.google.com/ et se terminer par /exec."); return; }
     if (url && !secret) { toast('Indique aussi le code secret.'); return; }
     if (url && S.apiUrl && url !== S.apiUrl) {
-      if (!confirm(SWITCH_MSG)) return;
-      if (!(await switchCave(url, secret))) return;
-      render();
+      if ((await addCave(url, secret)) === 'no') return;
+      toast('Cave ajoutée à « Mes caves ». Synchronisation…');
+      setView('reglages');
     } else {
-      if (url !== S.apiUrl) Object.assign(S, { lastSync: '', sheetUrl: '', labelOn: false, proprio: '', role: '', credits: null });
+      // Synchro coupée : la cave quitte « Mes caves », ses vins restent sur l'appareil.
+      if (!url && S.apiUrl) { CAVES = CAVES.filter(c => c.key !== curKey()); saveCaves(); }
+      if (url !== S.apiUrl) Object.assign(S, { lastSync: '', sheetUrl: '', labelOn: false, proprio: '', role: '', proprioActif: false, nom: '', credits: null });
       Object.assign(S, { apiUrl: url, secret });
       saveSettings();
     }
@@ -5293,8 +5455,8 @@ function wire() {
   $('#export').addEventListener('click', exportJSON);
   $('#import').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importJSON(f); });
   $('#reset').addEventListener('click', () => {
-    if (!confirm("Effacer tous les vins, l'historique et les photos de cet appareil ? Ce qui n'a pas été synchronisé sera perdu.")) return;
-    try { [LS_DATA, LS_SET, LS_TOKEN].forEach(k => localStorage.removeItem(k)); } catch {}
+    if (!confirm("Effacer toutes les caves de cet appareil, avec leurs vins, leur historique et leurs photos ? Ce qui n'a pas été synchronisé sera perdu.")) return;
+    try { [LS_DATA, LS_SET, LS_TOKEN, LS_CAVES].forEach(k => localStorage.removeItem(k)); Object.keys(localStorage).filter(k => k.startsWith('macave:cave:')).forEach(k => localStorage.removeItem(k)); } catch {}
     try { if (Photos._db) Photos._db.close(); indexedDB.deleteDatabase('macave-photos'); } catch {}
     setTimeout(() => location.reload(), 300);
   });
@@ -5326,6 +5488,7 @@ function wire() {
   loadAll();
   try { (await Photos.keys()).forEach(k => photoIds.add(k)); } catch {}
   wire();
+  rememberCave();
   const joined = await acceptInvite(), preset = !joined && applyPreset();
   setView(joined ? 'reglages' : 'cave');
   if (joined) toast('Invitation acceptée. Synchronisation…');
