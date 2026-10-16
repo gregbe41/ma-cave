@@ -723,6 +723,12 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .sim-ask .btn-primary{width:100%}
 .sim-src{margin:6px 0 0;font-size:.76rem;line-height:1.5;color:var(--muted)}
 .sim-src a{color:inherit}
+.cat-sug{margin:-6px 0 16px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line);overflow:hidden}
+.cat-h{margin:0;padding:9px 14px 4px;font-size:.82rem;font-weight:700;color:var(--accent-ink)}
+.cat-h span{font-weight:400;color:var(--muted)}
+.cat-sug .sim-row{padding:9px 14px;border-top:1px solid var(--soft)}
+.cat-sug .sim-id b{font-size:.95rem}
+.cat-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0;padding:8px 14px 10px;border-top:1px solid var(--soft);font-size:.8rem;color:var(--muted)}
 
 /* Toast */
 #toast{display:none;position:fixed;inset:auto calc(16px + var(--sar)) calc(92px + var(--sab)) calc(16px + var(--sal));margin:0 auto;max-width:440px;width:auto;border:0;padding:13px 18px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:500;font-size:.95rem;box-shadow:0 10px 30px -10px rgba(0,0,0,.45);z-index:50;text-align:center}
@@ -950,6 +956,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
       <div class="dup" id="wf-dup" hidden></div>
       <label class="f">Domaine ou producteur<input name="domaine" list="dl-domaine" autocomplete="off" required></label>
       <label class="f">Cuvée<input name="cuvee" autocomplete="off"></label>
+      <div class="cat-sug" id="wf-cat" hidden></div>
       <fieldset><legend>Couleur</legend><div class="colors" id="wf-colors"></div></fieldset>
       <div class="row2">
         <label class="f">Millésime<input name="millesime" inputmode="numeric" placeholder="ex. 2019" autocomplete="off"></label>
@@ -2915,8 +2922,59 @@ function simCatalogue(w) {
 function catalogueWine(x) {
   const d = Catalogue.data, app = d.A[x.a], seg = x.n.split(', ').filter(s => s !== 'VdF');
   if (app && appKey(seg[0]).startsWith(appKey(app))) seg[0] = seg[0].slice(app.length).trim();
-  const cuvee = seg.filter(s => s && appKey(s) !== appKey(app)).join(', ');
+  const cuvee = seg.filter(s => s && appKey(s) !== appKey(app) && !['rouge', 'blanc', 'rose'].includes(appKey(s))).join(', ');
   return { domaine: d.P[x.p], cuvee, appellation: app, couleur: x.c, region: d.R[x.r], pays: 'France' };
+}
+
+/* ---------- Dans le formulaire : les vins du catalogue pendant la saisie du domaine, pour remplir la fiche d'un geste ---------- */
+/** Les vins des producteurs qui portent les mots tapés (le dernier peut être en cours de frappe), la cuvée tapée d'abord. */
+function catMatches(f) {
+  const d = Catalogue.data, words = norm(f.elements.domaine.value).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(k => k && !DOM_STOP.has(k));
+  if (!d || !words.length || words.join(' ').length < 3) return [];
+  const last = words.pop(), prods = [];
+  d.pkey.forEach((k, i) => { if (i && k.includes(` ${last}`) && words.every(x => k.includes(` ${x} `))) prods.push(i); });
+  if (!prods.length || prods.length > 30) return [];   // trop vague : on attend un mot de plus
+  const cw = keyWords(f.elements.cuvee.value), app = Catalogue.appOf(f.elements.appellation.value), c = f.elements.couleur.value;
+  const score = x => (cw.length && cw.every(k => ` ${appKey(x.n)}`.includes(` ${k}`)) ? 4 : 0) + (app && x.a === app ? 2 : 0) + (c && x.c === c ? 1 : 0);
+  return prods.flatMap(p => d.byProd.get(p)).map(x => ({ x, s: score(x) }))
+    .sort((a, b) => b.s - a.s || d.pn[b.x.p] - d.pn[a.x.p]).slice(0, 5).map(o => o.x);
+}
+function renderCatSuggest() {
+  const f = $('#wine-form'), box = $('#wf-cat');
+  const list = FORM.catDone || !Catalogue.data ? [] : catMatches(f);
+  FORM.catList = list;
+  box.hidden = !list.length;
+  if (!list.length) return;
+  const d = Catalogue.data;
+  box.innerHTML = `<p class="cat-h">Au catalogue <span>· touche le bon vin pour remplir la fiche</span></p>
+    ${list.map((x, i) => `<button type="button" class="sim-row" data-act="cat-pick" data-i="${i}">${simColorDot(x.c)}<span class="sim-id"><b>${esc(x.n)}</b><span>${esc(d.P[x.p])}</span></span></button>`).join('')}
+    <p class="cat-foot"><button type="button" class="link" data-act="cat-none">Aucun de ces vins</button><span>LWIN, Liv-ex, CC BY 4.0</span></p>`;
+}
+let catTimer = null;
+function catInput() {
+  clearTimeout(catTimer);
+  if (FORM.catDone) return;
+  if (Catalogue.state !== 'ok') { Catalogue.load().then(() => { if ($('#dlg-form').open) renderCatSuggest(); }); return; }
+  catTimer = setTimeout(renderCatSuggest, 150);
+}
+/** Le vin choisi : domaine et cuvée sont les siens (c'est eux qu'on cherchait), le reste ne remplit que les champs vides. */
+function applyCatalogue(i) {
+  const x = FORM.catList && FORM.catList[i];
+  if (!x) return;
+  const f = $('#wine-form'), v = catalogueWine(x);
+  f.elements.domaine.value = v.domaine;
+  f.elements.cuvee.value = v.cuvee;
+  ['appellation', 'region', 'pays'].forEach(k => { if (v[k] && !str(f.elements[k].value)) f.elements[k].value = v[k]; });
+  const radio = v.couleur && !FORM.colorTouched && f.querySelector(`input[name="couleur"][value="${v.couleur}"]`);
+  if (radio) { radio.checked = true; $('#wf-colors').classList.remove('is-guess'); }
+  ['domaine', 'cuvee', 'appellation', 'region', 'pays'].forEach(k => f.elements[k].classList.remove('is-guess'));
+  FORM.catDone = true;
+  renderCatSuggest();
+  renderGrapes();
+  refreshClaudeTags();
+  checkDuplicate();
+  updateFormPreview();
+  toast('Fiche remplie depuis le catalogue : complète le millésime et le nombre de bouteilles.');
 }
 
 /* ---------- La fenêtre « Vins similaires » ---------- */
@@ -3204,6 +3262,7 @@ function openWineForm(id) {
   setAiStatus(!w ? '' : w.lecture === 'attente' ? "L'étiquette sera lue cette nuit."
     : w.lecture === 'faite' && guessList(w).length ? 'Les champs en orange ont été estimés par Claude : vérifie-les, puis enregistre.' : '');
   $('#wf-dup').hidden = true;
+  $('#wf-cat').hidden = true;
   fillDatalists();
   $('#wf-title').textContent = w ? 'Modifier le vin' : 'Nouveau vin';
   $('#wf-submit').textContent = w ? 'Enregistrer' : 'Ajouter à la cave';
@@ -4726,6 +4785,8 @@ function wire() {
         case 'sim-retry': SIM.key = ''; Catalogue.load().then(() => { SIM.key = ''; renderSimilar(); }); renderSimilar(); break;
         case 'sim-ask': askSuggest(UI.simWine); break;
         case 'sim-add': addFromSimilar(act.dataset.k); break;
+        case 'cat-pick': applyCatalogue(+act.dataset.i); break;
+        case 'cat-none': FORM.catDone = true; renderCatSuggest(); break;
       }
       return;
     }
@@ -4817,6 +4878,7 @@ function wire() {
   $('#wine-form').addEventListener('input', e => {
     e.target.classList.remove('is-guess');
     if (['domaine', 'cuvee', 'millesime'].includes(e.target.name)) checkDuplicate();
+    if (['domaine', 'cuvee'].includes(e.target.name)) catInput();
   });
   // Cépages : la liste suit la couleur et la région ; on coche, ou on ajoute un cépage absent de la liste.
   const formKey = n => (n === 'sansTarder' ? 'alerte' : CLAUDE_FIELDS.includes(n) ? n : '');
