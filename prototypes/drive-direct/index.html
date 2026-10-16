@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype Drive direct · Ma cave</title>
+<style>
+  :root { --bg: #F4F6F2; --surface: #FFFFFF; --ink: #1A2420; --muted: #55615B; --line: #DCE2DC; --wine: #6B1D2E; --ok: #2E6143; --ko: #8B3A26; --q: #8A4D0B; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 60px; display: grid; gap: 18px; }
+  h1 { font: 500 1.8rem/1.2 Georgia, serif; margin: 0; }
+  h2 { font-size: 1.05rem; margin: 0 0 8px; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+  button.main { background: var(--wine); border-color: var(--wine); color: #fff; }
+  button:disabled { opacity: .45; cursor: default; }
+  input[type="text"], input[type="email"] { font: inherit; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 0; flex: 1; }
+  .step { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); gap: 10px; align-items: start; padding-top: 10px; border-top: 1px solid var(--line); }
+  .step b { color: var(--wine); }
+  .optin { background: #FBEBD3; border-radius: 10px; padding: 10px 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
+  .roles label { border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; background: var(--surface); }
+  .roles input { margin-right: 6px; }
+  #log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+  #log li { padding: 6px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); }
+  #log li.ok b { color: var(--ok); } #log li.ko b { color: var(--ko); } #log li.q b { color: var(--q); }
+  #log pre { margin: 4px 0 0; white-space: pre-wrap; word-break: break-all; font-size: 12px; color: var(--muted); }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .gallery figure { margin: 0; display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+  .gallery img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 8px; background: var(--line); }
+  .ids { font: 12px ui-monospace, Consolas, monospace; color: var(--muted); word-break: break-all; }
+  [hidden] { display: none !important; }
+</style>
+<script src="config.local.js"></script>
+</head>
+<body>
+<main>
+  <header class="card">
+    <h1>Prototype : Ma cave sans script</h1>
+    <p class="muted">La cave est un fichier du Drive du propriétaire, partagé avec ses proches. L'appli n'a que l'accès « fichiers créés ou désignés dans l'appli ». On vérifie ce que chaque compte peut lire et écrire, et l'adoption des photos des invités par le propriétaire.</p>
+    <p id="cfg-warn" hidden><strong>config.local.js manque ou est incomplet.</strong> Copie config.example.js en config.local.js et remplis-le (voir LISEZMOI.md).</p>
+    <div class="row roles">
+      <label><input type="radio" name="role" value="owner">Propriétaire</label>
+      <label><input type="radio" name="role" value="guest">Invité</label>
+      <span class="muted">Un rôle par profil de navigateur, chacun connecté à un compte Google différent.</span>
+    </div>
+    <div class="row"><button class="main" id="signin">Se connecter avec Google</button><span id="me" class="muted">Non connecté</span><span style="flex:1"></span><button id="reset">Tout oublier sur ce navigateur</button></div>
+  </header>
+
+  <section class="card" id="optin-card">
+    <label class="optin"><input type="checkbox" id="optin"><span><strong>Synchroniser mes photos d'étiquettes.</strong> Elles seront rangées dans ton Google Drive et visibles par les autres membres de la cave. Pour cela, chaque photo est partagée par lien : seule une personne qui connaît son adresse, impossible à deviner, peut la voir. Sans cette autorisation, tes photos restent sur cet appareil.</span></label>
+  </section>
+
+  <section class="card" id="owner" hidden>
+    <h2>Propriétaire</h2>
+    <div class="step"><b>P1</b><div class="row"><button data-act="createCave">Créer la cave</button><span class="muted">Dossier « Ma cave (prototype) », fichier cave.json et dossier Photos.</span></div></div>
+    <div class="step"><b>P2</b><div class="row"><button data-act="addPhoto">Ajouter une photo</button><span class="muted">Une étiquette dessinée, rangée dans Photos et partagée par lien si la case ci-dessus est cochée.</span></div></div>
+    <div class="step"><b>P3</b><div class="row"><input type="email" id="guest-email" placeholder="Adresse Google de l'invité"><button data-act="shareCave">Partager la cave</button></div></div>
+    <div class="step"><b>P4</b><div class="row"><button data-act="adopt">Adopter les photos des invités</button><span class="muted">Recopie dans ton Drive les photos ajoutées par les invités.</span></div></div>
+    <div class="step"><b>P5</b><div class="row"><button data-act="showCave">Relire la cave et ses photos</button></div></div>
+    <p class="ids" id="owner-ids"></p>
+  </section>
+
+  <section class="card" id="guest" hidden>
+    <h2>Invité</h2>
+    <div class="step"><b>I1</b><div class="row"><input type="text" id="cave-hint" placeholder="ID de cave.json (affiché chez le propriétaire, comme dans un lien d'invitation)"><button data-act="probeBlind">Lire la cave sans la désigner</button></div></div>
+    <div class="step"><b>I2</b><div class="row"><button data-act="pickFolder">Désigner le dossier</button><span class="muted">Puis on essaie de lire cave.json et les photos du dossier.</span></div></div>
+    <div class="step"><b>I3</b><div class="row"><button data-act="pickFile">Désigner le fichier cave.json</button><span class="muted">Puis on essaie de le lire et de le modifier.</span></div></div>
+    <div class="step"><b>I4</b><div class="row"><button data-act="showCave">Afficher les photos du propriétaire</button><span class="muted">D'abord avec l'accès de l'appli, puis par lien.</span></div></div>
+    <div class="step"><b>I5</b><div class="row"><button data-act="addPhoto">Ajouter une photo</button><span class="muted">Dans le dossier Photos du propriétaire si possible, sinon dans ton Drive ; notée « à adopter ».</span></div></div>
+    <div class="step"><b>I6</b><div class="row"><button data-act="cleanup">Supprimer mes originaux adoptés</button></div></div>
+  </section>
+
+  <section class="card">
+    <h2>Photos de la cave</h2>
+    <div class="gallery" id="gallery"><p class="muted">Rien d'affiché pour l'instant.</p></div>
+  </section>
+
+  <section class="card">
+    <div class="row"><h2 style="margin:0">Journal</h2><span style="flex:1"></span><button id="copy-log">Copier le journal</button></div>
+    <ul id="log"></ul>
+  </section>
+</main>
+
+<script>
+const C = window.PROTO_CONFIG || {};
+const SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const API = 'https://www.googleapis.com/drive/v3', UP = 'https://www.googleapis.com/upload/drive/v3';
+const FOLDER = 'application/vnd.google-apps.folder';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let S = {};
+try { S = JSON.parse(localStorage.getItem('proto-drive') || '{}'); } catch (e) { S = {}; }
+const save = () => { try { localStorage.setItem('proto-drive', JSON.stringify(S)); } catch (e) { /* navigation privée */ } };
+let token = '', me = '', tokenClient = null, pickerReady = false;
+
+/* ---------- Journal ---------- */
+function log(kind, msg, detail) {
+  const li = document.createElement('li');
+  li.className = kind;
+  const d = detail === undefined ? '' : `<pre>${esc(typeof detail === 'string' ? detail : JSON.stringify(detail, null, 1))}</pre>`;
+  li.innerHTML = `<b>${{ ok: '✔', ko: '✘', info: '•', q: '?' }[kind]}</b> ${esc(new Date().toLocaleTimeString('fr-FR'))} · ${esc(msg)}${d}`;
+  $('#log').prepend(li);
+}
+
+/* ---------- Drive ---------- */
+async function drive(method, url, { json, body, headers = {}, raw } = {}) {
+  if (!token) throw new Error('Connecte-toi d\'abord.');
+  const h = Object.assign({ Authorization: 'Bearer ' + token }, headers);
+  let b = body;
+  if (json !== undefined) { h['Content-Type'] = 'application/json'; b = JSON.stringify(json); }
+  const r = await fetch(url, { method, headers: h, body: b });
+  if (!r.ok) { const e = new Error(`${r.status} ${(await r.text()).slice(0, 300)}`); e.status = r.status; throw e; }
+  if (raw) return r;
+  const t = await r.text();
+  try { return t ? JSON.parse(t) : {}; } catch (e) { return t; }
+}
+function upload(meta, blob) {
+  const fd = new FormData();
+  fd.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+  fd.append('file', blob);
+  return drive('POST', `${UP}/files?uploadType=multipart&fields=id,name,resourceKey,owners(emailAddress)`, { body: fd });
+}
+const shareByLink = id => drive('POST', `${API}/files/${id}/permissions?fields=id`, { json: { type: 'anyone', role: 'reader' } });
+async function readCave(id = S.caveId) {
+  if (!id) throw new Error('Cave inconnue : crée-la (propriétaire) ou désigne-la (invité).');
+  const r = await drive('GET', `${API}/files/${id}?alt=media`, { raw: true });
+  return JSON.parse(await r.text());
+}
+const writeCave = cave => drive('PATCH', `${UP}/files/${S.caveId}?uploadType=media&fields=id`, { body: JSON.stringify(cave, null, 1), headers: { 'Content-Type': 'application/json' } });
+// Photo partagée par lien : lue avec la clé API, sans l'accès de l'appli.
+async function publicBlob(id, rk) {
+  const r = await fetch(`${API}/files/${id}?alt=media&key=${encodeURIComponent(C.apiKey)}`, { headers: rk ? { 'X-Goog-Drive-Resource-Keys': `${id}/${rk}` } : {} });
+  if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 200)}`);
+  return r.blob();
+}
+async function tokenBlob(id) { return (await drive('GET', `${API}/files/${id}?alt=media`, { raw: true })).blob(); }
+
+/* ---------- Connexion et sélecteur ---------- */
+function signIn() {
+  if (!window.google || !google.accounts) { log('ko', 'Le script de connexion Google n\'est pas chargé.'); return; }
+  tokenClient = tokenClient || google.accounts.oauth2.initTokenClient({
+    client_id: C.clientId, scope: SCOPE,
+    callback: async r => {
+      if (r.error) { log('ko', 'Connexion refusée', r); return; }
+      token = r.access_token;
+      try {
+        const a = await drive('GET', `${API}/about?fields=user(emailAddress,displayName)`);
+        me = a.user.emailAddress;
+        $('#me').textContent = `Connecté : ${a.user.displayName} (${me})`;
+        log('ok', `Connecté en ${me}, avec le seul accès drive.file`);
+      } catch (e) { log('ko', 'Connecté, mais impossible de lire le compte', e.message); }
+    },
+    error_callback: e => log('ko', 'Connexion interrompue', e),
+  });
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+function gapiLoaded() { gapi.load('picker', () => { pickerReady = true; }); }
+function pick(kind) {
+  return new Promise((resolve, reject) => {
+    if (!pickerReady) { reject(new Error('Le sélecteur Google n\'est pas encore chargé.')); return; }
+    const view = new google.picker.DocsView(google.picker.ViewId.DOCS).setIncludeFolders(true).setOwnedByMe(false).setMode(google.picker.DocsViewMode.LIST);
+    if (kind === 'folder') view.setSelectFolderEnabled(true).setMimeTypes(FOLDER);
+    else view.setMimeTypes('application/json');
+    new google.picker.PickerBuilder().addView(view).setOAuthToken(token).setDeveloperKey(C.apiKey).setAppId(C.appId).setLocale('fr')
+      .setTitle(kind === 'folder' ? 'Choisis le dossier « Ma cave (prototype) »' : 'Choisis le fichier cave.json')
+      .setCallback(d => {
+        if (d.action === google.picker.Action.PICKED) resolve(d.docs[0]);
+        else if (d.action === google.picker.Action.CANCEL) reject(new Error('Sélection annulée.'));
+      }).build().setVisible(true);
+  });
+}
+
+/* ---------- Photos ---------- */
+function makeLabel() {
+  const c = document.createElement('canvas'); c.width = 600; c.height = 800;
+  const g = c.getContext('2d'), hue = Math.floor(Math.random() * 360);
+  g.fillStyle = `hsl(${hue} 40% 88%)`; g.fillRect(0, 0, 600, 800);
+  g.strokeStyle = `hsl(${hue} 40% 25%)`; g.lineWidth = 6; g.strokeRect(40, 40, 520, 720);
+  g.fillStyle = `hsl(${hue} 40% 20%)`; g.textAlign = 'center';
+  g.font = 'italic 40px Georgia'; g.fillText('Domaine du Prototype', 300, 260);
+  g.font = 'bold 64px Georgia'; g.fillText(S.role === 'owner' ? 'PROPRIÉTAIRE' : 'INVITÉ', 300, 400);
+  g.font = '30px Georgia'; g.fillText(me || '?', 300, 480);
+  g.font = 'bold 48px Georgia'; g.fillText(new Date().toLocaleTimeString('fr-FR'), 300, 640);
+  return new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+}
+function showBlobs(items) {
+  const box = $('#gallery');
+  box.innerHTML = items.length ? '' : '<p class="muted">Aucune photo dans la cave.</p>';
+  items.forEach(({ blob, text }) => {
+    const f = document.createElement('figure');
+    f.innerHTML = `${blob ? `<img src="${URL.createObjectURL(blob)}" alt="">` : '<img alt="">'}<figcaption>${esc(text)}</figcaption>`;
+    box.appendChild(f);
+  });
+}
+
+/* ---------- Actions ---------- */
+const A = {
+  async createCave() {
+    const folder = await drive('POST', `${API}/files?fields=id`, { json: { name: 'Ma cave (prototype)', mimeType: FOLDER } });
+    const photos = await drive('POST', `${API}/files?fields=id`, { json: { name: 'Photos', mimeType: FOLDER, parents: [folder.id] } });
+    const cave = { app: 'ma-cave-prototype', creeeLe: new Date().toISOString(), proprio: me, dossier: folder.id, dossierPhotos: photos.id, photos: [], visites: [] };
+    const f = await upload({ name: 'cave.json', parents: [folder.id], mimeType: 'application/json' }, new Blob([JSON.stringify(cave, null, 1)], { type: 'application/json' }));
+    Object.assign(S, { folderId: folder.id, photosId: photos.id, caveId: f.id }); save();
+    showIds();
+    log('ok', 'Cave créée dans ton Drive : dossier, cave.json et Photos', { dossier: folder.id, cave: f.id });
+  },
+
+  async shareCave() {
+    const email = $('#guest-email').value.trim();
+    if (!email) throw new Error('Indique l\'adresse Google de l\'invité.');
+    await drive('POST', `${API}/files/${S.folderId}/permissions?sendNotificationEmail=true&emailMessage=${encodeURIComponent('Test du prototype Ma cave : rien à faire dans Drive, ouvre le prototype en tant qu\'invité.')}`, { json: { type: 'user', role: 'writer', emailAddress: email } });
+    log('ok', `Dossier partagé avec ${email} en modification. Google lui envoie un e-mail.`);
+  },
+
+  async addPhoto() {
+    if (!$('#optin').checked) { log('info', 'Photo gardée sur cet appareil : la synchronisation des photos n\'est pas autorisée (case non cochée).'); return; }
+    const cave = await readCave();
+    const blob = await makeLabel(), meta = { name: `etiquette-${Date.now()}.jpg`, mimeType: 'image/jpeg', parents: [cave.dossierPhotos] };
+    let f;
+    try { f = await upload(meta, blob); log('ok', 'Photo créée dans le dossier Photos de la cave'); }
+    catch (e) {
+      if (S.role !== 'guest') throw e;
+      log('ko', 'L\'invité ne peut pas créer de fichier dans le dossier Photos du propriétaire', e.message);
+      delete meta.parents;
+      f = await upload(meta, blob);
+      log('info', 'Photo créée à la racine du Drive de l\'invité');
+    }
+    await shareByLink(f.id);
+    cave.photos.push({ id: f.id, rk: f.resourceKey || '', par: me, statut: S.role === 'owner' ? 'proprio' : 'a-adopter', le: new Date().toISOString() });
+    await writeCave(cave);
+    log('ok', `Photo partagée par lien et notée dans cave.json (${S.role === 'owner' ? 'au propriétaire' : 'à adopter'})`, { id: f.id, proprietaire: f.owners && f.owners[0] && f.owners[0].emailAddress, resourceKey: f.resourceKey || '(aucune)' });
+  },
+
+  async adopt() {
+    const cave = await readCave();
+    const todo = cave.photos.filter(p => p.statut === 'a-adopter');
+    if (!todo.length) { log('info', 'Aucune photo d\'invité à adopter.'); return; }
+    for (const p of todo) {
+      try { await tokenBlob(p.id); log('q', 'Le propriétaire lit la photo de l\'invité avec l\'accès de l\'appli : l\'accès n\'est donc pas individuel'); }
+      catch (e) { log('ok', 'Attendu : l\'appli du propriétaire ne lit pas la photo de l\'invité avec son propre accès', e.message); }
+      const blob = await publicBlob(p.id, p.rk);
+      const f = await upload({ name: `adoptee-${p.id}.jpg`, mimeType: 'image/jpeg', parents: [cave.dossierPhotos] }, blob);
+      await shareByLink(f.id);
+      Object.assign(p, { original: { id: p.id, rk: p.rk }, id: f.id, rk: f.resourceKey || '', statut: 'adoptee', adopteeLe: new Date().toISOString() });
+      log('ok', `Photo de ${p.par} recopiée par lien, puis recréée au nom du propriétaire`, { nouvelleId: f.id });
+    }
+    await writeCave(cave);
+    log('ok', `${todo.length} photo(s) adoptée(s) ; cave.json pointe vers les copies du propriétaire`);
+  },
+
+  async showCave() {
+    const cave = await readCave();
+    log('ok', `cave.json lu : ${cave.photos.length} photo(s), propriétaire ${cave.proprio}`);
+    const items = [];
+    for (const p of cave.photos) {
+      let blob = null, how = '';
+      try { blob = await tokenBlob(p.id); how = 'accès de l\'appli'; }
+      catch (e) {
+        try { blob = await publicBlob(p.id, p.rk); how = 'par lien'; }
+        catch (e2) { how = 'illisible : ' + e2.message; }
+      }
+      items.push({ blob, text: `${p.par} · ${p.statut} · ${how}` });
+    }
+    const byLink = items.filter(i => /par lien/.test(i.text)).length, direct = items.filter(i => /accès de l'appli/.test(i.text)).length;
+    log('info', `Photos lues : ${direct} avec l'accès de l'appli, ${byLink} par lien, ${items.length - direct - byLink} illisible(s)`);
+    showBlobs(items);
+  },
+
+  async probeBlind() {
+    const id = $('#cave-hint').value.trim();
+    const found = await drive('GET', `${API}/files?q=${encodeURIComponent("name = 'cave.json' and trashed = false")}&fields=files(id,owners(emailAddress))`);
+    log(found.files.length ? 'q' : 'ok', found.files.length ? 'La recherche trouve cave.json sans l\'avoir désigné' : 'Attendu : la recherche ne trouve pas cave.json tant qu\'il n\'est pas désigné', found.files);
+    if (!id) return;
+    try { await readCave(id); log('q', 'cave.json se lit avec son seul ID, sans être désigné : l\'accès n\'est pas individuel'); }
+    catch (e) { log('ok', 'Attendu : cave.json ne se lit pas avec son seul ID (accès individuel)', e.message); }
+  },
+
+  async pickFolder() {
+    const doc = await pick('folder');
+    S.folderId = doc.id; save();
+    log('ok', `Dossier désigné : ${doc.name}`, { id: doc.id });
+    let kids = [];
+    try {
+      kids = (await drive('GET', `${API}/files?q=${encodeURIComponent(`'${doc.id}' in parents and trashed = false`)}&fields=files(id,name,mimeType)`)).files;
+      log(kids.length ? 'ok' : 'ko', kids.length ? `Le contenu du dossier est visible : ${kids.map(k => k.name).join(', ')}` : 'Le dossier désigné paraît vide pour l\'appli : désigner le dossier ne donne pas accès à son contenu');
+    } catch (e) { log('ko', 'Impossible de lister le dossier désigné', e.message); }
+    const caveFile = kids.find(k => k.name === 'cave.json');
+    if (!caveFile) return;
+    try {
+      const cave = await readCave(caveFile.id);
+      S.caveId = caveFile.id; save();
+      log('ok', 'Désigner le dossier suffit pour lire cave.json', { photos: cave.photos.length });
+      if (cave.photos[0]) {
+        try { await tokenBlob(cave.photos[0].id); log('ok', 'Et pour lire les photos du propriétaire avec l\'accès de l\'appli'); }
+        catch (e) { log('ko', 'Mais pas pour lire les photos du propriétaire avec l\'accès de l\'appli', e.message); }
+      }
+    } catch (e) { log('ko', 'cave.json est listé mais ne se lit pas : il faudra le désigner lui-même', e.message); }
+  },
+
+  async pickFile() {
+    const doc = await pick('file');
+    S.caveId = doc.id; save();
+    const cave = await readCave();
+    log('ok', `cave.json désigné et lu : ${cave.photos.length} photo(s)`);
+    cave.visites = cave.visites || [];
+    cave.visites.push({ par: me, le: new Date().toISOString() });
+    await writeCave(cave);
+    log('ok', 'cave.json modifié par l\'invité (ajout d\'une visite)');
+  },
+
+  async cleanup() {
+    const cave = await readCave();
+    const mine = cave.photos.filter(p => p.statut === 'adoptee' && p.original && p.par === me && !p.originalSupprime);
+    if (!mine.length) { log('info', 'Aucun original adopté à supprimer.'); return; }
+    for (const p of mine) {
+      try { await drive('DELETE', `${API}/files/${p.original.id}`); p.originalSupprime = true; log('ok', 'Original supprimé de ton Drive', { id: p.original.id }); }
+      catch (e) { log('ko', 'Suppression de l\'original impossible', e.message); }
+    }
+    await writeCave(cave);
+  },
+};
+
+/* ---------- Interface ---------- */
+function showIds() {
+  $('#owner-ids').textContent = S.caveId ? `ID de cave.json (à coller chez l'invité en I1) : ${S.caveId}` : '';
+}
+function setRole(role) {
+  S.role = role; save();
+  $('#owner').hidden = role !== 'owner';
+  $('#guest').hidden = role !== 'guest';
+  document.querySelectorAll('input[name="role"]').forEach(i => { i.checked = i.value === role; });
+}
+document.querySelectorAll('input[name="role"]').forEach(i => i.addEventListener('change', () => setRole(i.value)));
+$('#signin').addEventListener('click', signIn);
+$('#copy-log').addEventListener('click', async () => {
+  const text = `Rôle : ${S.role || '?'} · ${me || 'non connecté'}\n` + [...document.querySelectorAll('#log li')].reverse().map(li => li.innerText).join('\n');
+  try { await navigator.clipboard.writeText(text); log('info', 'Journal copié : colle-le dans la conversation.'); }
+  catch (e) { log('ko', 'Copie impossible : sélectionne le journal à la main.'); }
+});
+$('#reset').addEventListener('click', () => { S = {}; save(); setRole(''); showIds(); $('#gallery').innerHTML = ''; log('info', 'État du prototype effacé sur ce navigateur (rien n\'est supprimé du Drive).'); });
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  b.disabled = true;
+  try { await A[b.dataset.act](); }
+  catch (err) { log('ko', `Échec : ${b.textContent}`, err.message || String(err)); }
+  finally { b.disabled = false; }
+});
+if (!C.clientId || !C.apiKey || !C.appId || /x{4}|…/.test(C.clientId + C.apiKey)) { $('#cfg-warn').hidden = false; $('#signin').disabled = true; }
+setRole(S.role || '');
+showIds();
+</script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer onload="gapiLoaded()"></script>
+</body>
+</html>
