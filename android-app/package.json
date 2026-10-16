@@ -11,7 +11,8 @@
     "install-phone": "\"%LOCALAPPDATA%\\Android\\Sdk\\platform-tools\\adb.exe\" install -r android/app/build/outputs/apk/debug/app-debug.apk",
     "phones": "\"%LOCALAPPDATA%\\Android\\Sdk\\platform-tools\\adb.exe\" devices -l",
     "apk:generique": "node scripts/apk.js generique",
-    "web:generique": "node scripts/copy-web.js --generique"
+    "web:generique": "node scripts/copy-web.js --generique",
+    "apk:essai": "node scripts/apk.js essai"
   },
   "dependencies": {
     "@capacitor/android": "8.5.2",
