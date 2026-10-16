@@ -24,3 +24,10 @@ if (!generique && fs.existsSync(conf)) {
   console.log(generique ? "index.html copié dans www/ pour l'APK générique (aucune cave intégrée)" : 'index.html copié dans www/ (sans cave.local.json : chaque appareil se relie à la main)');
 }
 fs.writeFileSync(path.join(dir, 'index.html'), html);
+// Le catalogue des vins français (« Vins similaires »), lu par l'appli à côté de index.html.
+const cat = path.join(__dirname, '..', '..', 'catalogue', 'lwin-france.json');
+if (fs.existsSync(cat)) {
+  fs.mkdirSync(path.join(dir, 'catalogue'), { recursive: true });
+  fs.copyFileSync(cat, path.join(dir, 'catalogue', 'lwin-france.json'));
+  console.log('catalogue/lwin-france.json copié dans www/');
+}

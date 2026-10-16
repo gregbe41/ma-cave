@@ -675,6 +675,55 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .h-com{display:block;font-family:var(--sans);font-style:italic;margin-top:3px}
 .d-foot{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
 
+/* ---------- Vins similaires ---------- */
+.d-sim{display:flex;align-items:center;gap:12px;width:100%;margin:18px 0 0;padding:12px 12px 12px 14px;border:0;border-radius:18px;background:var(--surface);box-shadow:var(--card-shadow);color:var(--ink);text-align:left}
+.ds-ico{flex:none;width:42px;height:42px;border-radius:13px;background:var(--accent-tint);color:var(--accent-ink);display:grid;place-items:center}
+.ds-ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ds-txt{flex:1;min-width:0;display:grid}
+.ds-txt b{font:700 1.02rem/1.25 var(--display)}
+.ds-txt span{font-size:.84rem;color:var(--muted)}
+.ds-go{flex:none;font-size:1.5rem;line-height:1;color:var(--muted)}
+.d-like{margin:0 0 12px;padding:16px;border-radius:18px;background:var(--accent-tint)}
+.dl-k{margin:0;font:700 1.08rem/1.3 var(--display);color:var(--accent-ink)}
+.dl-k .stars{margin-left:6px;font-size:.95rem}
+.dl-t{margin:4px 0 12px;font-size:.9rem;line-height:1.45}
+.d-like .btn{width:100%}
+.sim-like{margin:0 0 16px;padding:10px 14px;border-radius:14px;background:var(--accent-tint);color:var(--accent-ink);font-weight:600;font-size:.92rem}
+.sim-sec{margin:0 0 22px}
+.sim-h{font-size:1.12rem;margin:0 0 8px}
+.sim-meta{margin:-4px 0 8px;font-size:.8rem;color:var(--muted)}
+.sim-intro{margin:0 0 10px;font-size:.92rem;line-height:1.5}
+.sim-list{border-radius:16px;box-shadow:inset 0 0 0 1px var(--line);overflow:hidden}
+.sim-row{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:11px;row-gap:3px;align-items:center;width:100%;padding:11px 14px;border:0;border-radius:0;background:none;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.sim-list > .sim-row + .sim-row,.sim-list > .sim-item + .sim-item{border-top:1px solid var(--line)}
+.sim-row:hover{background:color-mix(in srgb,var(--ink) 3.5%,transparent)}
+.sim-row .dot{width:11px;height:11px}
+.sim-nodot{background:none;box-shadow:inset 0 0 0 1.5px var(--line)}
+.sim-id{min-width:0;display:grid}
+.sim-id b{font:600 1rem/1.3 var(--display);overflow-wrap:anywhere}
+.sim-id b small{font:600 .8rem var(--sans);color:var(--muted);margin-left:2px}
+.sim-id span{font-size:.84rem;color:var(--muted);overflow-wrap:anywhere}
+.sim-why{grid-column:2;display:flex;flex-wrap:wrap;gap:4px 6px}
+.sim-why:empty{display:none}
+.sim-tag{padding:1px 9px;border-radius:999px;background:var(--soft);font-size:.76rem;font-weight:600;line-height:1.6}
+.sim-tag.is-acc{background:var(--accent-tint);color:var(--accent-ink)}
+.sim-pq{grid-column:2;font-size:.88rem;line-height:1.45}
+.sim-item > summary{list-style:none}
+.sim-item > summary::-webkit-details-marker{display:none}
+.sim-item[open] > summary{background:color-mix(in srgb,var(--ink) 3.5%,transparent)}
+.sim-acts{display:flex;flex-wrap:wrap;gap:8px;padding:2px 14px 12px 36px}
+.sim-acts .btn{min-height:40px;padding:0 15px;font-size:.88rem}
+.sim-tabs{margin:0 -22px 8px;padding:0 22px 2px}
+.sim-desc{margin:0 0 10px;font-size:.86rem;color:var(--muted)}
+.sim-more{margin:12px 0 0}
+.sim-load,.sim-wait{display:flex;align-items:center;gap:12px;margin:0;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--young) 14%,transparent);font-size:.9rem;line-height:1.45}
+.sim-load .pw-spin,.sim-wait .pw-spin{width:18px;height:18px;border-width:2.5px}
+.sim-ask{padding:16px;border-radius:18px;background:var(--accent-tint)}
+.sim-ask .sim-h{color:var(--accent-ink)}
+.sim-ask .btn-primary{width:100%}
+.sim-src{margin:6px 0 0;font-size:.76rem;line-height:1.5;color:var(--muted)}
+.sim-src a{color:inherit}
+
 /* Toast */
 #toast{display:none;position:fixed;inset:auto calc(16px + var(--sar)) calc(92px + var(--sab)) calc(16px + var(--sal));margin:0 auto;max-width:440px;width:auto;border:0;padding:13px 18px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:500;font-size:.95rem;box-shadow:0 10px 30px -10px rgba(0,0,0,.45);z-index:50;text-align:center}
 #toast.show{display:block}
@@ -871,6 +920,14 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
     </div>
     <div class="sheet-body" id="wine-detail"></div>
     <div class="d-actions" id="wine-actions"></div>
+  </div>
+</dialog>
+
+<!-- Vins similaires : dans la cave, au catalogue, et l'avis de Claude -->
+<dialog class="sheet" id="dlg-similar" aria-labelledby="sim-title">
+  <div class="sheet-wrap">
+    <div class="sheet-head"><h2 id="sim-title">Vins similaires<span class="sub" id="sim-sub"></span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body" id="sim-body"></div>
   </div>
 </dialog>
 
@@ -1134,7 +1191,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
    ========================================================= */
 const LS_DATA = 'macave:data', LS_SET = 'macave:settings', LS_TOKEN = 'macave:token';
 // L'appli publique (GitHub Pages), son dépôt, et la version du script Google qui va avec cette page.
-const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 14;
+const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 15;
 const API_VERSION = 1;
 
 const COLORS = [
@@ -1320,7 +1377,7 @@ function toast(msg) {
 /* =========================================================
    Données locales
    ========================================================= */
-let db = { wines: [], moves: [], trash: [], people: [], avis: [], conseils: [] };
+let db = { wines: [], moves: [], trash: [], people: [], avis: [], conseils: [], suggestions: [] };
 let S = { apiUrl: '', secret: '', device: '', sheetUrl: '', webUrl: '', labelOn: false, lastSync: '', photoDeletes: [] };
 let STOCK = new Map(), BY_OWNER = new Map();
 const photoIds = new Set();
@@ -1329,7 +1386,7 @@ const UI = { view: 'cave', q: '', color: '', sort: 'nom', showEmpty: false, peri
 
 function loadAll() {
   const d = lsGet(LS_DATA, {});
-  db = { wines: d.wines || [], moves: d.moves || [], trash: d.trash || [], people: d.people || [], avis: d.avis || [], conseils: d.conseils || [] };
+  db = { wines: d.wines || [], moves: d.moves || [], trash: d.trash || [], people: d.people || [], avis: d.avis || [], conseils: d.conseils || [], suggestions: d.suggestions || [] };
   S = { ...S, ...lsGet(LS_SET, {}) };
   if (!Array.isArray(S.photoDeletes)) S.photoDeletes = [];
 }
@@ -1735,6 +1792,7 @@ function render() {
   else renderReglages();
   if (UI.openWine && $('#dlg-wine').open) renderDetail();
   if (UI.openConseil && $('#dlg-conseil').open) renderConseilDetail();
+  if (UI.simWine && $('#dlg-similar').open) renderSimilar();
   if (UI.periodKey && $('#dlg-period').open) renderPeriod();
   updateConseilBadge();
   updateSyncUI();
@@ -2457,6 +2515,8 @@ function fillTaste() {
 
 /* ---------- Fiche d'un vin ---------- */
 function openDetail(id) {
+  // Depuis « Vins similaires », un vin de la cave s'ouvre à la place de la fiche d'origine.
+  if ($('#dlg-similar').open) $('#dlg-similar').close();
   UI.openWine = id;
   renderDetail();
   const d = $('#dlg-wine');
@@ -2499,6 +2559,16 @@ function renderDetail() {
   const price = priceTile(w, s);
   const accords = accordsOf(w.accords);
   const place = [w.region, w.pays].filter(Boolean).join(' · ');
+  // Vins similaires : mis en avant quand le vin a plu, sinon une ligne discrète plus bas.
+  const like = (w.domaine || w.appellation) ? likedOf(w) : null, sg = suggestionOf(w.id);
+  const simTxt = sg && sg.statut === 'attente' ? '✦ Claude prépare ses suggestions…'
+    : sg && sg.resultat && sg.resultat.vins.length ? `✦ Claude a proposé ${sg.resultat.vins.length} vins` : 'Par domaine, appellation, cépage ou région';
+  const simHTML = !(w.domaine || w.appellation) ? '' : like
+    ? `<section class="d-like" aria-label="Vins similaires"><p class="dl-k">${like.me ? "Tu l'as aimé" : "Vous l'avez aimé"} ${starsHTML(Math.round(like.note))}</p>
+        <p class="dl-t">Retrouve ce plaisir : des vins dans le même esprit, dans ta cave et à découvrir.${sg && sg.resultat && sg.statut !== 'attente' ? ` ${esc(simTxt)}.` : ''}</p>
+        <button type="button" class="btn btn-primary" data-act="similar">Voir des vins similaires</button></section>`
+    : `<button type="button" class="d-sim" data-act="similar"><span class="ds-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 3h7l-.5 4.6a3 3 0 0 1-6 0z"/><path d="M7.5 10.6V16M5 17h5"/><path d="M13 7h7l-.5 4.6a3 3 0 0 1-6 0z"/><path d="M16.5 14.6V20M14 21h5"/></svg></span>
+        <span class="ds-txt"><b>Vins similaires</b><span>${esc(simTxt)}</span></span><span class="ds-go" aria-hidden="true">›</span></button>`;
 
   $('#wine-detail').innerHTML = `
     <div class="d-hero">
@@ -2521,9 +2591,11 @@ function renderDetail() {
       <p class="d-why">${esc(why)}</p>
       ${frise}
     </section>
+    ${like ? simHTML : ''}
     ${tiles.length || price ? `<dl class="d-info d-tiles">${price}${tiles.map(([k, v]) => `<div${String(v).length > 22 ? ' class="wide"' : ''}><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
     ${accords.length ? `<h3 class="d-h3">Avec quoi le servir</h3><ul class="acc-chips">${accords.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
     ${w.commentaire ? `<h3 class="d-h3">Notes</h3><p class="d-com">${esc(w.commentaire)}</p>` : ''}
+    ${like ? '' : simHTML}
     ${provHTML(w)}
     <h3 class="d-h3">Historique</h3>
     ${moves.length ? `<ul class="hist">${moves.map(m => `<li><button class="h-item" data-act="edit-move" data-move="${m.id}">
@@ -2572,6 +2644,464 @@ function priceTile(w, stock) {
   else if (stock > 0 && w.domaine && API.ready() && (S.serverVersion || 0) >= 13 && routineAlive()) src = 'Valeur du jour : Claude la cherchera en ligne cette nuit.';
   if (!lines.length && !src) return '';
   return `<div class="wide d-price"><dt>Prix</dt><dd>${lines.join('')}${src ? `<span class="pr-src">${esc(src)}</span>` : ''}</dd></div>`;
+}
+
+/* =========================================================
+   Vins similaires : dans la cave, au catalogue (LWIN) et, sur demande, l'avis de Claude
+   ========================================================= */
+/* Cépages principaux des appellations, pour rapprocher deux vins quand la fiche ne les donne pas :
+   [appellations séparées par « | », cépages du rouge et du rosé, du blanc, des effervescents et liquoreux]. */
+const APP_GRAPES = [
+  // Loire
+  ['sancerre|menetou salon|reuilly|coteaux du giennois', 'Pinot noir', 'Sauvignon blanc'],
+  ['pouilly fume|quincy|saint bris|valencay|touraine chenonceaux|touraine oisly', 'Gamay, Pinot noir, Malbec', 'Sauvignon blanc'],
+  ['pouilly sur loire', '', 'Chasselas'],
+  ['touraine', 'Gamay, Cabernet franc, Malbec', 'Sauvignon blanc, Chenin blanc', 'Chenin blanc'],
+  ['touraine mesland|touraine amboise', 'Gamay, Cabernet franc, Malbec', 'Chenin blanc'],
+  ['cheverny', 'Pinot noir, Gamay', 'Sauvignon blanc, Chardonnay'],
+  ['cour cheverny', '', 'Romorantin'],
+  ['vouvray|montlouis|montlouis sur loire|jasnieres|savennieres|coteaux du layon|bonnezeaux|quarts de chaume|coteaux de l aubance|coteaux de saumur', '', 'Chenin blanc', 'Chenin blanc'],
+  ['anjou|saumur|anjou villages|anjou villages brissac|chinon|bourgueil|saint nicolas de bourgueil|saumur champigny', 'Cabernet franc', 'Chenin blanc', 'Chenin blanc, Chardonnay, Cabernet franc'],
+  ['cabernet d anjou|rose de loire', 'Cabernet franc, Grolleau'],
+  ['rose d anjou', 'Grolleau'],
+  ['anjou gamay', 'Gamay'],
+  ['muscadet', '', 'Melon de Bourgogne'],
+  ['gros plant|gros plant du pays nantais', '', 'Folle blanche'],
+  ['coteaux du loir|coteaux du vendomois', "Pineau d'Aunis", 'Chenin blanc'],
+  ['cote roannaise|cotes du forez|saint pourcain|cotes d auvergne|chateaumeillant', 'Gamay', 'Chardonnay'],
+  ['cremant de loire|saumur mousseux', '', 'Chenin blanc', 'Chenin blanc, Chardonnay, Cabernet franc'],
+  // Bourgogne (le reste suit la région : pinot noir et chardonnay)
+  ['bourgogne aligote|bouzeron', '', 'Aligoté'],
+  ['bourgogne passe tout grains|coteaux bourguignons', 'Pinot noir, Gamay', 'Chardonnay'],
+  // Champagne
+  ['coteaux champenois|rose des riceys', 'Pinot noir', 'Chardonnay'],
+  // Bordeaux
+  ['saint emilion|saint emilion grand cru|pomerol|lalande de pomerol|fronsac|canon fronsac|castillon cotes de bordeaux|francs cotes de bordeaux|montagne saint emilion|lussac saint emilion|puisseguin saint emilion|saint georges saint emilion', 'Merlot, Cabernet franc', 'Sémillon, Sauvignon blanc'],
+  ['medoc|haut medoc|pauillac|margaux|saint julien|saint estephe|listrac medoc|moulis|moulis en medoc|pessac leognan|graves', 'Cabernet Sauvignon, Merlot', 'Sauvignon blanc, Sémillon'],
+  ['sauternes|barsac|loupiac|cadillac|sainte croix du mont|cerons|graves superieures|monbazillac|saussignac', '', 'Sémillon, Sauvignon blanc', 'Sémillon, Sauvignon blanc'],
+  ['entre deux mers', '', 'Sauvignon blanc, Sémillon'],
+  // Rhône
+  ['cote rotie|cornas', 'Syrah'],
+  ['hermitage|ermitage|crozes hermitage|saint joseph', 'Syrah', 'Marsanne, Roussanne'],
+  ['condrieu|chateau grillet', '', 'Viognier'],
+  ['saint peray', '', 'Marsanne, Roussanne', 'Marsanne, Roussanne'],
+  ['collines rhodaniennes', 'Syrah', 'Viognier'],
+  ['tavel', 'Grenache, Cinsault'],
+  ['muscat de beaumes de venise', '', 'Muscat', 'Muscat'],
+  ['clairette de die|cremant de die', '', 'Clairette', 'Clairette, Muscat'],
+  // Languedoc et Roussillon
+  ['picpoul de pinet', '', 'Picpoul'],
+  ['limoux|blanquette de limoux|cremant de limoux', 'Merlot, Malbec', 'Chardonnay, Chenin blanc, Mauzac', 'Mauzac, Chardonnay, Chenin blanc'],
+  ['banyuls|banyuls grand cru|maury|rivesaltes|collioure', 'Grenache', 'Grenache blanc', 'Grenache'],
+  ['muscat de rivesaltes|muscat de lunel|muscat de saint jean de minervois|muscat de frontignan|muscat de mireval|muscat du cap corse|muscat de cap corse', '', 'Muscat', 'Muscat'],
+  ['cabardes|malepere', 'Merlot, Cabernet Sauvignon, Grenache, Syrah'],
+  ['clairette du languedoc|clairette de bellegarde', '', 'Clairette'],
+  // Provence
+  ['bandol', 'Mourvèdre, Grenache, Cinsault', 'Clairette, Ugni blanc'],
+  ['cassis', 'Grenache, Mourvèdre', 'Marsanne, Clairette'],
+  ['bellet', 'Grenache', 'Rolle'],
+  ['palette', 'Mourvèdre, Grenache', 'Clairette'],
+  ['les baux de provence', 'Grenache, Syrah, Cabernet Sauvignon'],
+  // Sud-Ouest
+  ['cahors', 'Malbec'],
+  ['madiran|saint mont|tursan', 'Tannat', 'Gros Manseng, Petit Manseng'],
+  ['irouleguy', 'Tannat, Cabernet franc', 'Gros Manseng, Petit Manseng'],
+  ['jurancon|pacherenc du vic bilh', '', 'Gros Manseng, Petit Manseng', 'Petit Manseng, Gros Manseng'],
+  ['cotes de gascogne', 'Merlot, Tannat', 'Colombard, Ugni blanc, Gros Manseng'],
+  ['gaillac', 'Duras, Fer Servadou, Syrah', 'Mauzac', 'Mauzac'],
+  ['fronton', 'Négrette'],
+  ['marcillac', 'Fer Servadou'],
+  ['bergerac|cotes de bergerac|pecharmant|buzet|cotes de duras|cotes du marmandais|montravel|cotes de montravel|haut montravel|brulhois', 'Merlot, Cabernet Sauvignon, Cabernet franc', 'Sauvignon blanc, Sémillon'],
+  // Jura, Savoie, Corse
+  ['chateau chalon', '', 'Savagnin'],
+  ['cremant du jura', '', 'Chardonnay', 'Chardonnay'],
+  ['chignin bergeron', '', 'Roussanne'],
+  ['roussette de savoie|roussette du bugey', '', 'Altesse'],
+  ['cremant d alsace', 'Pinot noir', 'Pinot blanc', 'Pinot blanc, Riesling, Chardonnay'],
+  ['patrimonio', 'Nielluccio', 'Rolle'],
+  ['ajaccio', 'Sciaccarellu', 'Rolle'],
+];
+// Faute d'appellation connue, la grande région : [rouge et rosé, blanc, effervescent et liquoreux].
+const REGION_GRAPES = {
+  Bourgogne: ['Pinot noir', 'Chardonnay', 'Chardonnay, Pinot noir'], Beaujolais: ['Gamay', 'Chardonnay'],
+  Champagne: ['Pinot noir, Meunier', 'Chardonnay', 'Chardonnay, Pinot noir, Meunier'],
+  Bordeaux: ['Merlot, Cabernet Sauvignon, Cabernet franc', 'Sauvignon blanc, Sémillon', 'Sémillon, Sauvignon blanc'],
+  Rhône: ['Grenache, Syrah, Mourvèdre', 'Grenache blanc, Clairette, Roussanne'],
+  Languedoc: ['Grenache, Syrah, Carignan, Mourvèdre', 'Grenache blanc, Roussanne, Rolle'],
+  Roussillon: ['Grenache, Carignan, Syrah', 'Grenache blanc, Macabeu', 'Grenache'],
+  Provence: ['Grenache, Cinsault, Syrah, Mourvèdre', 'Rolle, Ugni blanc'],
+  Jura: ['Poulsard, Trousseau, Pinot noir', 'Chardonnay, Savagnin', 'Chardonnay'],
+  Savoie: ['Mondeuse, Gamay', 'Jacquère, Altesse'], Corse: ['Nielluccio, Sciaccarellu, Grenache', 'Rolle'],
+};
+/** Appellation comparable : sans accents ni ponctuation, sans « AOC ». */
+const appKey = s => norm(s).replace(/[^a-z0-9]+/g, ' ').trim().replace(/^(aoc|aop|igp) /, '');
+const APP_GRAPE_MAP = new Map();
+APP_GRAPES.forEach(([keys, ...g]) => keys.split('|').forEach(k => APP_GRAPE_MAP.set(k, g)));
+/** La clé connue la plus longue par laquelle commence l'appellation : « bourgogne hautes cotes de nuits » → « bourgogne ». */
+function longestKey(k, keys) {
+  let best = '';
+  for (const x of keys) if (x.length > best.length && k.startsWith(x + ' ')) best = x;
+  return best;
+}
+function grapesByApp(app, region, couleur) {
+  const k = appKey(app);
+  const g = (k && (APP_GRAPE_MAP.get(k) || APP_GRAPE_MAP.get(longestKey(k, APP_GRAPE_MAP.keys())))) || REGION_GRAPES[canonRegion(region)];
+  if (!g) return [];
+  const [r = '', b = '', o = ''] = g;
+  return splitGrapes(couleur === 'rouge' || couleur === 'rose' ? r : couleur === 'blanc' ? b : couleur ? o || b || r : r || b);
+}
+/** Cépages écrits dans un nom (« Riesling Grand Cru », « Blanc de Blancs ») : les plus longs d'abord. */
+let GRAPE_RE = null;
+function grapesInText(s) {
+  const t = grapeKey(s);
+  if (!t) return [];
+  if (/\bblanc de blancs\b/.test(t)) return ['Chardonnay'];
+  if (/\bblanc de noirs\b/.test(t)) return ['Pinot noir', 'Meunier'];
+  if (!GRAPE_RE) {
+    const names = [...GRAPES.map(g => grapeKey(g.name)), ...Object.keys(GRAPE_ALIASES)].sort((a, b) => b.length - a.length);
+    GRAPE_RE = new RegExp(`(?:^| )(${names.join('|')})(?= |$)`, 'g');
+  }
+  return [...new Set([...t.matchAll(GRAPE_RE)].map(m => canonGrape(m[1])))];
+}
+/** Les cépages d'un vin de la cave : ceux de la fiche, sinon ceux de son nom, sinon ceux de son appellation. */
+function grapesOf(w) {
+  const own = splitGrapes(w.cepages);
+  if (own.length) return own;
+  const txt = grapesInText(w.cuvee);
+  return txt.length ? txt : grapesByApp(w.appellation, w.region || Catalogue.regionOf(w), w.couleur);
+}
+
+/* Catalogue des vins français (base LWIN de Liv-ex, licence CC BY 4.0), chargé à la première ouverture de « Vins similaires ».
+   Le fichier est construit par catalogue/construire.py. Sans lui (hors ligne, page ouverte en fichier), la fenêtre s'en passe. */
+const DOM_STOP = new Set('domaine domaines chateau chateaux cave caves cellier mas clos famille champagne maison vignobles vignerons de la le les des du d l et en vin vins grand cru premier 1er'.split(' '));
+const keyWords = s => norm(s).replace(/[^a-z0-9]+/g, ' ').split(' ').filter(k => k.length > 2 && !DOM_STOP.has(k));
+const nameTokens = s => [...new Set(norm(s).replace(/[^a-z0-9]+/g, ' ').split(' ').filter(k => k && !DOM_STOP.has(k)))];
+const Catalogue = {
+  state: '', data: null, promise: null,
+  load() {
+    if (this.state === 'ok') return Promise.resolve();
+    if (this.promise) return this.promise;
+    this.state = 'loading';
+    return (this.promise = fetch('catalogue/lwin-france.json')
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(d => { this.build(d); this.state = 'ok'; })
+      .catch(e => { console.warn('Catalogue indisponible', e); this.state = 'error'; })
+      .finally(() => { this.promise = null; }));
+  },
+  build(d) {
+    const C = d.couleurs || {}, P = d.producteurs, A = d.appellations, R = d.regions;
+    const pn = new Uint32Array(P.length), byApp = new Map(), byProd = new Map(), appIdx = new Map(), appReg = new Map();
+    const push = (m, k, x) => { const l = m.get(k); if (l) l.push(x); else m.set(k, [x]); };
+    const rows = d.vins.map(([p, n, a, r, c]) => { pn[p]++; const x = { p, n, a, r, c: C[c] || '' }; push(byApp, a, x); push(byProd, p, x); return x; });
+    A.forEach((x, i) => { if (x) appIdx.set(appKey(x), i); });
+    // Région d'une appellation : celle de la plupart de ses vins.
+    for (const [a, xs] of byApp) {
+      const n = new Map();
+      xs.forEach(x => n.set(x.r, (n.get(x.r) || 0) + 1));
+      appReg.set(a, R[[...n].sort((u, v) => v[1] - u[1])[0][0]] || '');
+    }
+    this.data = { P, A, R, rows, pn, byApp, byProd, appIdx, appKeys: [...appIdx.keys()], appReg, pkey: P.map(x => ` ${appKey(x)} `), gcache: new Map() };
+  },
+  /** Appellation du catalogue d'un vin de la cave (0 si inconnue) : « Touraine Mesland » → Touraine. */
+  appOf(app) {
+    const d = this.data, k = appKey(app);
+    if (!d || !k) return 0;
+    return d.appIdx.get(k) || d.appIdx.get(longestKey(k, d.appKeys)) || 0;
+  },
+  regionOf(w) {
+    const r = canonRegion(w.region);
+    if (r || !this.data) return r;
+    const a = this.appOf(w.appellation);
+    return a ? this.data.appReg.get(a) : '';
+  },
+  /** Producteurs du catalogue qui sont ce domaine : les mêmes mots distinctifs (« Domaine du Cerberon » = « Domaine Cerberon »),
+      ou un seul de plus pour un nom d'au moins deux mots (« Terres Noires » = « Domaine des Terres Noires Vignerons »).
+      Un homonyme d'une autre région est écarté, une initiale compte : « J. Faiveley » n'est pas « Domaine Faiveley »,
+      ni « R. Grange » le « Domaine de la Grange ». */
+  producers(w) {
+    const d = this.data, mine = nameTokens(w.domaine);
+    if (!d || !keyWords(w.domaine).length) return [];
+    const reg = this.regionOf(w);
+    const found = [];
+    d.pkey.forEach((k, i) => {
+      if (!i || !mine.every(x => k.includes(` ${x} `))) return;
+      const extra = nameTokens(d.P[i]).filter(x => !mine.includes(x)).length;
+      if (extra === 0 || (extra === 1 && mine.length >= 2)) found.push([i, extra]);
+    });
+    const ok = found.filter(([i]) => !reg || d.byProd.get(i).some(x => d.R[x.r] === reg));
+    const best = Math.min(...ok.map(([, e]) => e));
+    return ok.filter(([, e]) => e === best).map(([i]) => i).slice(0, 3);
+  },
+  grapes(x) {
+    if (x.g) return x.g;
+    const d = this.data;
+    let g = grapesInText(x.n);
+    if (!g.length) {
+      const k = `${x.a}|${x.r}|${x.c}`;
+      g = d.gcache.get(k);
+      if (!g) d.gcache.set(k, (g = grapesByApp(d.A[x.a], d.R[x.r] || d.appReg.get(x.a), x.c)));
+    }
+    return (x.g = g);
+  },
+};
+
+/** Le vin a-t-il plu ? Ma meilleure note, sinon la moyenne des autres. */
+function likedOf(w) {
+  const notes = [...db.avis.filter(a => a.vinId === w.id && a.note).map(a => ({ qui: a.qui, note: a.note })),
+    ...db.moves.filter(m => m.vinId === w.id && m.type === 'sortie' && m.note).map(m => ({ qui: m.par, note: m.note }))];
+  const mine = notes.filter(a => a.qui === S.device).map(a => a.note);
+  if (mine.length) return Math.max(...mine) >= 4 ? { me: true, note: Math.max(...mine) } : null;
+  const avg = notes.length ? notes.reduce((s, a) => s + a.note, 0) / notes.length : 0;
+  return avg >= 4 ? { me: false, note: avg, n: notes.length } : null;
+}
+
+/** Dans la cave : les vins en stock qui partagent domaine, appellation, cépages ou région, de la même couleur. */
+function simInCave(w) {
+  const g = grapesOf(w), app = appKey(w.appellation), dom = norm(w.domaine), reg = canonRegion(w.region) || Catalogue.regionOf(w);
+  const out = [];
+  for (const x of db.wines) {
+    if (x.id === w.id || (STOCK.get(x.id) || 0) <= 0) continue;
+    const sameDom = !!dom && norm(x.domaine) === dom;
+    if (w.couleur && x.couleur && x.couleur !== w.couleur && !sameDom) continue;
+    const why = [];
+    let score = 0;
+    if (sameDom) { score += 4; why.push('même domaine'); }
+    const xa = appKey(x.appellation);
+    if (app && xa === app) { score += 3; why.push('même appellation'); }
+    else if (app && xa && (xa.startsWith(app + ' ') || app.startsWith(xa + ' '))) { score += 2; why.push('appellation voisine'); }
+    const shared = grapesOf(x).filter(k => g.includes(k));
+    if (shared.length) { score += Math.min(4, 2 * shared.length) + (shared[0] === g[0] ? 1 : 0); why.push(shared.slice(0, 2).join(', ')); }
+    if (reg && (canonRegion(x.region) || Catalogue.regionOf(x)) === reg) { score += 1; if (!why.length) why.push(reg); }
+    if (score) out.push({ w: x, score, why });
+  }
+  return out.sort((a, b) => b.score - a.score || wineTitle(a.w).localeCompare(wineTitle(b.w), 'fr')).slice(0, 6);
+}
+
+/** Au catalogue : quatre listes (même domaine, même appellation, même cépage, même région), de la couleur du vin. */
+function simCatalogue(w) {
+  const d = Catalogue.data;
+  if (!d) return null;
+  const c = w.couleur, A = Catalogue.appOf(w.appellation), prods = Catalogue.producers(w), own = new Set(prods), reg = Catalogue.regionOf(w);
+  const sameColor = x => !c || x.c === c;
+  const fame = (a, b) => d.pn[b.p] - d.pn[a.p];
+  // Un vin par groupe (producteur ou appellation) : celui du producteur le plus présent au catalogue.
+  const onePer = (xs, key) => {
+    const m = new Map();
+    for (const x of xs) { const k = key(x), cur = m.get(k); if (!cur) m.set(k, { x, n: 1 }); else { cur.n++; if (d.pn[x.p] > d.pn[cur.x.p]) cur.x = x; } }
+    return [...m.values()];
+  };
+  const lists = { domaine: [], appellation: [], cepage: [], region: [] };
+  // La cuvée de la fiche (sans les mots du domaine) désigne ce vin-là chez son producteur : on ne le propose pas.
+  const dw = keyWords(w.domaine), cw = keyWords(w.cuvee).filter(k => !dw.includes(k));
+  const self = x => cw.length && x.a === A && cw.every(k => ` ${appKey(x.n)} `.includes(` ${k} `));
+  if (prods.length) lists.domaine = prods.flatMap(p => d.byProd.get(p)).filter(x => !self(x))
+    .sort((a, b) => sameColor(b) - sameColor(a) || (b.a === A) - (a.a === A)).map(x => ({ x }));
+  if (A) lists.appellation = onePer(d.byApp.get(A).filter(x => sameColor(x) && !own.has(x.p)), x => x.p).map(o => o.x).sort(fame).map(x => ({ x }));
+  const g0 = grapesOf(w)[0];
+  if (g0) {
+    const cand = d.rows.filter(x => sameColor(x) && x.a !== A && !own.has(x.p) && Catalogue.grapes(x).includes(g0));
+    lists.cepage = onePer(cand, x => (x.a ? 'a' + x.a : 'r' + x.r))
+      .map(o => ({ ...o, main: Catalogue.grapes(o.x)[0] === g0, near: d.R[o.x.r] === reg }))
+      .sort((a, b) => b.main - a.main || b.near - a.near || b.n - a.n)
+      .map(o => ({ x: o.x, why: [g0, d.A[o.x.a] || d.R[o.x.r]].filter(Boolean).join(' · ') }));
+  }
+  if (reg) {
+    const cand = d.rows.filter(x => d.R[x.r] === reg && x.a && x.a !== A && sameColor(x) && !own.has(x.p));
+    lists.region = onePer(cand, x => x.a).sort((a, b) => b.n - a.n).map(o => ({ x: o.x, why: d.A[o.x.a] }));
+  }
+  return { lists, prod: prods.map(p => d.P[p]), app: d.A[A] || '', g0: g0 || '', reg };
+}
+/** Fiche à préremplir d'après une ligne du catalogue : la cuvée est le nom sans l'appellation. */
+function catalogueWine(x) {
+  const d = Catalogue.data, app = d.A[x.a], seg = x.n.split(', ').filter(s => s !== 'VdF');
+  if (app && appKey(seg[0]).startsWith(appKey(app))) seg[0] = seg[0].slice(app.length).trim();
+  const cuvee = seg.filter(s => s && appKey(s) !== appKey(app)).join(', ');
+  return { domaine: d.P[x.p], cuvee, appellation: app, couleur: x.c, region: d.R[x.r], pays: 'France' };
+}
+
+/* ---------- La fenêtre « Vins similaires » ---------- */
+const SIM_TABS = [['domaine', 'Même domaine'], ['appellation', 'Même appellation'], ['cepage', 'Même cépage'], ['region', 'Même région']];
+const SIM_LIENS = { proche: 'Proche', cepage: 'Même cépage', style: 'Même style', audace: 'Pour oser' };
+const SIM = { id: null, key: '', sig: '', cave: [], cat: null, tab: '', more: 8, cands: new Map() };
+const suggestOn = () => API.ready() && (S.serverVersion || 0) >= 15 && claudeOn();
+const suggestionOf = id => db.suggestions.find(x => x.vinId === id);
+
+function openSimilar(id) {
+  const w = db.wines.find(x => x.id === id);
+  if (!w) return;
+  Object.assign(SIM, { id, key: '', sig: '', tab: '', more: 8 });
+  UI.simWine = id;
+  renderSimilar();
+  const dlg = $('#dlg-similar');
+  if (!dlg.open) dlg.showModal();
+  $('#sim-body').scrollTop = 0;
+  if (Catalogue.state !== 'ok') Catalogue.load().then(() => { SIM.key = ''; if (UI.simWine === id && dlg.open) renderSimilar(); });
+}
+
+const simColorDot = k => (k ? `<span class="dot" style="--c:${colorOf(k).hex}" aria-label="${esc(colorOf(k).label)}"></span>` : '<span class="dot sim-nodot" aria-hidden="true"></span>');
+/** Un vin à découvrir : touché, il propose de le chercher en ligne ou de l'ajouter à la cave. */
+function simItem(key, v, title, sub, extra = '') {
+  SIM.cands.set(key, v);
+  const q = encodeURIComponent([v.domaine, v.cuvee, v.appellation].filter(Boolean).join(' '));
+  return `<details class="sim-item"><summary class="sim-row">${simColorDot(v.couleur)}<span class="sim-id"><b>${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</span>${extra}</summary>
+    <div class="sim-acts"><a class="btn" href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Chercher en ligne</a><button type="button" class="btn" data-act="sim-add" data-k="${esc(key)}">Ajouter à la cave</button></div></details>`;
+}
+
+function renderSimilar() {
+  const dlg = $('#dlg-similar'), w = db.wines.find(x => x.id === UI.simWine);
+  if (!w) { if (dlg.open) dlg.close(); return; }
+  // Les listes ne sont recalculées que si la fiche ou le catalogue ont changé.
+  const key = `${w.id}|${w.updatedAt}|${Catalogue.state}|${db.wines.length}|${db.moves.length}`;
+  if (SIM.key !== key) {
+    Object.assign(SIM, { key, cave: simInCave(w), cat: simCatalogue(w) });
+    if (SIM.cat && !(SIM.cat.lists[SIM.tab] || []).length) SIM.tab = (SIM_TABS.find(([k]) => SIM.cat.lists[k].length) || [''])[0];
+  }
+  const like = likedOf(w), sg = suggestionOf(w.id);
+  // Rien n'a changé (synchro sans effet ici) : on ne redessine pas, pour garder ouvert le vin qu'on regarde.
+  const sig = [key, SIM.tab, SIM.more, sg ? sg.updatedAt + sg.statut : '', SUGG.busy.has(w.id), suggestOn(), STOCK.size, db.avis.length].join('|');
+  if (sig === SIM.sig && dlg.open) return;
+  SIM.sig = sig;
+  SIM.cands.clear();
+  $('#sim-sub').textContent = [wineTitle(w), w.appellation ? w.domaine : '', w.millesime].filter(Boolean).join(' · ');
+  let h = like ? `<p class="sim-like">${like.me ? "Tu l'as aimé" : "Vous l'avez aimé"} ${starsHTML(Math.round(like.note))} : voici des vins dans le même esprit.</p>` : '';
+  if (sg && sg.resultat && sg.resultat.vins.length) h += simClaudeHTML(w, sg);
+
+  // Dans la cave
+  h += `<section class="sim-sec sim-cave"><h3 class="sim-h">Dans ta cave</h3>${SIM.cave.length
+    ? `<div class="sim-list">${SIM.cave.map(({ w: x, why }) => { const n = STOCK.get(x.id) || 0; return `<button type="button" class="sim-row" data-open="${x.id}">${simColorDot(x.couleur)}<span class="sim-id"><b>${esc(wineTitle(x))}${x.millesime ? ` <small>${x.millesime}</small>` : ''}</b><span>${esc([wineSub(x), `${n} ${plural(n, 'bouteille', 'bouteilles')}`].filter(Boolean).join(' · '))}</span></span><span class="sim-why">${why.map(t => `<span class="sim-tag">${esc(t)}</span>`).join('')}</span></button>`; }).join('')}</div>`
+    : '<p class="hint">Aucun vin proche en cave pour le moment.</p>'}</section>`;
+
+  // Au catalogue
+  h += '<section class="sim-sec sim-cat"><h3 class="sim-h">À découvrir</h3>';
+  if (Catalogue.state === 'loading' || (!Catalogue.state && !SIM.cat)) h += '<p class="sim-load"><span class="pw-spin" aria-hidden="true"></span>Chargement du catalogue des vins français…</p>';
+  else if (!SIM.cat) h += `<p class="hint">Le catalogue n'a pas pu être chargé${navigator.onLine ? '' : ' (pas de connexion)'}. <button type="button" class="link" data-act="sim-retry">Réessayer</button></p>`;
+  else if (!SIM.tab) h += `<p class="hint">Rien de proche au catalogue : il connaît surtout les domaines réputés.${w.appellation ? '' : ' Indique l\'appellation du vin pour élargir la recherche.'}</p>`;
+  else {
+    const { lists, prod, app, g0, reg } = SIM.cat, col = w.couleur ? colorOf(w.couleur).label.toLowerCase() : '';
+    const desc = { domaine: `Les autres vins de ${prod.join(' ou ')}, au catalogue.`, appellation: `${app}${col ? ` ${col}` : ''}, chez d'autres producteurs.`,
+      cepage: `${g0}${col ? `, ${col}` : ''}, dans d'autres appellations.`, region: `${reg}${col ? `, ${col}` : ''}, une appellation après l'autre.` }[SIM.tab];
+    h += `<div class="chips sim-tabs" role="group" aria-label="Rapprocher par">${SIM_TABS.filter(([k]) => lists[k].length).map(([k, label]) => `<button type="button" class="chip" data-act="sim-tab" data-tab="${k}" aria-pressed="${k === SIM.tab}">${label}</button>`).join('')}</div>
+      <p class="sim-desc">${esc(desc)}</p>`;
+    const items = lists[SIM.tab], shown = items.slice(0, SIM.more), d = Catalogue.data;
+    h += `<div class="sim-list">${shown.map(({ x, why }, i) => simItem(`c${i}`, catalogueWine(x), x.n, d.P[x.p], why ? `<span class="sim-why"><span class="sim-tag">${esc(why)}</span></span>` : '')).join('')}</div>`;
+    if (items.length > shown.length) h += `<p class="sim-more"><button type="button" class="btn" data-act="sim-more">Voir plus (${items.length - shown.length})</button></p>`;
+  }
+  h += '</section>';
+
+  if (!(sg && sg.resultat && sg.resultat.vins.length)) h += simClaudeHTML(w, sg);
+  h += `<p class="sim-src">Catalogue : extrait de la base <a href="https://www.liv-ex.com/lwin/" target="_blank" rel="noopener">LWIN</a> de Liv-ex, sous <a href="https://www.liv-ex.com/lwin-creative-commons-licence/" target="_blank" rel="noopener">licence CC BY 4.0</a> (vins français, colonnes simplifiées, accents rétablis).</p>`;
+  $('#sim-body').innerHTML = h;
+}
+
+/** L'avis de Claude : sa dernière réponse, gardée dans la cave, ou le bouton pour la demander. */
+function simClaudeHTML(w, sg) {
+  const r = sg && sg.resultat && sg.resultat.vins.length ? sg.resultat : null;
+  const sending = SUGG.busy.has(w.id), waiting = sending || (sg && sg.statut === 'attente');
+  let wait = '';
+  if (waiting) {
+    wait = sending ? 'Demande envoyée à Claude…' : sg.mode === 'nuit' ? 'Claude répondra cette nuit, au passage de la routine.'
+      : "Claude répond d'ici une à deux minutes. Tu peux fermer cette fenêtre : sa réponse restera dans la fiche.";
+    wait = `<p class="sim-wait"><span class="pw-spin" aria-hidden="true"></span><span>${esc(wait)}${sg && sg.note && !sending ? `<br><small>${esc(sg.note)}</small>` : ''}</span></p>`;
+  }
+  const hasAvis = db.avis.some(a => a.vinId === w.id && (a.note || a.commentaire));
+  if (!r) {
+    let body;
+    if (!API.ready()) body = '<p class="hint">Relie l\'appli à la cave (Réglages) pour demander aussi l\'avis de Claude.</p>';
+    else if ((S.serverVersion || 0) < 15) body = '<p class="hint">L\'avis de Claude sera disponible quand le script de la cave sera passé en version 15 (Réglages).</p>';
+    else if (!claudeOn()) return '';
+    else body = waiting ? wait : `<button type="button" class="btn btn-primary" data-act="sim-ask">Demander à Claude · 0,5 jeton</button>`;
+    return `<section class="sim-sec sim-ask"><h3 class="sim-h">✦ L'avis de Claude</h3>
+      <p class="sim-intro">Cinq vins à découvrir, choisis d'après ce vin${hasAvis ? ' et vos avis' : ''}. Sa réponse reste dans la fiche, pour tous.</p>${body}
+      ${sg && sg.statut === 'echec' && !waiting ? `<p class="hint">La dernière demande n'a pas abouti${sg.note ? ` : ${esc(sg.note)}` : '.'}</p>` : ''}</section>`;
+  }
+  const when = sg.date ? new Date(sg.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  return `<section class="sim-sec sim-claude"><h3 class="sim-h">✦ L'avis de Claude</h3>
+    <p class="sim-meta">${esc([when && `Le ${when}`, sg.par && `demandé par ${sg.par}`].filter(Boolean).join(' · '))}</p>
+    ${r.intro ? `<p class="sim-intro">${esc(r.intro)}</p>` : ''}
+    <div class="sim-list">${r.vins.map((v, i) => simItem(`g${i}`, { ...v, src: 'claude' }, v.appellation || v.domaine, [v.appellation ? v.domaine : '', v.cuvee].filter(Boolean).join(', '),
+      `<span class="sim-why">${v.lien ? `<span class="sim-tag is-acc">${esc(SIM_LIENS[v.lien] || v.lien)}</span>` : ''}${v.budget ? `<span class="sim-tag">${esc(v.budget)}</span>` : ''}</span>${v.pourquoi ? `<span class="sim-pq">${esc(v.pourquoi)}</span>` : ''}`)).join('')}</div>
+    ${waiting ? wait : suggestOn() ? '<p class="sim-more"><button type="button" class="btn" data-act="sim-ask">Redemander à Claude · 0,5 jeton</button></p>' : ''}</section>`;
+}
+
+/** « Ajouter à la cave » : le formulaire « Nouveau vin », prérempli par le catalogue ou par Claude. */
+function addFromSimilar(k) {
+  const v = SIM.cands.get(k);
+  if (!v) return;
+  openWineForm();
+  const f = $('#wine-form');
+  ['domaine', 'cuvee', 'appellation', 'region', 'pays'].forEach(n => { if (v[n]) f.elements[n].value = v[n]; });
+  const radio = v.couleur && f.querySelector(`input[name="couleur"][value="${v.couleur}"]`);
+  if (radio) { radio.checked = true; FORM.colorTouched = true; }
+  renderGrapes();
+  setAiStatus(v.src === 'claude' ? "Fiche préremplie d'après la suggestion de Claude : vérifie-la, indique le nombre de bouteilles, puis ajoute-la."
+    : 'Fiche préremplie depuis le catalogue LWIN : vérifie-la, indique le nombre de bouteilles, puis ajoute-la.');
+  updateFormPreview();
+}
+
+/* ---------- Demander à Claude : par le script (API tout de suite, sinon routine), puis suivi ---------- */
+const SUGG = { busy: new Set(), timer: null };
+function cleanSuggestion(o) {
+  const vinId = str(o && o.vinId);
+  if (!vinId) return null;
+  const r = o.resultat && typeof o.resultat === 'object' ? o.resultat : null;
+  return {
+    id: str(o.id) || 'sg-' + vinId, vinId, date: str(o.date), par: str(o.par), statut: ['attente', 'fait', 'echec'].includes(o.statut) ? o.statut : 'attente',
+    mode: str(o.mode), note: str(o.note), updatedAt: str(o.updatedAt),
+    resultat: r ? { intro: str(r.intro), vins: (Array.isArray(r.vins) ? r.vins : []).filter(v => v && (v.domaine || v.appellation)).slice(0, 6)
+      .map(v => ({ domaine: str(v.domaine), cuvee: str(v.cuvee), appellation: str(v.appellation), couleur: colorKey(v.couleur), region: str(v.region), budget: str(v.budget), lien: str(v.lien), pourquoi: str(v.pourquoi) })) } : null,
+  };
+}
+async function askSuggest(vinId) {
+  if (!db.wines.some(x => x.id === vinId) || SUGG.busy.has(vinId)) return;
+  if (!navigator.onLine) { toast('Pas de connexion internet : réessaie une fois en ligne.'); return; }
+  SUGG.busy.add(vinId);
+  renderSimilar();
+  try {
+    // Le vin et ses dernières modifications doivent être sur le serveur avant la demande.
+    while (syncing) await new Promise(r => setTimeout(r, 300));
+    await sync();
+    const r = await API.call('suggest', { vinId }, 150e3);
+    takeSuggestion(r.suggestion, true);
+  } catch (e) {
+    toast(/Action inconnue/.test(e.message) ? "Le script de la cave doit d'abord passer en version 15." : `Demande non envoyée : ${e.message}`);
+  } finally {
+    SUGG.busy.delete(vinId);
+    persist();
+    render();
+    watchSuggestions();
+  }
+}
+/** Version du script : remplace la copie locale si elle est plus récente ; une réponse arrivée pendant qu'on fait autre chose est signalée. */
+function takeSuggestion(o, mine) {
+  const s = cleanSuggestion(o);
+  if (!s) return;
+  const old = db.suggestions.find(x => x.id === s.id);
+  if (old && (s.updatedAt || '') < (old.updatedAt || '')) return;
+  const ready = s.statut === 'fait' && (!old || old.statut === 'attente');
+  if (old) Object.assign(old, s); else db.suggestions.push(s);
+  const w = db.wines.find(x => x.id === s.vinId);
+  if (ready && !mine && w && s.par === S.device && !(UI.simWine === s.vinId && $('#dlg-similar').open)) toast(`Claude a proposé des vins similaires à ${wineTitle(w)} : ouvre sa fiche.`);
+}
+/** Suivi des demandes en attente de la routine : toutes les 10 s les 5 premières minutes, puis toutes les 30 s, 20 minutes au plus. */
+function watchSuggestions() {
+  clearTimeout(SUGG.timer);
+  const wait = db.suggestions.filter(s => s.statut === 'attente' && s.par === S.device && s.mode === 'routine');
+  if (!wait.length || !API.ready()) return;
+  const age = Date.now() - Math.max(...wait.map(s => Date.parse(s.updatedAt) || 0));
+  if (age > 20 * 60e3) return;
+  SUGG.timer = setTimeout(pollSuggestions, age < 5 * 60e3 ? 10e3 : 30e3);
+}
+async function pollSuggestions() {
+  const ids = db.suggestions.filter(s => s.statut === 'attente' && s.par === S.device).map(s => s.id);
+  if (!ids.length) return;
+  if (!document.hidden) {
+    try {
+      const r = await API.call('suggestGet', { ids });
+      (r.suggestions || []).forEach(s => takeSuggestion(s));
+      persist(); render();
+    } catch { /* nouvel essai au prochain tour */ }
+  }
+  watchSuggestions();
 }
 
 /* =========================================================
@@ -3840,6 +4370,8 @@ function mergeInto(remote) {
   db.avis = mergeList(db.avis, remote.avis).filter(a => outs.has(a.mvId));
   db.avis.forEach(a => { a.vinId = outs.get(a.mvId); });
   db.conseils = mergeList(db.conseils, remote.conseils);
+  // Vins similaires : seul le script les écrit (réponses de Claude) ; un script trop ancien n'en renvoie pas.
+  db.suggestions = mergeList(db.suggestions || [], remote.suggestions).map(cleanSuggestion).filter(x => x && ids.has(x.vinId));
   db.trash = [...trash.values()].filter(t => Date.now() - Date.parse(t.at) < 365 * 864e5);
   persist();
 }
@@ -4019,7 +4551,7 @@ async function sync({ interactive = false } = {}) {
     syncing = false;
     render();
     if (syncAgain || more) { syncAgain = false; scheduleSync(more ? 1500 : 600); }
-    if (syncState.k === 'ok') { maybeAskWho(); processConseils(); }
+    if (syncState.k === 'ok') { maybeAskWho(); processConseils(); watchSuggestions(); }
   }
 }
 
@@ -4099,7 +4631,7 @@ async function switchCave(u, s) {
 }
 /** Vide l'appareil : données, photos, choix liés à la cave (propriétaire filtré, analyses vues). */
 async function clearDevice() {
-  db = { wines: [], moves: [], trash: [], people: [], avis: [], conseils: [] };
+  db = { wines: [], moves: [], trash: [], people: [], avis: [], conseils: [], suggestions: [] };
   persist();
   photoIds.clear();
   Photos.urls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
@@ -4188,6 +4720,12 @@ function wire() {
         case 'add-person': promptAddPerson(); break;
         case 'rename-person': renamePerson(act.dataset.name); break;
         case 'remove-person': removePerson(act.dataset.name); break;
+        case 'similar': openSimilar(id); break;
+        case 'sim-tab': SIM.tab = act.dataset.tab; SIM.more = 8; renderSimilar(); break;
+        case 'sim-more': SIM.more += 8; renderSimilar(); break;
+        case 'sim-retry': SIM.key = ''; Catalogue.load().then(() => { SIM.key = ''; renderSimilar(); }); renderSimilar(); break;
+        case 'sim-ask': askSuggest(UI.simWine); break;
+        case 'sim-add': addFromSimilar(act.dataset.k); break;
       }
       return;
     }
@@ -4231,7 +4769,8 @@ function wire() {
 
   // Fiche du vin et détail d'une période des stats : toucher en dehors de la fenêtre la ferme.
   ['#dlg-wine', '#dlg-period'].forEach(s => $(s).addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.close(); }));
-  $('#dlg-wine').addEventListener('close', () => { UI.openWine = null; });
+  // L'événement « close » arrive après coup : si la fiche a déjà été rouverte (autre vin), on ne l'oublie pas.
+  $('#dlg-wine').addEventListener('close', () => { if (!$('#dlg-wine').open) UI.openWine = null; });
   $('#dlg-form').addEventListener('close', () => { if (FORM.tmpUrl) { URL.revokeObjectURL(FORM.tmpUrl); FORM.tmpUrl = null; } });
 
   $('#q').addEventListener('input', e => { UI.q = e.target.value; renderCave(); });
@@ -4413,6 +4952,7 @@ function wire() {
   $('#scan-dots').addEventListener('click', e => { const b = e.target.closest('[data-sgo]'); if (b) scrollScanTo(+b.dataset.sgo); });
   $('#dlg-scan').addEventListener('cancel', e => { if (!leaveScan()) e.preventDefault(); });
   $('#dlg-scan').addEventListener('close', () => scanReset());
+  $('#dlg-similar').addEventListener('close', () => { if (!$('#dlg-similar').open) UI.simWine = null; });
   $('#dlg-conseil').addEventListener('close', () => { UI.openConseil = null; UI.csOpen.clear(); if (UI.view === 'conseil') renderConseil(); });
   $('#dlg-period').addEventListener('close', () => { UI.periodKey = ''; if (UI.view === 'stats') renderStats(); });
   $('#dlg-period').addEventListener('keydown', e => {

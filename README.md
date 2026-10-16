@@ -1,6 +1,6 @@
 # Ma cave partagée
 
-Une appli pour tenir sa cave à vin à plusieurs : les bouteilles, celles à boire en premier, qui a débouché quoi, les avis de chacun et quelques statistiques. Elle fonctionne sur téléphone, tablette et ordinateur, même hors connexion. En option, Claude lit les étiquettes, conseille en magasin et estime la valeur des bouteilles.
+Une appli pour tenir sa cave à vin à plusieurs : les bouteilles, celles à boire en premier, qui a débouché quoi, les avis de chacun et quelques statistiques. Elle fonctionne sur téléphone, tablette et ordinateur, même hors connexion. Depuis la fiche d'un vin, « Vins similaires » propose des bouteilles proches dans la cave et à découvrir dans un catalogue de 62 000 vins français. En option, Claude lit les étiquettes, conseille en magasin, propose des vins dans le même esprit et estime la valeur des bouteilles.
 
 <p align="center">
   <img src="docs/captures/cave.png" width="200" alt="La cave">
@@ -35,6 +35,7 @@ Le pas-à-pas complet, y compris pour préparer une appli déjà reliée à ta c
 | Ce que fait Claude | Comment l'activer | Coût |
 |---|---|---|
 | Lire une étiquette tout de suite, conseiller en magasin | Une clé API dans le script ([INSTALLATION.md](INSTALLATION.md), étape 8) | environ 3,5 centimes par étiquette |
+| Proposer cinq vins dans le même esprit qu'un vin de la cave (« Demander à Claude » dans « Vins similaires ») | La clé API, sinon la routine | environ 2 centimes par demande avec la clé |
 | Lire les étiquettes la nuit, compléter les fiches, chercher la valeur du jour | Une routine Claude ([routine/consigne.md](routine/consigne.md)) | compris dans un abonnement Claude |
 
 Sans Claude, tout se saisit à la main : l'appli ne promet alors aucune lecture automatique.
@@ -54,9 +55,11 @@ index.html          toute l'appli (HTML, CSS et JavaScript, un seul fichier), se
 apps-script/        le script Google (Code.gs) et son manifeste (appsscript.json)
 android-app/        l'appli Android (Capacitor) qui embarque index.html
 routine/            la consigne de la routine Claude, avec {{ADRESSE}} et {{CODE_ROUTINE}} à remplacer
+catalogue/          le catalogue des vins français (extrait de LWIN) et le script qui le construit
 docs/captures/      les captures de ce fichier
 ```
 
 - **Construire l'APK** : `cd android-app && npm ci && npm run apk:generique` donne `android-app/dist/ma-cave.apk`.
 - **Publier une version** : `git tag v1.2.0 && git push origin v1.2.0`. GitHub Actions construit l'APK, le signe et le joint à la version. Le secret `ANDROID_KEYSTORE_B64` doit être en place pour que l'APK puisse mettre à jour celui déjà installé.
+- **Catalogue** : `catalogue/lwin-france.json` est un extrait de la base [LWIN](https://www.liv-ex.com/lwin/) de Liv-ex, publiée sous [licence CC BY 4.0](https://www.liv-ex.com/lwin-creative-commons-licence/). Pour le mettre à jour : `python -I catalogue/construire.py`, voir [catalogue/LISEZMOI.md](catalogue/LISEZMOI.md).
 - **Ne jamais pousser** : `android-app/cave.local.json` (adresse et code d'une cave), `android-app/www/`, `android-app/dist/` et les clés de signature. Le fichier `.gitignore` les écarte.

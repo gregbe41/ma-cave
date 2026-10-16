@@ -14,3 +14,6 @@ desktop.ini
 
 # Prototypes : identifiants du projet Google Cloud
 prototypes/**/config.local.js
+
+# Base LWIN téléchargée (25 Mo) : seul son extrait catalogue/lwin-france.json est versionné
+*.xlsx

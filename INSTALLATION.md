@@ -8,7 +8,7 @@ Compte environ 20 minutes, lecture des étiquettes comprise.
 
 ## Comment ça marche
 
-- **Le Google Sheet** contient la cave : onglets Vins, Mouvements, Corbeille, Personnes et Lectures IA.
+- **Le Google Sheet** contient la cave : onglets Vins, Mouvements, Corbeille, Personnes, Avis, Conseils, Suggestions et Lectures IA.
 - **Le script** est attaché à ce Sheet. Les appareils lui envoient leurs modifications, il les fusionne et range les photos d'étiquettes dans un dossier Drive « Ma cave – étiquettes ».
 - **Chaque appareil** (page web ou appli Android) connaît l'adresse du script et un code secret. Personne n'a besoin de se connecter à Google, sauf toi pour l'installation.
 - **Une routine Claude** passe chaque nuit : elle lit les photos d'étiquettes en attente, complète les fiches et cherche la valeur du jour des bouteilles. C'est compris dans ton abonnement Claude, sans clé API à payer.
@@ -47,7 +47,7 @@ Compte environ 20 minutes, lecture des étiquettes comprise.
    - le **code secret des appareils**, par exemple `1a2b-3c4d-5e6f-7a8b` ;
    - le **code de la routine de lecture**, qui ne permet que de lire les étiquettes en attente et de compléter les fiches.
 
-Dans le Sheet, les onglets Vins, Mouvements, Corbeille, Personnes, Avis, Conseils et Lectures IA apparaissent. Un dossier « Ma cave – étiquettes » est créé dans ton Drive.
+Dans le Sheet, les onglets Vins, Mouvements, Corbeille, Personnes, Avis, Conseils, Suggestions et Lectures IA apparaissent. Un dossier « Ma cave – étiquettes » est créé dans ton Drive.
 
 > **Ce que tu autorises.** L'écran de Google doit lister trois accès : les feuilles de calcul **dans lesquelles l'application est installée** (ce Sheet seulement), les fichiers Google Drive **que tu utilises avec cette application** (ceux que le script crée : le dossier des étiquettes et les photos), et la connexion à un service externe (l'API Claude, pour la lecture immédiate facultative). Coche les trois. S'il manque la ligne sur Google Drive, c'est que l'étape 2.5 manque : `installer` s'arrête alors avec un message qui le dit. Refais l'étape 2.5, puis relance `installer`.
 
@@ -124,6 +124,8 @@ Garde-fous : quotas `QUOTA_JOUR` (20 par défaut) et `QUOTA_MOIS` (100 par défa
 
 La même clé rend aussi l'onglet **Conseil** immédiat : une quinzaine de secondes au lieu d'une à deux minutes. Chaque bouteille analysée compte pour une lecture dans les quotas. Sans clé, quota atteint ou API en panne, c'est la routine qui répond, lancée tout de suite.
 
+Elle répond aussi tout de suite à **« Demander à Claude »** dans « Vins similaires » (depuis la version 15 du script) : une demande compte pour une lecture, pour un coût d'environ 2 centimes, puisqu'il n'y a pas de photo à lire. Sans clé, c'est la routine qui répond.
+
 ---
 
 ## Au quotidien
@@ -132,8 +134,9 @@ La même clé rend aussi l'onglet **Conseil** immédiat : une quinzaine de secon
 - **Qui a rempli quoi** : la colonne « Rempli par Claude » de l'onglet Vins liste les champs dont la valeur vient de Claude. Tout le reste a été saisi à la main, et Claude n'y touche jamais. Une valeur de Claude corrigée, dans l'appli ou dans le Sheet, devient la tienne. Claude repasse sur une fiche (photo ou non) quand on y ajoute un millésime, une appellation ou un domaine, ou sur demande (« Demander l'avis de Claude » dans la fiche) : il ne met alors à jour que les champs vides et les siens.
 - **Valeur du jour** (depuis la version 13 du script) : la nuit, la routine cherche en ligne le prix actuel des bouteilles en cave, avec sa fourchette, sa source et le mois. Elle le fait pour 30 vins au plus par nuit, et revoit chaque valeur au bout d'un an. Cette recherche passe par le forfait Claude de la routine, pas par la clé API. Une valeur saisie à la main (colonne « Valeur du jour (€) » ou fiche de l'appli) n'est jamais remplacée. Vide-la pour que Claude la cherche de nouveau.
 - **Ajouter ou supprimer un vin** : passe par l'appli. Une ligne effacée à la main dans le Sheet reviendrait à la synchro suivante.
-- **N'ajoute pas de colonne** dans les onglets Vins, Mouvements, Corbeille, Personnes, Avis et Conseils : le script réécrit les lignes à chaque synchro.
+- **N'ajoute pas de colonne** dans les onglets Vins, Mouvements, Corbeille, Personnes, Avis, Conseils et Suggestions : le script réécrit les lignes à chaque synchro.
 - **Conseils** : une ligne par analyse demandée dans l'onglet Conseil de l'appli (bouteilles vues en magasin), avec un résumé lisible. Les colonnes « Bouteilles » et « Résultat » sont réservées à l'appli : ne les modifie pas à la main.
+- **Suggestions** (depuis la version 15 du script) : une ligne par vin pour lequel quelqu'un a demandé à Claude des vins similaires, avec sa dernière réponse en résumé lisible. Elle reste dans la cave : tout le monde la retrouve dans la fiche, sans redemander. La colonne « Résultat » est réservée à l'appli.
 - **Personnes** : la liste des propriétaires de bouteilles, commune à tous les appareils. Pour ajouter quelqu'un, tu peux écrire un prénom sur une nouvelle ligne de l'onglet. Pour renommer ou réunir deux personnes (« Manu » et « Emmanuel »), passe par l'appli, dans Réglages › Personnes : elle met aussi à jour l'historique, ce que l'onglet seul ne fait pas.
 - **Couper l'accès à quelqu'un** : dans les propriétés du script, change la valeur de `SECRET`, puis renvoie une invitation aux autres appareils. Pour la routine, c'est `SECRET_ROUTINE`, à mettre à jour aussi dans la routine.
 
