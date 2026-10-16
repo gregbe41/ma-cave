@@ -15,12 +15,21 @@ C'est une page web. Le même prototype tourne aussi dans l'APK d'essai, pour une
 
 1. Sur [console.cloud.google.com](https://console.cloud.google.com/), crée un projet nommé « Ma cave ».
 2. **API et services › Bibliothèque** : active **Google Drive API** et **Google Picker API**.
-3. **Google Auth Platform** (écran de consentement OAuth) › **Commencer** :
-   - nom de l'appli : « Ma cave », ton adresse en e-mail d'assistance ;
-   - audience : **Externe** ;
-   - dans **Accès aux données**, ajoute le champ d'application `https://www.googleapis.com/auth/drive.file` ;
-   - dans **Audience › Utilisateurs test**, ajoute ton compte Google et celui qui jouera l'invité.
-4. **Clients › Créer un client** : type **Application Web**, origine JavaScript autorisée `http://localhost:8765`. Note l'**ID client**.
+3. **L'écran de consentement**, c'est-à-dire ce que Google affiche quand on autorise l'appli. Google l'a rangé dans une rubrique nommée **Google Auth Platform**. Pour l'ouvrir, vérifie que le projet « Ma cave » est sélectionné en haut de la page, puis :
+   - va directement sur [console.cloud.google.com/auth/overview](https://console.cloud.google.com/auth/overview) ;
+   - ou ouvre le menu ☰ en haut à gauche, puis **API et services › Écran de consentement OAuth**, qui mène au même endroit ;
+   - ou tape « Google Auth Platform » dans la barre de recherche en haut de la console.
+
+   Sur cette page, s'il est écrit que Google Auth Platform n'est pas encore configuré, touche **Commencer**. Quatre écrans se suivent :
+   1. **Informations sur l'application** : nom « Ma cave », et ton adresse en e-mail d'assistance ;
+   2. **Audience** : **Externe** ;
+   3. **Coordonnées** : ton adresse e-mail ;
+   4. **Terminer** : accepte le règlement, puis **Créer**.
+
+   Ensuite, deux réglages dans le menu de gauche de Google Auth Platform :
+   - **Accès aux données** ([lien direct](https://console.cloud.google.com/auth/scopes)) › **Ajouter ou supprimer des champs d'application**. Dans le panneau qui s'ouvre, filtre sur `drive.file` et coche `https://www.googleapis.com/auth/drive.file`. S'il n'apparaît pas, colle cette adresse dans **Ajouter manuellement des champs d'application**, puis **Ajouter au tableau**. Termine par **Mettre à jour**, puis **Enregistrer** en bas de la page ;
+   - **Audience** ([lien direct](https://console.cloud.google.com/auth/audience)) › **Utilisateurs test** › **Add users** : ajoute ton compte Google et celui qui jouera l'invité, puis **Enregistrer**. Tant que l'appli est « En test », seuls ces comptes peuvent se connecter.
+4. Toujours dans Google Auth Platform, **Clients** ([lien direct](https://console.cloud.google.com/auth/clients)) › **Créer un client** : type **Application Web**, origine JavaScript autorisée `http://localhost:8765`. Note l'**ID client**.
 5. **API et services › Identifiants › Créer des identifiants › Clé API**. Dans ses restrictions :
    - restriction d'application **Sites Web** : `http://localhost:8765/*` ;
    - restriction d'API : **Google Drive API** et **Google Picker API**.
