@@ -54,6 +54,17 @@
     <label class="optin"><input type="checkbox" id="optin"><span><strong>Synchroniser mes photos d'étiquettes.</strong> Elles seront rangées dans ton Google Drive et visibles par les autres membres de la cave. Pour cela, chaque photo est partagée par lien : seule une personne qui connaît son adresse, impossible à deviner, peut la voir. Sans cette autorisation, tes photos restent sur cet appareil.</span></label>
   </section>
 
+  <section class="card" id="simple">
+    <h2>Parcours simple : créer, inviter, rejoindre, retrouver ses caves</h2>
+    <p class="muted">Ce que vivrait chacun dans l'appli : aucun identifiant à recopier, rien à installer. L'appli crée la cave dans le Drive, la partage, et la retrouve sur tous les appareils.</p>
+    <div class="step"><b>A</b><div class="row"><input type="text" id="cave-name" placeholder="Nom de la cave, ex. Cave de Greg"><button data-act="newCave">Créer une cave</button><span class="muted">propriétaire</span></div></div>
+    <div class="step"><b>B</b><div class="row"><input type="email" id="invite-email" placeholder="Adresse Google du proche"><button data-act="invite">Inviter</button><span class="muted">propriétaire : partage la cave et prépare le lien à envoyer</span></div></div>
+    <p class="ids" id="invite-link"></p>
+    <div class="step"><b>C</b><div class="row"><button data-act="join">Rejoindre la cave du lien</button><span class="muted">invité, après avoir ouvert le lien : un seul geste dans le sélecteur de Google</span></div></div>
+    <div class="step"><b>D</b><div class="row"><button data-act="myCaves">Mes caves</button><span class="muted">sur n'importe quel appareil connecté : les caves dont on est propriétaire, puis celles où l'on est invité</span></div></div>
+    <div id="caves-list"></div>
+  </section>
+
   <section class="card" id="owner" hidden>
     <h2>Propriétaire</h2>
     <div class="step"><b>P1</b><div class="row"><button data-act="createCave">Créer la cave</button><span class="muted">Dossier « Ma cave (prototype) », fichier cave.json et dossier Photos.</span></div></div>
@@ -197,12 +208,73 @@ function showBlobs(items) {
   });
 }
 
+/** Le sélecteur de Google limité à la cave du lien : l'invité n'a qu'à confirmer. */
+function pickCave(id) {
+  return new Promise((resolve, reject) => {
+    if (!pickerReady) { reject(new Error('Le sélecteur Google n\'est pas encore chargé.')); return; }
+    const view = new google.picker.DocsView(google.picker.ViewId.DOCS).setMode(google.picker.DocsViewMode.LIST);
+    const limited = typeof view.setFileIds === 'function';
+    if (limited) view.setFileIds(id); else view.setOwnedByMe(false).setMimeTypes('application/json');
+    log(limited ? 'ok' : 'q', limited ? 'Sélecteur limité au fichier de la cave du lien' : 'Le sélecteur ne sait pas se limiter à un fichier : l\'invité doit trouver cave.json lui-même');
+    new google.picker.PickerBuilder().addView(view).setOAuthToken(token).setDeveloperKey(C.apiKey).setAppId(C.appId).setLocale('fr')
+      .setTitle('Confirme la cave à rejoindre')
+      .setCallback(d => {
+        if (d.action === google.picker.Action.PICKED) resolve(d.docs[0]);
+        else if (d.action === google.picker.Action.CANCEL) reject(new Error('Sélection annulée.'));
+      }).build().setVisible(true);
+  });
+}
+const inviteLink = id => `${location.origin}${location.pathname}#rejoindre=${encodeURIComponent(id)}`;
+
 /* ---------- Actions ---------- */
 const A = {
-  async createCave() {
-    const folder = await drive('POST', `${API}/files?fields=id`, { json: { name: 'Ma cave (prototype)', mimeType: FOLDER } });
+  async newCave() {
+    const name = $('#cave-name').value.trim() || 'Cave (prototype)';
+    await A.createCave(name);
+    log('ok', `Cave « ${name} » créée et retenue par l'appli : rien à recopier`);
+  },
+
+  async invite() {
+    const email = $('#invite-email').value.trim();
+    if (!S.folderId || !S.caveId) throw new Error('Crée d\'abord une cave (A).');
+    if (!email) throw new Error('Indique l\'adresse Google du proche.');
+    await drive('POST', `${API}/files/${S.folderId}/permissions?sendNotificationEmail=true&emailMessage=${encodeURIComponent('Je t\'invite dans ma cave sur Ma cave (prototype).')}`, { json: { type: 'user', role: 'writer', emailAddress: email } });
+    const link = inviteLink(S.caveId);
+    $('#invite-link').textContent = `Lien à envoyer : ${link}`;
+    try { await navigator.clipboard.writeText(link); } catch (e) { /* copie à la main */ }
+    log('ok', `Cave partagée avec ${email}. Lien d'invitation copié : à envoyer par message, et à ouvrir dans le profil de l'invité`, link);
+  },
+
+  async join() {
+    const m = /rejoindre=([\w-]+)/.exec(location.hash), id = m ? decodeURIComponent(m[1]) : $('#cave-hint').value.trim();
+    if (!id) throw new Error('Ouvre d\'abord le lien d\'invitation dans ce profil.');
+    try { await readCave(id); log('q', 'La cave se lit avant toute confirmation : l\'accès n\'est donc pas individuel'); }
+    catch (e) { log('ok', 'Attendu : la cave ne se lit pas avant que l\'invité la confirme', e.message); }
+    const doc = await pickCave(id);
+    if (doc.id !== id) log('ko', 'Le fichier choisi n\'est pas celui du lien', { lien: id, choisi: doc.id });
+    S.caveId = doc.id; save();
+    const cave = await readCave();
+    log('ok', `Cave « ${cave.nom || 'sans nom'} » rejointe, propriétaire ${cave.proprio}, en un geste`);
+  },
+
+  async myCaves() {
+    const r = await drive('GET', `${API}/files?q=${encodeURIComponent("name = 'cave.json' and trashed = false")}&fields=files(id,ownedByMe,owners(displayName,emailAddress),modifiedTime)&pageSize=100`);
+    const caves = [];
+    for (const f of r.files) {
+      let nom = '?';
+      try { nom = (await readCave(f.id)).nom || 'Cave sans nom'; } catch (e) { nom = 'illisible : ' + e.message; }
+      caves.push({ id: f.id, nom, mine: f.ownedByMe, owner: f.owners && f.owners[0] ? f.owners[0].displayName || f.owners[0].emailAddress : '?' });
+    }
+    const li = c => `<li>${esc(c.nom)}${c.mine ? '' : ` <span class="muted">· de ${esc(c.owner)}</span>`}${c.id === S.caveId ? ' <b>· ouverte</b>' : ''}</li>`;
+    const mine = caves.filter(c => c.mine), shared = caves.filter(c => !c.mine);
+    $('#caves-list').innerHTML = `<h3>Mes caves</h3><ul>${mine.map(li).join('') || '<li class="muted">aucune</li>'}</ul><h3>Caves partagées avec moi</h3><ul>${shared.map(li).join('') || '<li class="muted">aucune</li>'}</ul>`;
+    log('ok', `Mes caves : ${mine.length} dont je suis propriétaire, ${shared.length} où je suis invité (retrouvées dans le Drive, sans rien recopier)`, caves.map(c => `${c.mine ? 'propriétaire' : 'invité'} · ${c.nom}`));
+  },
+
+  async createCave(name = 'Ma cave (prototype)') {
+    const folder = await drive('POST', `${API}/files?fields=id`, { json: { name: `Ma cave – ${name}`, mimeType: FOLDER } });
     const photos = await drive('POST', `${API}/files?fields=id`, { json: { name: 'Photos', mimeType: FOLDER, parents: [folder.id] } });
-    const cave = { app: 'ma-cave-prototype', creeeLe: new Date().toISOString(), proprio: me, dossier: folder.id, dossierPhotos: photos.id, photos: [], visites: [] };
+    const cave = { app: 'ma-cave-prototype', nom: name, creeeLe: new Date().toISOString(), proprio: me, dossier: folder.id, dossierPhotos: photos.id, photos: [], visites: [] };
     const f = await upload({ name: 'cave.json', parents: [folder.id], mimeType: 'application/json' }, new Blob([JSON.stringify(cave, null, 1)], { type: 'application/json' }));
     Object.assign(S, { folderId: folder.id, photosId: photos.id, caveId: f.id }); save();
     showIds();

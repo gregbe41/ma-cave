@@ -36,6 +36,20 @@ node prototypes/drive-direct/serve.js
 
 Puis ouvre `http://localhost:8765` dans les deux profils.
 
+### D'abord le parcours simple (5 minutes)
+
+C'est celui que vivrait chacun dans l'appli : rien à installer, aucun identifiant à recopier.
+
+| Où | Étapes |
+|---|---|
+| Profil 1, toi | Se connecter, **A** (donne un nom à la cave), **B** avec l'adresse Google de l'invité : le lien d'invitation est copié |
+| Profil 2, l'invité | Colle le lien dans la barre d'adresse, se connecter, **C** (confirmer la cave dans le sélecteur de Google), puis **D** |
+| Profil 1 | **D** : ta cave apparaît dans « Mes caves » |
+
+À vérifier : l'invité confirme la cave en un seul geste, et « Mes caves » retrouve chaque cave avec son rôle (propriétaire ou invité). Ouvre aussi le prototype dans une **troisième** fenêtre, connectée au compte de l'invité, et touche **D** : la cave doit y apparaître sans rien refaire (c'est ce qui permettra de retrouver ses caves sur un nouveau téléphone).
+
+### Ensuite les tests détaillés
+
 | Où | Étapes |
 |---|---|
 | Profil 1, **Propriétaire** | Se connecter, cocher « Synchroniser mes photos », **P1**, **P2** deux fois, **P3** avec l'adresse de l'invité |
