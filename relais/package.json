@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "regles": "node genere-regles.js",
-    "local": "node serveur-local.js"
+    "start": "node serveur.js",
+    "deploie:cloudflare": "node deploie-cloudflare.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.131.0"

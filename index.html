@@ -4931,12 +4931,31 @@ function conseilConnu(b) {
   return o;
 }
 /** Conseil : les photos restent sur l'appareil, le relais les transmet à Claude le temps de l'analyse. */
+/** Une photo plus petite, sans rien afficher : celles d'un conseil partent en 1024 px, assez pour reconnaître une
+    bouteille en rayon, et le relais gratuit n'a que quelques millisecondes de calcul par demande. */
+function reduirePhoto(blob, max = 1024, q = 0.8) {
+  return new Promise(res => {
+    const img = new Image(), u = URL.createObjectURL(blob);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      if (k >= 1) { URL.revokeObjectURL(u); res(blob); return; }
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u);
+      c.toBlob(b => res(b || blob), 'image/jpeg', q);
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); res(blob); };
+    img.src = u;
+  });
+}
 async function driveConseil(c) {
   const bouteilles = [];
   for (const [i, b] of c.bouteilles.entries()) {
     const rec = await Photos.get(scanKey(c.id, i)).catch(() => null);
     if (!rec || !rec.blob) throw new Error("une photo n'est plus sur cet appareil");
-    bouteilles.push({ data: await blobToB64(rec.blob), mime: rec.blob.type || 'image/jpeg', connu: conseilConnu(b) });
+    const photo = await reduirePhoto(rec.blob);
+    bouteilles.push({ data: await blobToB64(photo), mime: photo.type || 'image/jpeg', connu: conseilConnu(b) });
   }
   try {
     const r = await relais('conseil', { bouteilles, question: c.question || '' }, 180e3);

@@ -1,0 +1,6 @@
+node_modules
+config.local.json
+credits.local.json
+.dev.vars
+dist
+*.md

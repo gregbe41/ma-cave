@@ -35,7 +35,8 @@ Chaque demande est un `POST /v1/<demande>` avec l'en-tête `Authorization: Beare
 | Variable | Rôle |
 |---|---|
 | `ANTHROPIC_API_KEY` | la clé de l'API Claude (secret) |
-| `GOOGLE_CLIENTS` | les identifiants des clients OAuth de l'appli (web et Android), séparés par des virgules |
+| `GOOGLE_PROJET` | le numéro du projet Google Cloud de l'appli : tous ses clients OAuth (web, Android) sont acceptés, et seulement eux |
+| `GOOGLE_CLIENTS` | à la place, ou en plus : les identifiants des clients OAuth acceptés, séparés par des virgules |
 | `ORIGINES` | les adresses autorisées à appeler le relais : l'appli web (`https://gregbe41.github.io`) et l'appli Android (`https://localhost`) |
 | `ADMINS` | les adresses Google de l'éditeur : ses caves ont le plafond `ADMIN_JOUR` / `ADMIN_MOIS` (100 / 800 bouchons par défaut) |
 | `PLAFOND_JOUR`, `PLAFOND_MOIS` | le plafond des autres caves (20 / 80 bouchons par défaut) |
@@ -46,16 +47,39 @@ Chaque demande est un `POST /v1/<demande>` avec l'en-tête `Authorization: Beare
 Crée `relais/config.local.json` (ce fichier n'est jamais publié) :
 
 ```json
-{ "ANTHROPIC_API_KEY": "sk-ant-…", "GOOGLE_CLIENTS": "…-web.apps.googleusercontent.com,…-android.apps.googleusercontent.com",
+{ "ANTHROPIC_API_KEY": "sk-ant-…", "GOOGLE_PROJET": "123456789012",
   "ORIGINES": "http://localhost:8765,https://localhost", "ADMINS": "ton.adresse@gmail.com" }
 ```
 
-puis `npm install` dans `relais/` et `node relais/serveur-local.js` : le relais répond sur `http://localhost:8787`.
+puis `npm install` dans `relais/` et `node relais/serveur.js` : le relais répond sur `http://localhost:8787`.
 
-## Le mettre en ligne
+## Le mettre en ligne : Cloudflare Workers (choisi)
 
-Pas encore choisi. Le code ne dépend pas de l'hébergeur : `relais.js` prend une demande web et rend une réponse.
+L'offre gratuite ne demande pas de carte bancaire. Au-delà de ses quotas (100 000 demandes par jour, 1 000 écritures
+KV par jour, soit 1 000 demandes à Tastevin), Cloudflare refuse les demandes : **il ne facture jamais rien**, même si le
+relais est inondé de fausses demandes. Prends un compte Cloudflare réservé au relais : ses quotas ne sont pas partagés
+avec un autre service.
 
-- **Cloudflare Workers** (recommandé, gratuit sans carte bancaire) : `worker.js` est prêt. Il faut un compte
-  Cloudflare, un espace KV nommé `CAVES` pour les bouchons, la clé en secret, puis une commande de mise en ligne.
-- **Google Cloud** : dans le projet « Ma cave », mais Google demande une carte bancaire.
+Une demande y a droit à 10 ms de calcul. Une lecture d'étiquette en prend environ 7 ; c'est pourquoi les photos d'un
+Conseil partent en 1024 px (environ 6 à 8 ms pour quatre photos).
+
+1. Crée le compte Cloudflare (gratuit), avec une adresse à toi.
+2. Dans un terminal, depuis le dossier du dépôt : `npm install --prefix relais`, puis `node relais/deploie-cloudflare.js`.
+   - Une page Cloudflare s'ouvre : connecte-toi avec ce compte, autorise, puis confirme le compte dans le terminal.
+   - Donne ton adresse Google (tes caves ont le plafond le plus haut), puis colle ta clé de l'API Claude quand elle est
+     demandée : elle ne s'affiche pas.
+3. Le script recopie l'adresse du relais dans `prototypes/drive-direct/config.local.js` (ligne `relais`). La prochaine
+   construction de l'APK d'essai branche Tastevin sur les caves Google Drive.
+
+Relancer le script met le relais à jour. Les fichiers qu'il écrit (`wrangler.toml`, `cloudflare.local.json`) ne sont
+jamais publiés.
+
+**Conseil** : dans la console Anthropic, crée un espace de travail réservé au relais, avec une limite de dépense par
+mois, et une clé dans cet espace. C'est le seul plafond strict sur ce que coûte Claude.
+
+## Autre hébergement possible : Google Cloud Run
+
+`deploie-cloudrun.sh` (à lancer dans Cloud Shell) met le relais sur Cloud Run dans les limites gratuites : région
+`us-central1`, au plus une instance, bouchons dans Firestore, clé dans Secret Manager, images anciennes supprimées. Mais
+Google demande une carte bancaire et ne coupe rien de lui-même : une inondation de demandes se paierait jusqu'à ce
+qu'on réagisse. À ne choisir qu'avec un coupe-circuit de facturation, dans un projet séparé.

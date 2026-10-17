@@ -22,3 +22,6 @@ prototypes/**/config.local.js
 relais/config.local.json
 relais/credits.local.json
 relais/.dev.vars
+relais/wrangler.toml
+relais/cloudflare.local.json
+relais/.wrangler/

@@ -8,7 +8,7 @@
    à qui appartient la cave ? Seul un membre qui a rejoint la cave avec l'appli passe.
 
    Indépendant de l'hébergeur : creerRelais() prend la configuration (env), un stockage (get/put JSON) et une fonction
-   fetch, et renvoie handle(Request) → Response. worker.js (Cloudflare) et serveur-local.js (Node) l'utilisent. */
+   fetch, et renvoie handle(Request) → Response. worker.js (Cloudflare) et serveur.js (Node : Cloud Run, ou un ordinateur) l'utilisent. */
 import Anthropic from '@anthropic-ai/sdk';
 import * as R from './regles.js';
 
@@ -35,7 +35,10 @@ function aujourdhui(maintenant = new Date()) {
 }
 
 export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, maintenant = () => new Date() }) {
-  const clients = liste(env.GOOGLE_CLIENTS);
+  // Les clients OAuth de l'appli : listés un par un, ou tous ceux du projet Google Cloud (leur identifiant commence
+  // par le numéro du projet).
+  const clients = liste(env.GOOGLE_CLIENTS), projet = String(env.GOOGLE_PROJET || '').trim();
+  const clientDeLAppli = id => !!id && (clients.includes(id) || (/^\d+$/.test(projet) && String(id).startsWith(projet + '-')));
   const origines = liste(env.ORIGINES);
   const admins = liste(env.ADMINS).map(s => s.toLowerCase());
   const plafond = admin => (admin
@@ -61,7 +64,7 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
     const ti = await google(`${TOKENINFO}?access_token=${encodeURIComponent(jeton)}`);
     if (!ti.ok) throw erreur(401, 'Connexion à Google expirée : reconnecte-toi.', 'auth');
     // Un jeton délivré à une autre appli (même avec un accès plus large) ne passe pas.
-    if (!clients.includes(ti.j.azp || ti.j.aud)) throw erreur(401, "Ce jeton n'a pas été délivré à l'appli Ma cave.", 'auth');
+    if (!clientDeLAppli(ti.j.azp || ti.j.aud)) throw erreur(401, "Ce jeton n'a pas été délivré à l'appli Ma cave.", 'auth');
     if (!String(ti.j.scope || '').split(' ').includes(DRIVE_FILE)) throw erreur(401, 'Accès Google incomplet.', 'auth');
     const fic = await google(`${DRIVE}/files/${cave}?fields=id,name,ownedByMe,owners(emailAddress)`, jeton);
     if (fic.status === 401) throw erreur(401, 'Connexion à Google expirée : reconnecte-toi.', 'auth');
