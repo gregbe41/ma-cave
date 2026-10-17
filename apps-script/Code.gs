@@ -16,32 +16,33 @@
  *
  * Propriétés du script (Paramètres du projet › Propriétés du script) :
  *   SECRET             code secret des appareils, celui des invitations (créé par « installer »)
- *   SECRET_PROPRIO     code du propriétaire de la cave : crédits et réglages en plus. Créé tout seul et affiché dans l'onglet
+ *   SECRET_PROPRIO     code du propriétaire de la cave : bouchons et réglages en plus. Créé tout seul et affiché dans l'onglet
  *                      « Propriétaire » du Sheet ; jamais dans une invitation
  *   PROPRIO_ACTIF      noté la première fois que le code du propriétaire sert : les rôles (part de chaque membre,
  *                      actions réservées) ne s'appliquent qu'à partir de là. Avant, chacun a tous les droits, comme en v15
  *   SECRET_ROUTINE     code de la routine de lecture, limité à cette tâche (créé par « installer »)
  *   ANTHROPIC_API_KEY  clé de l'API Claude pour la lecture immédiate (facultatif)
- *   QUOTA_JOUR         crédits Claude par jour pour toute la cave (20 par défaut)
- *   QUOTA_MOIS         crédits Claude par mois pour toute la cave (100 par défaut)
- *   PART_MEMBRE        crédits par mois pour chaque membre (25 par défaut, 0 : pas de part) ; le propriétaire n'a que la limite de la cave
+ *   QUOTA_JOUR         bouchons par jour pour toute la cave (40 par défaut)
+ *   QUOTA_MOIS         bouchons par mois pour toute la cave (200 par défaut)
+ *   PART_MEMBRE        bouchons par mois pour chaque membre (50 par défaut, 0 : pas de part) ; le propriétaire n'a que la limite de la cave
  *   COTE_MOIS          valeur du jour : chaque vin est revu tous les N mois (12 par défaut ; 3, 6, 12 ou 24)
- *   Crédits : 1 = une lecture d'étiquette par l'API (environ 3,5 centimes). La routine de nuit n'en consomme pas.
+ *   Bouchons : l'unité des demandes à Tastevin (l'IA de l'appli, propulsée par Claude). 2 = une lecture d'étiquette par
+ *   l'API (environ 3,5 centimes) ; les tarifs ont doublé en v18 pour supprimer les fractions. La routine de nuit n'en consomme pas.
  *   ROUTINE_URL        adresse du déclencheur API de la routine (…/routines/trig_…/fire), pour « Lire maintenant »
  *   ROUTINE_TOKEN      jeton de ce déclencheur (sk-ant-oat01-…), gardé ici et jamais envoyé aux appareils
  *   ROUTINE_VU         dernier passage de la routine (noté automatiquement)
  */
 
-const VERSION = 17;
+const VERSION = 18;
 const FOLDER_TITLE = 'Ma cave – étiquettes';
 const LOG_TITLE = 'Lectures IA';
 const OWNER_TITLE = 'Propriétaire';
 const MODEL = 'claude-opus-5-5';
 const MAX_TOKENS = 3000;                         // plafonne le coût d'une lecture
 const PRICE_IN = 4 / 1e6, PRICE_OUT = 20 / 1e6;  // $ par token, Claude Opus 5.5
-const QUOTA_JOUR = 20, QUOTA_MOIS = 100, PART_MEMBRE = 25;
-// Ce que coûte chaque demande à Claude par l'API, en crédits (conseil : par bouteille photographiée).
-const COSTS = { label: 1, conseil: 1, suggest: 0.5 };
+const QUOTA_JOUR = 40, QUOTA_MOIS = 200, PART_MEMBRE = 50;
+// Ce que coûte chaque demande à Claude par l'API, en bouchons (conseil : par bouteille photographiée). Entiers : pas de demi-bouchon.
+const COSTS = { label: 2, conseil: 2, suggest: 1 };
 // La demande en cours : son rôle (propriétaire, membre ou routine) et la personne qui la fait (son prénom sur l'appareil).
 let REQ = { role: 'app', who: '' };
 
@@ -242,6 +243,7 @@ function doPost(e) {
   catch (err) { return out({ ok: false, error: 'Requête illisible.' }); }
   try {
     ownerCode();
+    bouchons();
     const role = checkSecret(p.secret);
     if (role === 'proprio') ownerSeen();
     REQ = { role: role, who: str(p.device).replace(/\s+/g, ' ').slice(0, 40) || '?' };
@@ -368,8 +370,8 @@ function ownerCode() {
     sh.getRange(1, 1, 4, 2).setValues([
       ['Code du propriétaire', code],
       ['', ''],
-      ["À quoi il sert", "À régler les crédits de Claude et la part de chacun, et à lancer les actions sur toute la cave. Tant qu'il n'a servi sur aucun appareil, chacun a tous les droits."],
-      ['Où le saisir', "Dans l'appli, sur tes appareils seulement : Réglages › Claude et crédits › « Tu héberges cette cave ? ». Ne le donne à personne : les invitations utilisent un autre code."],
+      ["À quoi il sert", "À régler les bouchons de Tastevin (l'IA de l'appli) et la part de chacun, et à lancer les actions sur toute la cave. Tant qu'il n'a servi sur aucun appareil, chacun a tous les droits."],
+      ['Où le saisir', "Dans l'appli, sur tes appareils seulement : Réglages › Tastevin et bouchons › « Tu héberges cette cave ? ». Ne le donne à personne : les invitations utilisent un autre code."],
     ]);
     sh.getRange(1, 1, 4, 1).setFontWeight('bold');
   } catch (err) { console.error(err); }
@@ -576,7 +578,7 @@ function tidyConseil(r, n) {
   const txt = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
   const bouteilles = [];
   for (let i = 1; i <= n; i++) {
-    const x = byIndex[i] || { estEtiquette: false, avis: "Claude n'a rien répondu pour cette photo." };
+    const x = byIndex[i] || { estEtiquette: false, avis: "Tastevin n'a rien répondu pour cette photo." };
     bouteilles.push(Object.assign(tidyLabel(x), { index: i, aBoire: txt(x.aBoire, 300), style: txt(x.style, 600), accords: txt(x.accords, 300), prix: txt(x.prix, 400), avis: txt(x.avis, 800) }));
   }
   return { bouteilles: bouteilles, recommandation: txt(r.recommandation, 1000) };
@@ -856,7 +858,7 @@ function applyCotes(p) {
 function runRoutine(p) {
   routineConfig();
   const pending = readTab(SpreadsheetApp.getActiveSpreadsheet(), TABS[0]).rows.filter(w => toRead(w, true)).length;
-  if (!pending) return { fired: false, message: 'Aucune étiquette ni fiche en attente de Claude.' };
+  if (!pending) return { fired: false, message: 'Aucune étiquette ni fiche en attente de Tastevin.' };
   const r = fireRoutine("Lancement à la demande depuis l'appli", p.device, ROUTINE_PAUSE);
   if (!r.fired) return { fired: false, message: 'Une lecture a été lancée il y a moins de 5 minutes. Réessaie dans ' + Math.ceil(r.wait / 60e3) + ' min.' };
   logLecture(p.device, 'Lecture lancée à la demande', pending + ' en attente', null);
@@ -1224,7 +1226,7 @@ function suggestPut(p) {
   }
   const next = old && old.statut === 'fait' && old.resultat ? suggestNext(old, w, d) : 0;
   if (next && !(REQ.role === 'proprio' && p.force === true)) {
-    throw userErr('Claude a déjà proposé des vins pour celui-ci le ' + dayFr(Date.parse(old.date)) + '. Tu pourras redemander à partir du ' + dayFr(next) + ', ou dès que sa fiche ou ses avis changent.', 'recent');
+    throw userErr('Tastevin a déjà proposé des vins pour celui-ci le ' + dayFr(Date.parse(old.date)) + '. Tu pourras redemander à partir du ' + dayFr(next) + ', ou dès que sa fiche ou ses avis changent.', 'recent');
   }
   if (!claimSuggest(vinId)) return { suggestion: old || null, deja: true, message: "Quelqu'un vient de le demander : la réponse arrive pour toute la cave." };
   try {
@@ -1362,7 +1364,33 @@ function tidyLabel(r) {
   return o;
 }
 
-/* ---------- Crédits : ce que Claude coûte par l'API, compté pour la cave et pour chaque personne ---------- */
+/* ---------- Bouchons : ce que Claude coûte par l'API, compté pour la cave et pour chaque personne ---------- */
+/** v18 : les crédits deviennent des bouchons, deux fois plus nombreux (tarifs doublés, sans fraction). Une seule fois par
+    cave : les plafonds réglés par le propriétaire et ce qui a déjà été compté ce mois-ci doublent aussi, la dépense
+    réelle ne change pas. Appelé au début de chaque requête, avant tout verrou. */
+function bouchons() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('UNITE') === 'bouchon') return;
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    if (props.getProperty('UNITE') === 'bouchon') return;
+    ['QUOTA_JOUR', 'QUOTA_MOIS', 'PART_MEMBRE'].forEach(k => {
+      const v = props.getProperty(k);
+      if (v != null && v !== '' && isFinite(+v)) props.setProperty(k, String(Math.round(+v * 2)));
+    });
+    const q = parseJson(props.getProperty('QUOTA_ETAT'));
+    if (Object.keys(q).length) {
+      if (q.nDay) q.nDay = round1(q.nDay * 2);
+      if (q.nMonth) q.nMonth = round1(q.nMonth * 2);
+      if (q.who && typeof q.who === 'object') Object.keys(q.who).forEach(k => { q.who[k] = round1((+q.who[k] || 0) * 2); });
+      props.setProperty('QUOTA_ETAT', JSON.stringify(q));
+    }
+    props.setProperty('UNITE', 'bouchon');
+  } finally {
+    lock.releaseLock();
+  }
+}
 const round1 = x => Math.round(x * 10) / 10;
 function creditLimits() {
   const props = PropertiesService.getScriptProperties();
@@ -1392,9 +1420,9 @@ function creditStatus() {
 /** Vérifie qu'il reste de quoi payer cette demande, sans rien décompter (une demande qui échoue ne coûte rien). */
 function creditCheck(cost) {
   const L = creditLimits(), q = creditState(L.props), used = q.who[REQ.who] || 0;
-  if ((q.nDay || 0) + cost > L.jour) throw userErr("Plus de crédits Claude pour aujourd'hui sur cette cave (" + L.jour + ' par jour). Réessaie demain, ou remplis la fiche à la main.', 'quota');
-  if ((q.nMonth || 0) + cost > L.mois) throw userErr('Les crédits Claude de la cave sont épuisés pour ce mois (' + L.mois + '). Le propriétaire peut en ajouter dans Réglages.', 'quota');
-  if (REQ.role !== 'proprio' && L.part && ownerDeclared() && used + cost > L.part) throw userErr('Tu as utilisé ta part de crédits Claude pour ce mois (' + L.part + '). Le propriétaire de la cave peut l\'augmenter dans Réglages.', 'quota');
+  if ((q.nDay || 0) + cost > L.jour) throw userErr("Plus de bouchons pour aujourd'hui sur cette cave (" + L.jour + ' par jour). Réessaie demain, ou remplis la fiche à la main.', 'quota');
+  if ((q.nMonth || 0) + cost > L.mois) throw userErr('Les bouchons de la cave sont épuisés pour ce mois (' + L.mois + '). Le propriétaire peut en ajouter dans Réglages.', 'quota');
+  if (REQ.role !== 'proprio' && L.part && ownerDeclared() && used + cost > L.part) throw userErr('Tu as utilisé ta part de bouchons pour ce mois (' + L.part + '). Le propriétaire de la cave peut l\'augmenter dans Réglages.', 'quota');
 }
 /** Décompte une demande réussie, pour la cave et pour la personne, et renvoie ce qui reste. */
 function creditTake(cost) {
@@ -1413,7 +1441,7 @@ function creditTake(cost) {
 
 /** Ce qui reste pour le jour et le mois (forme des scripts précédents, lue par les anciennes versions de l'appli). */
 function quota(take) {
-  if (take) { creditCheck(1); return creditTake(1); }
+  if (take) { creditCheck(COSTS.label); return creditTake(COSTS.label); }
   const c = creditStatus();
   return { jour: c.jour, mois: c.mois };
 }
@@ -1658,7 +1686,7 @@ function cleanConseil(o) {
 const CONSEIL_MAX = 6;
 /** Une ligne lisible dans le Sheet : « Domaine A, Saint-Joseph 2019 · Domaine B… ». */
 function conseilResume(c) {
-  if (c.statut !== 'fait' || !c.resultat) return c.statut === 'echec' ? 'Échec : ' + c.note : 'En attente de Claude';
+  if (c.statut !== 'fait' || !c.resultat) return c.statut === 'echec' ? 'Échec : ' + c.note : 'En attente de Tastevin';
   return list(c.resultat.bouteilles).map(x => [x.domaine, x.appellation, x.millesime].filter(Boolean).join(' ') || 'Bouteille illisible').join(' · ');
 }
 
@@ -1679,7 +1707,7 @@ function cleanSuggestion(o) {
 }
 /** Une ligne lisible dans le Sheet : « Domaine A (Appellation) · Domaine B… ». */
 function suggestResume(x) {
-  if (!x.resultat || !list(x.resultat.vins).length) return x.statut === 'echec' ? 'Échec : ' + x.note : 'En attente de Claude';
+  if (!x.resultat || !list(x.resultat.vins).length) return x.statut === 'echec' ? 'Échec : ' + x.note : 'En attente de Tastevin';
   return (x.statut === 'attente' ? '(nouvelle demande en cours) ' : '') + x.resultat.vins.map(v => [v.domaine, v.cuvee].filter(Boolean).join(', ') + (v.appellation ? ' (' + v.appellation + ')' : '')).join(' · ');
 }
 

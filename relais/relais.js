@@ -1,6 +1,6 @@
 /* Relais Claude des caves Google Drive de Ma cave.
    Il garde la clé de l'API Claude (jamais dans l'appli), vérifie que la personne fait partie de la cave, et compte les
-   crédits de chaque cave. Les consignes données à Claude sont fixées ici (relais/regles.js, recopiées du script de la
+   bouchons de chaque cave (l'unité des demandes à Tastevin, l'IA de l'appli, propulsée par Claude). Les consignes données à Claude sont fixées ici (relais/regles.js, recopiées du script de la
    cave) : le relais n'accepte que des données, jamais des consignes.
 
    Qui demande ? L'appli envoie le jeton Google de la personne (accès drive.file) et l'identifiant de la cave (son fichier
@@ -15,8 +15,8 @@ import * as R from './regles.js';
 const DRIVE = 'https://www.googleapis.com/drive/v3';
 const TOKENINFO = 'https://oauth2.googleapis.com/tokeninfo';
 const DRIVE_FILE = 'https://www.googleapis.com/auth/drive.file';
-// Ce que coûte chaque demande, en crédits (1 crédit ≈ une lecture d'étiquette, quelques centimes).
-export const COUTS = { etiquette: 1, conseil: 1, similaires: 0.5, revoir: 0.5, cote: 1 };
+// Ce que coûte chaque demande, en bouchons (2 bouchons ≈ une lecture d'étiquette, quelques centimes). Entiers : pas de demi-bouchon.
+export const COUTS = { etiquette: 2, conseil: 2, similaires: 1, revoir: 1, cote: 2 };
 const MAX_IMAGE = 7e6;       // caractères base64 par photo (comme le script)
 const MAX_CORPS = 40e6;      // une demande Conseil peut porter plusieurs photos
 const MAX_BOUTEILLES = 10;
@@ -27,7 +27,7 @@ const entier = (v, d) => { const n = parseInt(v, 10); return Number.isFinite(n) 
 const liste = v => String(v || '').split(',').map(s => s.trim()).filter(Boolean);
 const texte = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
 
-/** Jour et mois à Paris : les crédits repartent à minuit, heure française. */
+/** Jour et mois à Paris : les bouchons repartent à minuit, heure française. */
 function aujourdhui(maintenant = new Date()) {
   const p = Object.fromEntries(new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(maintenant).map(x => [x.type, x.value]));
   const jour = `${p.year}-${p.month}-${p.day}`;
@@ -39,9 +39,9 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
   const origines = liste(env.ORIGINES);
   const admins = liste(env.ADMINS).map(s => s.toLowerCase());
   const plafond = admin => (admin
-    ? { jour: entier(env.ADMIN_JOUR, 50), mois: entier(env.ADMIN_MOIS, 400) }
-    : { jour: entier(env.PLAFOND_JOUR, 10), mois: entier(env.PLAFOND_MOIS, 40) });
-  const partDefaut = entier(env.PART_MEMBRE, 10);
+    ? { jour: entier(env.ADMIN_JOUR, 100), mois: entier(env.ADMIN_MOIS, 800) }
+    : { jour: entier(env.PLAFOND_JOUR, 20), mois: entier(env.PLAFOND_MOIS, 80) });
+  const partDefaut = entier(env.PART_MEMBRE, 20);
   const claude = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY || 'absente', baseURL: env.ANTHROPIC_BASE_URL || undefined, fetch: f, maxRetries: 1 });
   const verifies = new Map();  // jeton + cave → qui, pour quelques minutes
 
@@ -106,9 +106,9 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
   }
   function verifierCredits(e, qui, cout) {
     const L = limites(e, qui);
-    if ((e.nJour || 0) + cout > L.jour) throw erreur(429, `Plus de crédits Claude pour aujourd'hui sur cette cave (${L.jour} par jour). Réessaie demain, ou remplis la fiche à la main.`, 'quota');
-    if ((e.nMois || 0) + cout > L.mois) throw erreur(429, `Les crédits Claude de la cave sont épuisés pour ce mois (${L.mois}).`, 'quota');
-    if (!qui.proprio && L.part && (e.qui[qui.email] || 0) + cout > L.part) throw erreur(429, `Tu as utilisé ta part de crédits Claude pour ce mois (${L.part}). Le propriétaire de la cave peut l'augmenter.`, 'quota');
+    if ((e.nJour || 0) + cout > L.jour) throw erreur(429, `Plus de bouchons pour aujourd'hui sur cette cave (${L.jour} par jour). Réessaie demain, ou remplis la fiche à la main.`, 'quota');
+    if ((e.nMois || 0) + cout > L.mois) throw erreur(429, `Les bouchons de la cave sont épuisés pour ce mois (${L.mois}).`, 'quota');
+    if (!qui.proprio && L.part && (e.qui[qui.email] || 0) + cout > L.part) throw erreur(429, `Tu as utilisé ta part de bouchons pour ce mois (${L.part}). Le propriétaire de la cave peut l'augmenter.`, 'quota');
   }
   /** Décompte une demande réussie (une demande qui échoue ne coûte rien) ; relit l'état juste avant d'écrire. */
   async function debiter(cave, qui, cout) {
@@ -145,20 +145,20 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       }
     } catch (e) {
       if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) throw erreur(502, 'La clé Claude du relais est refusée.', 'cle');
-      if (e instanceof Anthropic.RateLimitError) throw erreur(503, 'Claude est très demandé en ce moment : réessaie dans un instant.', 'occupe');
-      if (e instanceof Anthropic.BadRequestError && /credit|balance|billing/i.test(e.message)) throw erreur(503, 'Claude est indisponible pour le moment (plafond de dépense atteint). Remplis la fiche à la main.', 'occupe');
-      if (e instanceof Anthropic.APIError) throw erreur(502, `Claude a répondu une erreur (${e.status || 'réseau'}).`, 'claude');
-      throw erreur(502, 'Claude ne répond pas. Réessaie plus tard.', 'claude');
+      if (e instanceof Anthropic.RateLimitError) throw erreur(503, 'Tastevin est très demandé en ce moment : réessaie dans un instant.', 'occupe');
+      if (e instanceof Anthropic.BadRequestError && /credit|balance|billing/i.test(e.message)) throw erreur(503, 'Tastevin est indisponible pour le moment (plafond de dépense atteint). Remplis la fiche à la main.', 'occupe');
+      if (e instanceof Anthropic.APIError) throw erreur(502, `Tastevin a répondu une erreur (${e.status || 'réseau'}).`, 'claude');
+      throw erreur(502, 'Tastevin ne répond pas. Réessaie plus tard.', 'claude');
     }
-    if (r.stop_reason === 'refusal') throw erreur(422, 'Claude a refusé de traiter cette demande.', 'refus');
-    if (r.stop_reason === 'max_tokens') throw erreur(422, 'Réponse incomplète de Claude. Réessaie, avec une photo plus nette si besoin.', 'incomplet');
+    if (r.stop_reason === 'refusal') throw erreur(422, 'Tastevin a refusé de traiter cette demande.', 'refus');
+    if (r.stop_reason === 'max_tokens') throw erreur(422, 'Réponse incomplète de Tastevin. Réessaie, avec une photo plus nette si besoin.', 'incomplet');
     const txt = r.content.filter(b => b.type === 'text').map(b => b.text).join('');
     try {
       if (schema) return { json: JSON.parse(txt), usage: r.usage };
       // Sans sortie structurée (recherche web) : le dernier objet JSON du texte.
       const m = txt.match(/\{[\s\S]*\}(?![\s\S]*\{)/);
       return { json: JSON.parse(m ? m[0] : txt), usage: r.usage };
-    } catch { throw erreur(502, 'La réponse de Claude est illisible. Réessaie.', 'illisible'); }
+    } catch { throw erreur(502, 'La réponse de Tastevin est illisible. Réessaie.', 'illisible'); }
   }
 
   /* ---------- Actions ---------- */
@@ -166,7 +166,7 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
     async etat({ cave, qui }) { return { credits: statut(await etatCave(cave), qui), role: qui.proprio ? 'proprio' : 'membre' }; },
 
     async reglages({ cave, qui, p }) {
-      if (!qui.proprio) throw erreur(403, 'Seul le propriétaire de la cave règle ses crédits.', 'proprio');
+      if (!qui.proprio) throw erreur(403, 'Seul le propriétaire de la cave règle ses bouchons.', 'proprio');
       const e = await etatCave(cave), L = limites(e, qui);
       const g = e.reglages;
       if (p.jour != null) g.jour = Math.min(entier(p.jour, L.jour), L.plafond.jour);

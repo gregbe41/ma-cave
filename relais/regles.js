@@ -679,7 +679,7 @@ export function tidyConseil(r, n) {
   const txt = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
   const bouteilles = [];
   for (let i = 1; i <= n; i++) {
-    const x = byIndex[i] || { estEtiquette: false, avis: "Claude n'a rien répondu pour cette photo." };
+    const x = byIndex[i] || { estEtiquette: false, avis: "Tastevin n'a rien répondu pour cette photo." };
     bouteilles.push(Object.assign(tidyLabel(x), { index: i, aBoire: txt(x.aBoire, 300), style: txt(x.style, 600), accords: txt(x.accords, 300), prix: txt(x.prix, 400), avis: txt(x.avis, 800) }));
   }
   return { bouteilles: bouteilles, recommandation: txt(r.recommandation, 1000) };

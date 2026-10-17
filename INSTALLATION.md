@@ -45,7 +45,7 @@ Compte environ 20 minutes, lecture des étiquettes comprise.
    - Clique sur **Autoriser**.
 3. Le **journal d'exécution** s'affiche en bas. Note les trois codes :
    - le **code secret des appareils**, par exemple `1a2b-3c4d-5e6f-7a8b`. C'est celui des membres de la cave, et celui que contiennent les invitations ;
-   - le **code du propriétaire**, à garder pour toi (il est aussi dans l'onglet « Propriétaire » du Sheet) : sur tes appareils, il donne en plus la main sur les crédits de Claude et sur les actions qui touchent toute la cave (voir l'étape 8) ;
+   - le **code du propriétaire**, à garder pour toi (il est aussi dans l'onglet « Propriétaire » du Sheet) : sur tes appareils, il donne en plus la main sur les bouchons de Tastevin (l'IA de l'appli) et sur les actions qui touchent toute la cave (voir l'étape 8) ;
    - le **code de la routine de lecture**, qui ne permet que de lire les étiquettes en attente et de compléter les fiches.
 
 Dans le Sheet, les onglets Vins, Mouvements, Corbeille, Personnes, Avis, Conseils, Suggestions, Lectures IA et Propriétaire apparaissent. Un dossier « Ma cave – étiquettes » est créé dans ton Drive.
@@ -84,7 +84,7 @@ La page ne contient aucune donnée. Sans l'adresse du script et le code secret, 
 
 Si cet appareil avait déjà des vins (ancienne version, essais), ils sont envoyés dans le Sheet à cette première synchro.
 
-**Sur tes propres appareils**, ajoute ensuite le code du propriétaire, que tu trouves dans l'onglet « Propriétaire » du Sheet : Réglages › Claude et crédits › « Tu héberges cette cave ? ». Il ne part jamais dans une invitation. Tant qu'il n'est saisi sur aucun appareil, chacun a tous les droits et il n'y a pas de part par membre.
+**Sur tes propres appareils**, ajoute ensuite le code du propriétaire, que tu trouves dans l'onglet « Propriétaire » du Sheet : Réglages › Tastevin et bouchons › « Tu héberges cette cave ? ». Il ne part jamais dans une invitation. Tant qu'il n'est saisi sur aucun appareil, chacun a tous les droits et il n'y a pas de part par membre.
 
 **Pour inviter quelqu'un** : dans Réglages, touche **Inviter quelqu'un** et envoie le lien par message. En l'ouvrant dans son navigateur, la personne est reliée automatiquement. Dans l'appli Android, il suffit de coller ce lien dans le champ « Adresse du script ». Le lien contient le code secret : ne l'envoie qu'à des personnes de confiance.
 
@@ -125,28 +125,29 @@ Si tu préfères que l'étiquette soit lue tout de suite, pendant la saisie, le 
 2. Dans l'éditeur Apps Script : **Paramètres du projet › Propriétés du script › Ajouter une propriété du script**, nom `ANTHROPIC_API_KEY`, valeur : ta clé.
 3. Exécute la fonction **`testerCleClaude`** : le journal doit afficher « Clé valide ».
 
-### Les crédits : qui dépense quoi (depuis la version 16 du script)
+### Les bouchons : qui dépense quoi (depuis la version 16 du script)
 
-Tout ce que Claude fait tout de suite par la clé API se compte en **crédits**. Un crédit vaut à peu près une lecture d'étiquette, soit environ 3,5 centimes. Ce que fait la routine de nuit ne coûte aucun crédit.
+Dans l'appli, l'IA s'appelle **Tastevin** : elle est propulsée par Claude. Tout ce qu'elle fait tout de suite par la clé API se compte en **bouchons**. Deux bouchons valent à peu près une lecture d'étiquette, soit environ 3,5 centimes. Ce que fait la routine de nuit ne coûte aucun bouchon.
 
-| Demande | Crédits |
+| Demande | Bouchons |
 |---|---|
-| Lecture d'étiquette pendant la saisie | 1 |
-| Conseil en magasin | 1 par bouteille photographiée |
-| Vins similaires (« Demander à Claude ») | 0,5 |
+| Lecture d'étiquette pendant la saisie | 2 |
+| Conseil en magasin | 2 par bouteille photographiée |
+| Vins similaires (« Demander à Tastevin ») | 1 |
 
-- **Les crédits appartiennent à la cave** : une limite par mois (`QUOTA_MOIS`, 100 par défaut) et une par jour (`QUOTA_JOUR`, 20 par défaut), pour tout le monde.
-- **Chaque membre a sa part du mois** (`PART_MEMBRE`, 25 par défaut, 0 pour ne pas en mettre), dès que le propriétaire a saisi son code sur un de ses appareils. Le propriétaire n'a que la limite de la cave.
+- **Les bouchons appartiennent à la cave** : une limite par mois (`QUOTA_MOIS`, 200 par défaut) et une par jour (`QUOTA_JOUR`, 40 par défaut), pour tout le monde.
+- **Chaque membre a sa part du mois** (`PART_MEMBRE`, 50 par défaut, 0 pour ne pas en mettre), dès que le propriétaire a saisi son code sur un de ses appareils. Le propriétaire n'a que la limite de la cave.
 - **Ce que Claude produit pour un vin sert à toute la cave** : la lecture, le style et les accords, la valeur du jour, les vins similaires. Personne ne repaie ce qu'un autre a déjà demandé. Les vins similaires d'un même vin ne se redemandent pas avant 30 jours, sauf si sa fiche ou ses avis ont changé ; une demande déjà en cours n'est pas relancée par un autre appareil.
-- **Les actions sur toute la cave** (« Faire compléter style et accords par Claude ») sont réservées au propriétaire, là aussi une fois son code saisi.
-- **Une demande qui échoue ne coûte rien.** Quand les crédits manquent, la lecture et le conseil passent à la routine de nuit.
-- Tout se règle dans l'appli, avec le code du propriétaire : **Réglages › Claude et crédits** affiche ce qui reste, la dépense du mois de chacun, et permet de changer les limites, la part de chacun et le rythme de la valeur du jour (`COTE_MOIS`). Chaque appel reste noté dans l'onglet « Lectures IA ».
+- **Les actions sur toute la cave** (« Faire compléter style et accords par Tastevin ») sont réservées au propriétaire, là aussi une fois son code saisi.
+- **Une demande qui échoue ne coûte rien.** Quand les bouchons manquent, la lecture et le conseil passent à la routine de nuit.
+- Tout se règle dans l'appli, avec le code du propriétaire : **Réglages › Tastevin et bouchons** affiche ce qui reste, la dépense du mois de chacun, et permet de changer les limites, la part de chacun et le rythme de la valeur du jour (`COTE_MOIS`). Chaque appel reste noté dans l'onglet « Lectures IA ».
+- **Passage à la version 18** : les crédits sont devenus des bouchons, avec des tarifs doublés pour supprimer les demi-crédits. À la première requête, le script double une seule fois les limites que tu avais réglées et ce qui a déjà été dépensé dans le mois : la dépense réelle ne change pas.
 
 Si une lecture immédiate échoue, l'étiquette est lue la nuit suivante.
 
-La même clé rend aussi l'onglet **Conseil** immédiat : une quinzaine de secondes au lieu d'une à deux minutes. Chaque bouteille analysée compte pour un crédit. Sans clé, crédits épuisés ou API en panne, c'est la routine qui répond, lancée tout de suite.
+La même clé rend aussi l'onglet **Conseil** immédiat : une quinzaine de secondes au lieu d'une à deux minutes. Chaque bouteille analysée compte pour deux bouchons. Sans clé, bouchons épuisés ou API en panne, c'est la routine qui répond, lancée tout de suite.
 
-Elle répond aussi tout de suite à **« Demander à Claude »** dans « Vins similaires » (depuis la version 15 du script) : une demande coûte un demi-crédit, environ 2 centimes, puisqu'il n'y a pas de photo à lire. Sans clé, c'est la routine qui répond.
+Elle répond aussi tout de suite à **« Demander à Tastevin »** dans « Vins similaires » (depuis la version 15 du script) : une demande coûte un bouchon, environ 2 centimes, puisqu'il n'y a pas de photo à lire. Sans clé, c'est la routine qui répond.
 
 ---
 
@@ -183,6 +184,6 @@ Il n'y a rien à exécuter : depuis la version 17, ce qui manque se crée tout s
 | « Le script est trop ancien » | Le code a changé mais pas le déploiement | « Mettre à jour le script » ci-dessus |
 | Les fiches restent « À identifier » | La routine ne passe pas, ou ne joint pas le script | Regarde le dernier passage sur claude.ai/code/routines ; une erreur `host_not_allowed` signifie que l'étape 7a manque |
 | « Lecture échouée » sur une fiche | Photo floue ou sans étiquette | Reprends une photo, ou touche « Relancer la lecture cette nuit » |
-| « Plus de crédits Claude… » ou « Tu as utilisé ta part… » | Limite du jour, du mois ou part du membre atteinte | Attends le lendemain ou le mois suivant, ou augmente les limites dans Réglages › Claude et crédits (avec le code du propriétaire) |
+| « Plus de bouchons… » ou « Tu as utilisé ta part… » | Limite du jour, du mois ou part du membre atteinte | Attends le lendemain ou le mois suivant, ou augmente les limites dans Réglages › Tastevin et bouchons (avec le code du propriétaire) |
 
 Les erreurs du script sont aussi visibles dans l'éditeur Apps Script, menu **Exécutions**.

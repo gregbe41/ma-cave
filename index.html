@@ -438,7 +438,13 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .optin{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:12px 14px;border-radius:12px;background:var(--accent-tint);font-size:.92rem;line-height:1.45}
 .optin input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent)}
 .caves-add .btn{justify-self:start}
-/* Claude et crédits */
+/* Tastevin et bouchons */
+.ico-tv,.ico-bo{display:inline-block;width:1.2em;height:1.2em;vertical-align:-.25em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ico-tv .ico-fill{fill:currentColor;stroke-width:1}
+.ico-bo .ico-dot{fill:currentColor;stroke:none}
+.by-claude .ico-tv{margin-right:3px;width:1.25em;height:1.25em}
+.sim-h .ico-tv,.tv-h .ico-tv{margin-right:6px;color:var(--accent-ink)}
+.cr-row b .ico-bo{width:.95em;height:.95em;margin:0 2px;color:var(--accent-ink)}
 .cr-gauges{display:grid;gap:12px;margin:12px 0}
 .cr-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.92rem}
 .cr-row b{font:800 1.15rem var(--display)}
@@ -868,13 +874,13 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
           <span class="ci-ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.3l1.4-2h5.6l1.4 2h2.3A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
           <div>
             <h2>Devant un rayon ?</h2>
-            <p>Photographie une ou plusieurs étiquettes : Claude te dit s'il faut la prendre, quand la boire et avec quoi. Rien n'est ajouté à ta cave.</p>
+            <p>Photographie une ou plusieurs étiquettes : Tastevin te dit s'il faut la prendre, quand la boire et avec quoi. Rien n'est ajouté à ta cave.</p>
           </div>
         </div>
         <label class="btn ci-scan"><input type="file" accept="image/*" capture="environment" id="scan-camera" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.3l1.4-2h5.6l1.4 2h2.3A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></svg>Scanner une étiquette</label>
         <label class="btn ci-files"><input type="file" accept="image/*" multiple id="scan-files" hidden>ou choisir des photos dans la galerie</label>
       </div>
-      <div class="d-note conseil-off" id="conseil-off" hidden><p><strong>Conseil a besoin de Claude.</strong> La personne qui héberge la cave peut ajouter une clé API Claude dans le script, ou une routine Claude : le guide <a href="https://github.com/gregbe41/ma-cave/blob/main/INSTALLATION.md" target="_blank" rel="noopener">INSTALLATION.md</a> explique comment.</p></div>
+      <div class="d-note conseil-off" id="conseil-off" hidden><p><strong>Conseil a besoin de Tastevin.</strong> La personne qui héberge la cave peut ajouter une clé API Claude dans le script, ou une routine Claude : le guide <a href="https://github.com/gregbe41/ma-cave/blob/main/INSTALLATION.md" target="_blank" rel="noopener">INSTALLATION.md</a> explique comment.</p></div>
       <h2 class="d-h3">Vins analysés</h2>
       <div class="cs-list" id="conseil-list"></div>
     </section>
@@ -923,7 +929,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
       </div>
 
       <div class="set" id="credits-set" hidden>
-        <h2>Claude et crédits</h2>
+        <h2 class="tv-h"><svg class="ico-tv" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="10" cy="13" rx="7.5" ry="2.2"/><path d="M2.5 13c0 4.1 3.4 7 7.5 7s7.5-2.9 7.5-7"/><path d="M8.3 13.5c.5-1 2.9-1 3.4 0"/><path d="M17.4 13.8h1.2"/><circle cx="20.4" cy="13.8" r="1.8"/><path class="ico-fill" d="M6.6 3c.3 1.6 1 2.3 2.6 2.6-1.6.3-2.3 1-2.6 2.6-.3-1.6-1-2.3-2.6-2.6 1.6-.3 2.3-1 2.6-2.6z"/></svg>Tastevin et bouchons</h2>
         <div id="credits-box"></div>
       </div>
 
@@ -954,7 +960,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 
       <div class="set" id="scanner-set" hidden>
         <h2>Photos d'étiquettes</h2>
-        <p>Le scanner de Google repère l'étiquette pendant que tu vises, la recadre et la redresse : Claude la lit mieux. Ce choix ne vaut que pour cet appareil.</p>
+        <p>Le scanner de Google repère l'étiquette pendant que tu vises, la recadre et la redresse : Tastevin la lit mieux. Ce choix ne vaut que pour cet appareil.</p>
         <div class="seg" role="group" aria-label="Photos d'étiquettes">
           <button type="button" data-scanner-set="on">Scanner</button>
           <button type="button" data-scanner-set="off">Appareil photo</button>
@@ -1051,7 +1057,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
         </fieldset>
         <div class="row2">
           <label class="f">Prix d'achat (€)<input name="prix" inputmode="decimal" autocomplete="off"></label>
-          <label class="f">Valeur du jour (€)<input name="cote" inputmode="decimal" placeholder="Claude la cherche" autocomplete="off"></label>
+          <label class="f">Valeur du jour (€)<input name="cote" inputmode="decimal" placeholder="Tastevin la cherche" autocomplete="off"></label>
         </div>
         <label class="f">Fournisseur<input name="fournisseur" list="dl-fournisseur" autocomplete="off"></label>
         <label class="f">Emplacement dans la cave<input name="emplacement" placeholder="ex. Casier B, rangée 3" autocomplete="off"></label>
@@ -1141,7 +1147,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
   <form class="sheet-wrap" id="bulk-form" novalidate>
     <div class="sheet-head"><h2 id="bulk-title">Ajouter par photos</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body">
-      <p class="hint" style="margin:0 0 14px">Jusqu'à 15 photos d'étiquettes : une fiche est créée pour chacune, puis Claude les lit et te signale les doublons à regrouper.</p>
+      <p class="hint" style="margin:0 0 14px">Jusqu'à 15 photos d'étiquettes : une fiche est créée pour chacune, puis Tastevin les lit et te signale les doublons à regrouper.</p>
       <div class="bulk-pickers" id="bulk-pick">
         <label class="btn"><input type="file" accept="image/*" capture="environment" id="bulk-camera" hidden>Prendre une photo</label>
         <label class="btn"><input type="file" accept="image/*" multiple id="bulk-files" hidden><span id="bulk-pick-label">Choisir des photos</span></label>
@@ -1171,7 +1177,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 <!-- Conseil : bouteilles photographiées en magasin, avant l'analyse -->
 <dialog class="sheet" id="dlg-scan" aria-labelledby="scan-title">
   <form class="sheet-wrap" id="scan-form" novalidate>
-    <div class="sheet-head"><h2 id="scan-title">Conseil de Claude<span class="sub">Rien n'est ajouté à ta cave</span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-head"><h2 id="scan-title">Conseil de Tastevin<span class="sub">Rien n'est ajouté à ta cave</span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body">
       <div class="scan-track" id="scan-track"></div>
       <div class="scan-dots" id="scan-dots"></div>
@@ -1205,9 +1211,9 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 </dialog>
 
 <!-- Conseil : résultat de l'analyse -->
-<dialog class="sheet" id="dlg-conseil" aria-label="Conseil de Claude">
+<dialog class="sheet" id="dlg-conseil" aria-label="Conseil de Tastevin">
   <div class="sheet-wrap">
-    <div class="sheet-head"><h2>Conseil de Claude<span class="sub" id="cs-sub"></span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-head"><h2>Conseil de Tastevin<span class="sub" id="cs-sub"></span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body" id="conseil-detail"></div>
   </div>
 </dialog>
@@ -1217,7 +1223,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
   <div class="sheet-wrap">
     <div class="sheet-head"><h2 id="add-title">Ajouter des bouteilles</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body add-opts">
-      <button type="button" class="add-opt primary" data-add="scan"><b>Scanner une étiquette</b><span id="add-scan-sub">Claude remplit la fiche</span></button>
+      <button type="button" class="add-opt primary" data-add="scan"><b>Scanner une étiquette</b><span id="add-scan-sub">Tastevin remplit la fiche</span></button>
       <button type="button" class="add-opt" data-add="bulk" id="add-bulk"><b>Ajouter par photos</b><span>Jusqu'à 15 bouteilles d'un coup</span></button>
       <button type="button" class="add-opt" data-add="manual"><b>Saisir à la main</b><span>Domaine, millésime, nombre de bouteilles…</span></button>
       <button type="button" class="btn add-cancel" data-close>Annuler</button>
@@ -1275,7 +1281,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
    ========================================================= */
 const LS_DATA = 'macave:data', LS_SET = 'macave:settings', LS_TOKEN = 'macave:token';
 // L'appli publique (GitHub Pages), son dépôt, et la version du script Google qui va avec cette page.
-const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 17;
+const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 18;
 const API_VERSION = 1;
 
 const COLORS = [
@@ -1425,6 +1431,9 @@ const Native = (() => {
   const on = !!(C && C.isNativePlatform && C.isNativePlatform());
   return { on, P: on ? C.Plugins || {} : {} };
 })();
+/* Tastevin (l'IA de l'appli, propulsée par Claude) : la coupelle du sommelier et son étincelle ; le bouchon, l'unité de ses crédits. */
+const ICO_TV = '<svg class="ico-tv" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="10" cy="13" rx="7.5" ry="2.2"/><path d="M2.5 13c0 4.1 3.4 7 7.5 7s7.5-2.9 7.5-7"/><path d="M8.3 13.5c.5-1 2.9-1 3.4 0"/><path d="M17.4 13.8h1.2"/><circle cx="20.4" cy="13.8" r="1.8"/><path class="ico-fill" d="M6.6 3c.3 1.6 1 2.3 2.6 2.6-1.6.3-2.3 1-2.6 2.6-.3-1.6-1-2.3-2.6-2.6 1.6-.3 2.3-1 2.6-2.6z"/></svg>';
+const ICO_BOUCHON = '<svg class="ico-bo" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6.4" rx="4.6" ry="1.7"/><path d="M7.4 6.4v11.2c0 .95 2.06 1.7 4.6 1.7s4.6-.75 4.6-1.7V6.4"/><circle class="ico-dot" cx="10" cy="10.4" r=".6"/><circle class="ico-dot" cx="13.7" cy="11.9" r=".6"/><circle class="ico-dot" cx="10.9" cy="14.6" r=".6"/><circle class="ico-dot" cx="13.9" cy="16.4" r=".6"/></svg>';
 const starsHTML = n => n ? `<span class="stars" aria-label="${n} sur 5">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>` : '';
 
 /* Thème : automatique (celui de l'appareil), clair ou sombre. Le choix est propre à chaque appareil. */
@@ -1971,11 +1980,11 @@ function renderCave() {
   renderTonight(inStock, prio);
   $('#tally').innerHTML = db.wines.length ? `<section class="summary" aria-label="Résumé de la cave">
     <div class="cave-head"><h2 class="cave-h">La cave</h2><p class="tally"><span class="tally-n">${fmtNum(bottles)}</span> ${plural(bottles, 'bouteille', 'bouteilles')}</p></div>
-    <p class="tally-sub">${inStock.length} ${plural(inStock.length, 'vin', 'vins')} en cave${whose}${value ? ` · achat ${fmtMoney(value, 0)}` : ''}${today ? ` · <span title="Valeur du jour : estimation de Claude pour ${valued.length} ${plural(valued.length, 'vin', 'vins')}, prix d'achat pour les autres">aujourd'hui ~${fmtMoney(today, 0)}</span>` : ''}</p>
+    <p class="tally-sub">${inStock.length} ${plural(inStock.length, 'vin', 'vins')} en cave${whose}${value ? ` · achat ${fmtMoney(value, 0)}` : ''}${today ? ` · <span title="Valeur du jour : estimation de Tastevin pour ${valued.length} ${plural(valued.length, 'vin', 'vins')}, prix d'achat pour les autres">aujourd'hui ~${fmtMoney(today, 0)}</span>` : ''}</p>
     ${bottles > 0 ? `<div class="mix" role="img" aria-label="Couleurs : ${esc(mixTxt)}">${mix.map(([c, n]) => `<span style="--c:${c.hex};flex:${n}"></span>`).join('')}${other > 0 ? `<span style="--c:#9AA69F;flex:${other}"></span>` : ''}</div>` : ''}
     ${more ? `<p class="tally-more">${more}</p>` : ''}
   </section>
-    ${UI.review ? `<div class="review-bar"><span>${review} ${plural(review, 'fiche lue par Claude reste', 'fiches lues par Claude restent')} à vérifier : ouvre-les une à une pour confirmer ou regrouper les doublons.</span><button class="link" data-act="review-off">Tout afficher</button></div>` : ''}` : '';
+    ${UI.review ? `<div class="review-bar"><span>${review} ${plural(review, 'fiche lue par Tastevin reste', 'fiches lues par Tastevin restent')} à vérifier : ouvre-les une à une pour confirmer ou regrouper les doublons.</span><button class="link" data-act="review-off">Tout afficher</button></div>` : ''}` : '';
 
   $('#v-cave .tools').hidden = !db.wines.length;
 
@@ -2147,11 +2156,11 @@ function readNote(w) {
   if (w.alerte === 'passe') out.push(`<div class="d-note is-fail"><p><strong>Ce vin a peut-être déjà dépassé son apogée : à boire sans tarder.</strong> Avant de l'ouvrir, regarde le niveau du vin dans la bouteille (dans le col ou en haut de l'épaule, c'est bon signe), sa couleur à travers le verre (brune, c'est mauvais signe) et le bouchon (sec, poussé ou qui a coulé, c'est mauvais signe).</p>
     <div class="btn-row"><button class="btn" data-act="clear-alert" data-id="${w.id}">Il va bien, retirer l'alerte</button></div></div>`);
   if (w.lecture === 'attente') out.push(`<div class="d-note is-wait"><p>L'étiquette sera lue ${plusTard()} : la fiche sera complétée automatiquement.</p></div>`);
-  if (w.lecture === 'revoir') out.push(`<div class="d-note is-wait"><p>Claude repassera sur cette fiche ${plusTard()} : il remplira les champs vides et mettra à jour ses propres estimations, sans toucher à ce qui a été saisi à la main.</p>
+  if (w.lecture === 'revoir') out.push(`<div class="d-note is-wait"><p>Tastevin repassera sur cette fiche ${plusTard()} : il remplira les champs vides et mettra à jour ses propres estimations, sans toucher à ce qui a été saisi à la main.</p>
     <div class="btn-row">${S.routineOn ? `<button class="btn" data-act="read-now">Maintenant</button>` : ''}<button class="btn" data-act="cancel-review" data-id="${w.id}">Annuler</button></div></div>`);
   if (w.lecture === 'echec') out.push(`<div class="d-note is-fail"><p>La lecture de l'étiquette a échoué${w.lectureNote ? ` : ${esc(w.lectureNote)}` : '.'}</p>
     <div class="btn-row"><button class="btn" data-act="reread" data-id="${w.id}">Relancer la lecture cette nuit</button></div></div>`);
-  if (w.lecture === 'faite' && (g.length || w.lectureNote)) out.push(`<div class="d-note"><p>Fiche complétée par Claude à partir de l'étiquette.${g.length ? ` Estimé, à vérifier : ${g.map(k => FIELD_NAMES[k]).join(', ')}.` : ''}</p>
+  if (w.lecture === 'faite' && (g.length || w.lectureNote)) out.push(`<div class="d-note"><p>Fiche complétée par Tastevin à partir de l'étiquette.${g.length ? ` Estimé, à vérifier : ${g.map(k => FIELD_NAMES[k]).join(', ')}.` : ''}</p>
     ${w.lectureNote ? `<p>${esc(w.lectureNote)}</p>` : ''}
     <div class="btn-row"><button class="btn" data-act="verify" data-id="${w.id}">Vérifier la fiche</button></div></div>`);
   if (twin) {
@@ -2172,9 +2181,9 @@ function provHTML(w) {
   if (!any && w.lecture !== 'faite') return '';
   const ask = reviewOn() && !['attente', 'revoir'].includes(w.lecture) && claudeRoom(w);
   return `<div class="d-prov">
-    <p>${mine.length ? `<span class="by-claude">✦ Claude</span> a rempli : ${esc(provNames(mine))}. Le reste a été saisi à la main.` : 'Tout ce qui figure sur cette fiche a été saisi à la main.'}</p>
-    <p class="hint">${mine.length ? "Tu as le dernier mot : Claude ne touche jamais à ce qui a été saisi à la main. Modifie l'un de ses champs pour le reprendre à ton compte, ou vide-le pour le lui laisser." : 'Claude ne remplit que les champs laissés vides.'}</p>
-    ${ask ? `<div class="btn-row"><button class="btn" data-act="ask-claude" data-id="${w.id}">Demander l'avis de Claude</button></div>` : ''}
+    <p>${mine.length ? `<span class="by-claude">${ICO_TV}Tastevin</span> a rempli : ${esc(provNames(mine))}. Le reste a été saisi à la main.` : 'Tout ce qui figure sur cette fiche a été saisi à la main.'}</p>
+    <p class="hint">${mine.length ? "Tu as le dernier mot : Tastevin ne touche jamais à ce qui a été saisi à la main. Modifie l'un de ses champs pour le reprendre à ton compte, ou vide-le pour le lui laisser." : 'Tastevin ne remplit que les champs laissés vides.'}</p>
+    ${ask ? `<div class="btn-row"><button class="btn" data-act="ask-claude" data-id="${w.id}">Demander l'avis de Tastevin</button></div>` : ''}
   </div>`;
 }
 
@@ -2488,10 +2497,14 @@ function renderReglages() {
 
 /* ---------- Claude et crédits (script v16) : ce que coûte Claude, la part de chacun, les réglages du propriétaire ---------- */
 const fmtCr = n => (Math.round((n || 0) * 10) / 10).toLocaleString('fr-FR');
+/** « 2 bouchons » ; le tarif d'une demande, tel que le script ou le relais l'annonce (sinon celui d'aujourd'hui). */
+const bouchons = n => `${fmtCr(n)} ${plural(n, 'bouchon', 'bouchons')}`;
+const COUTS_DEFAUT = { label: 2, conseil: 2, suggest: 1, revoir: 1, cote: 2 };
+const cout = k => { const c = S.credits && S.credits.couts; return c && c[k] != null ? c[k] : COUTS_DEFAUT[k]; };
 const COTE_RYTHMES = [[3, 'Tous les 3 mois'], [6, 'Tous les 6 mois'], [12, 'Une fois par an'], [24, 'Tous les 2 ans']];
 const gaugeHTML = (left, max, label) => {
   const pct = max ? Math.max(0, Math.min(100, (left / max) * 100)) : 0;
-  return `<div class="cr-gauge"><div class="cr-row"><span>${label}</span><b class="num">${fmtCr(left)} <small>sur ${fmtCr(max)}</small></b></div><span class="cr-bar"><i style="width:${pct}%"></i></span></div>`;
+  return `<div class="cr-gauge"><div class="cr-row"><span>${label}</span><b class="num">${fmtCr(left)}${ICO_BOUCHON} <small>sur ${fmtCr(max)}</small></b></div><span class="cr-bar"><i style="width:${pct}%"></i></span></div>`;
 };
 function renderCredits() {
   const set = $('#credits-set');
@@ -2501,40 +2514,41 @@ function renderCredits() {
   if (set.hidden) return;
   const owner = S.role === 'proprio';
   let h = '';
-  if (!S.labelOn) h += '<p>Pas de clé API sur cette cave : Claude passe par la routine de nuit, qui ne coûte aucun crédit.</p>';
+  if (!S.labelOn) h += '<p>Pas de clé API sur cette cave : Tastevin passe par la routine de nuit, qui ne coûte aucun bouchon.</p>';
   else {
     h += isDrive()
-      ? `<p>Claude passe par le relais de l'appli, en crédits de la cave : une lecture d'étiquette, 1 crédit ; une fiche revue ou complétée, ${fmtCr(c.couts && c.couts.revoir)} ; un conseil en magasin, 1 par bouteille ; des vins similaires, ${fmtCr(c.couts && c.couts.suggest)} ; une valeur du jour, ${fmtCr(c.couts && c.couts.cote)}. Ce que Claude trouve pour un vin sert à toute la cave. Une demande qui échoue ne coûte rien.</p>`
-      : `<p>Chaque appel immédiat à Claude se paie avec la clé API de la cave, en crédits : une lecture d'étiquette, 1 crédit ; un conseil en magasin, 1 par bouteille ; des vins similaires, ${fmtCr(c.couts && c.couts.suggest)}. Ce que Claude trouve pour un vin sert à toute la cave. La lecture de nuit, par la routine, ne coûte rien.</p>`;
+      ? `<p>Tastevin passe par le relais de l'appli, en bouchons de la cave : une lecture d'étiquette, ${bouchons(cout('label'))} ; une fiche revue ou complétée, ${bouchons(cout('revoir'))} ; un conseil en magasin, ${bouchons(cout('conseil'))} par bouteille ; des vins similaires, ${bouchons(cout('suggest'))} ; une valeur du jour, ${bouchons(cout('cote'))}. Ce que Tastevin trouve pour un vin sert à toute la cave. Une demande qui échoue ne coûte rien.</p>`
+      : `<p>Chaque appel immédiat à Tastevin se paie avec la clé API de la cave, en bouchons : une lecture d'étiquette, ${bouchons(cout('label'))} ; un conseil en magasin, ${bouchons(cout('conseil'))} par bouteille ; des vins similaires, ${bouchons(cout('suggest'))}. Ce que Tastevin trouve pour un vin sert à toute la cave. La lecture de nuit, par la routine, ne coûte rien.</p>`;
     h += '<div class="cr-gauges">' + gaugeHTML(c.mois, c.max.mois, 'La cave, ce mois-ci') + gaugeHTML(c.jour, c.max.jour, "Aujourd'hui");
     if (!owner && c.part) h += gaugeHTML(c.partReste, c.part, 'Ta part du mois');
     h += '</div>';
-    if (!owner && !c.part) h += `<p class="hint">Tu as utilisé ${fmtCr(c.moi)} ${plural(Math.ceil(c.moi), 'crédit', 'crédits')} ce mois-ci.</p>`;
+    if (!owner && !c.part) h += `<p class="hint">Tu as utilisé ${bouchons(c.moi)} ce mois-ci.</p>`;
   }
   if (owner) {
     const who = (c.parPersonne || []).filter(x => x.credits > 0);
-    if (S.labelOn) h += who.length ? `<p class="cr-who-h">Dépense du mois</p><ul class="cr-who">${who.map(x => `<li><span>${esc(x.qui)}</span><b class="num">${fmtCr(x.credits)}</b></li>`).join('')}</ul>` : '<p class="hint">Personne n\'a encore utilisé de crédit ce mois-ci.</p>';
+    if (S.labelOn) h += who.length ? `<p class="cr-who-h">Dépense du mois</p><ul class="cr-who">${who.map(x => `<li><span>${esc(x.qui)}</span><b class="num">${fmtCr(x.credits)}</b></li>`).join('')}</ul>` : '<p class="hint">Personne n\'a encore utilisé de bouchon ce mois-ci.</p>';
     h += `<form class="cr-form" id="credits-form">
       <div class="row2">
-        <label class="f">Crédits par mois, pour la cave<input name="mois" type="number" min="0" max="10000" inputmode="numeric" value="${c.max.mois}"></label>
+        <label class="f">Bouchons par mois, pour la cave<input name="mois" type="number" min="0" max="10000" inputmode="numeric" value="${c.max.mois}"></label>
         <label class="f">Par jour, au plus<input name="jour" type="number" min="0" max="1000" inputmode="numeric" value="${c.max.jour}"></label>
       </div>
       <label class="f">Part de chaque membre, par mois<input name="part" type="number" min="0" max="10000" inputmode="numeric" value="${c.max.part}"><span class="hint">0 : pas de part, seule la limite de la cave compte. Toi, tu n'as que celle-ci.</span></label>
-      <label class="f">Valeur du jour : chaque vin est revu<select name="coteMois">${COTE_RYTHMES.map(([v, l]) => `<option value="${v}"${v === (S.coteMois || 12) ? ' selected' : ''}>${l}</option>`).join('')}</select><span class="hint">${isDrive() ? "Par l'appareil du propriétaire, avec au plus la moitié des crédits du mois." : 'Par la routine de nuit, sans crédit.'}</span></label>
-      ${isDrive() && c.plafond ? `<p class="hint">Au plus ${c.plafond.mois} crédits par mois et ${c.plafond.jour} par jour : c'est le plafond de l'appli pour cette cave.</p>` : ''}
+      <label class="f">Valeur du jour : chaque vin est revu<select name="coteMois">${COTE_RYTHMES.map(([v, l]) => `<option value="${v}"${v === (S.coteMois || 12) ? ' selected' : ''}>${l}</option>`).join('')}</select><span class="hint">${isDrive() ? "Par l'appareil du propriétaire, avec au plus la moitié des bouchons du mois." : 'Par la routine de nuit, sans bouchon.'}</span></label>
+      ${isDrive() && c.plafond ? `<p class="hint">Au plus ${c.plafond.mois} bouchons par mois et ${c.plafond.jour} par jour : c'est le plafond de l'appli pour cette cave.</p>` : ''}
       <button class="btn btn-primary" type="submit">Enregistrer</button>
     </form>
     ${isDrive() ? '' : '<p class="hint">Cet appareil a le code du propriétaire. <button type="button" class="link" data-act="owner-forget">Repasser en membre</button></p>'}`;
   } else if (isDrive()) {
-    h += `<p class="hint">${S.driveOwner ? `${esc(S.driveOwner)}, propriétaire de la cave,` : 'Le propriétaire de la cave'} règle ces crédits et la part de chacun.</p>`;
+    h += `<p class="hint">${S.driveOwner ? `${esc(S.driveOwner)}, propriétaire de la cave,` : 'Le propriétaire de la cave'} règle ces bouchons et la part de chacun.</p>`;
   } else {
-    if (!S.proprioActif) h += '<p class="hint">Personne ne s\'est encore déclaré propriétaire : chacun utilise les crédits de la cave, sans part fixe.</p>';
+    if (!S.proprioActif) h += '<p class="hint">Personne ne s\'est encore déclaré propriétaire : chacun utilise les bouchons de la cave, sans part fixe.</p>';
     h += `<details class="howto cr-owner"><summary>Tu héberges cette cave ?</summary>
-      <p>Entre ici le code du propriétaire pour régler les crédits et la part de chacun. Il est dans ton Google Sheet, onglet « Propriétaire ». Il ne part jamais dans une invitation.${/^https:\/\/docs\.google\.com\//.test(S.sheetUrl) ? ` <a href="${esc(S.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a>` : ''}</p>`;
+      <p>Entre ici le code du propriétaire pour régler les bouchons et la part de chacun. Il est dans ton Google Sheet, onglet « Propriétaire ». Il ne part jamais dans une invitation.${/^https:\/\/docs\.google\.com\//.test(S.sheetUrl) ? ` <a href="${esc(S.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a>` : ''}</p>`;
     h += `
       <label class="f">Code du propriétaire<input id="owner-code" placeholder="ex. 1a2b-3c4d-5e6f-7a8b" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
       <button type="button" class="btn" data-act="owner-save">Enregistrer</button></details>`;
   }
+  h += '<p class="hint">Tastevin est propulsé par Claude, l\'IA d\'Anthropic.</p>';
   $('#credits-box').innerHTML = h;
 }
 async function saveOwnerCode() {
@@ -2545,7 +2559,7 @@ async function saveOwnerCode() {
     if (r.role !== 'proprio') throw new Error("Ce code n'est pas celui du propriétaire.");
     S.proprio = code;
     serverInfo(r);
-    toast('Cet appareil a maintenant la main sur les crédits de la cave.');
+    toast('Cet appareil a maintenant la main sur les bouchons de la cave.');
   } catch (e) { toast(e.code === 'auth' ? "Ce code n'est pas celui du propriétaire." : e.message); }
   renderReglages();
 }
@@ -2559,7 +2573,7 @@ async function saveCredits(form) {
   const v = k => form.elements[k].value;
   try {
     serverInfo(await API.call('setCredits', { mois: v('mois'), jour: v('jour'), part: v('part'), coteMois: v('coteMois') }));
-    toast('Crédits enregistrés pour toute la cave.');
+    toast('Bouchons enregistrés pour toute la cave.');
   } catch (e) { toast(e.message); }
   renderReglages();
 }
@@ -2682,13 +2696,13 @@ function renderSyncBox() {
       : k === 'offline' ? 'Hors ligne : tes modifications sont gardées sur cet appareil.'
       : S.lastSync ? `Reliée à Google Drive. Dernière synchro ${rel(S.lastSync)}.` : 'Reliée à Google Drive, pas encore synchronisée.';
     let d = `<p class="status" data-k="${k}"><span class="sync-dot"></span>${st}</p>`;
-    d += `<p class="hint">Lecture des étiquettes : ${relaisOn() ? 'immédiate, par Claude (relais de l\'appli).' : 'à la main pour l\'instant, Claude arrivera dans les caves Google Drive avec le relais.'} ${S.photoShare ? 'Tes photos sont partagées avec la cave.' : 'Tes photos restent sur cet appareil (voir plus bas).'}</p>`;
+    d += `<p class="hint">Lecture des étiquettes : ${relaisOn() ? 'immédiate, par Tastevin (relais de l\'appli).' : 'à la main pour l\'instant, Tastevin arrivera dans les caves Google Drive avec le relais.'} ${S.photoShare ? 'Tes photos sont partagées avec la cave.' : 'Tes photos restent sur cet appareil (voir plus bas).'}</p>`;
     d += '<div class="btn-row"><button class="btn btn-primary" data-act="sync-now">Synchroniser maintenant</button>';
     if (/^https:\/\/drive\.google\.com\//.test(S.driveUrl)) d += `<a class="btn" href="${esc(S.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Google Drive</a>`;
     d += '</div>';
     // Style et accords des vins déjà en cave : Claude les ajoute aussitôt ; une action sur toute la cave, pour le propriétaire.
     const manque = tasteMissing().length;
-    if (manque && relaisOn()) d += `<p class="hint">${manque} ${plural(manque, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${S.role === 'proprio' ? '' : ' Le propriétaire de la cave peut les faire compléter par Claude.'}</p>${S.role === 'proprio' ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Claude</button></div>' : ''}`;
+    if (manque && relaisOn()) d += `<p class="hint">${manque} ${plural(manque, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${S.role === 'proprio' ? '' : ' Le propriétaire de la cave peut les faire compléter par Tastevin.'}</p>${S.role === 'proprio' ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Tastevin</button></div>' : ''}`;
     box.innerHTML = d;
     return;
   }
@@ -2698,7 +2712,7 @@ function renderSyncBox() {
     : k === 'offline' ? 'Hors ligne : tes modifications sont gardées sur cet appareil.'
     : S.lastSync ? `Relié. Dernière synchro ${rel(S.lastSync)}.` : 'Relié, pas encore synchronisé.';
   let h = `<p class="status" data-k="${k}"><span class="sync-dot"></span>${line}</p>`;
-  h += `<p class="hint">Lecture des étiquettes : ${S.labelOn ? 'immédiate (API Claude)' : claudeOn() ? `chaque nuit, par la routine Claude${S.routineOn ? ', ou à la demande' : ''}` : 'à la main (aucun Claude n\'est branché sur cette cave)'}.</p>`;
+  h += `<p class="hint">Lecture des étiquettes : ${S.labelOn ? 'immédiate, par Tastevin (clé API Claude)' : claudeOn() ? `chaque nuit, par Tastevin (routine Claude)${S.routineOn ? ', ou à la demande' : ''}` : 'à la main (Tastevin n\'est pas branché sur cette cave)'}.</p>`;
   // Script de la cave plus ancien que cette page : la marche à suivre pour le mettre à jour.
   if (S.serverVersion && S.serverVersion < SCRIPT_VERSION) h = `<div class="note"><p>Une nouvelle version du script de la cave est disponible (v${SCRIPT_VERSION}, celle-ci est en v${S.serverVersion}). La personne qui héberge la cave peut la mettre à jour en quelques minutes : <a href="${REPO_URL}/blob/main/INSTALLATION.md#mettre-à-jour-le-script" target="_blank" rel="noopener">comment faire</a>.</p></div>` + h;
   h += `<div class="btn-row"><button class="btn btn-primary" data-act="sync-now">Synchroniser maintenant</button>`;
@@ -2711,7 +2725,7 @@ function renderSyncBox() {
   // Une action sur toute la cave : réservée au propriétaire à partir du script v16.
   // Tant que le propriétaire ne s'est déclaré sur aucun appareil, chacun a tous les droits (script v17).
   const bulkOk = (S.serverVersion || 0) < 16 || S.role === 'proprio' || !S.proprioActif;
-  if (missing && (S.serverVersion || 0) >= 12 && claudeOn()) h += `<p class="hint">${missing} ${plural(missing, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${bulkOk ? '' : ' Le propriétaire de la cave peut les faire compléter par Claude.'}</p>${bulkOk ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Claude</button></div>' : ''}`;
+  if (missing && (S.serverVersion || 0) >= 12 && claudeOn()) h += `<p class="hint">${missing} ${plural(missing, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${bulkOk ? '' : ' Le propriétaire de la cave peut les faire compléter par Tastevin.'}</p>${bulkOk ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Tastevin</button></div>' : ''}`;
   box.innerHTML = h;
 }
 /** Vins en cave sans style ni accords, que Claude peut compléter (pas déjà en attente de lecture). */
@@ -2724,7 +2738,7 @@ function fillTaste() {
   ws.forEach(w => Object.assign(w, { lecture: 'revoir', updatedAt: now }));
   queueClaude(ws.map(w => w.id));
   commit();
-  toast(`${ws.length} ${plural(ws.length, 'fiche sera complétée', 'fiches seront complétées')} par Claude${relaisOn() ? ' dans un instant.' : S.routineOn ? ' : touche « Lire maintenant » dans la Cave pour ne pas attendre la nuit.' : ' cette nuit.'}`);
+  toast(`${ws.length} ${plural(ws.length, 'fiche sera complétée', 'fiches seront complétées')} par Tastevin${relaisOn() ? ' dans un instant.' : S.routineOn ? ' : touche « Lire maintenant » dans la Cave pour ne pas attendre la nuit.' : ' cette nuit.'}`);
 }
 
 /* ---------- Fiche d'un vin ---------- */
@@ -2775,8 +2789,8 @@ function renderDetail() {
   const place = [w.region, w.pays].filter(Boolean).join(' · ');
   // Vins similaires : mis en avant quand le vin a plu, sinon une ligne discrète plus bas.
   const like = (w.domaine || w.appellation) ? likedOf(w) : null, sg = suggestionOf(w.id);
-  const simTxt = sg && sg.statut === 'attente' ? '✦ Claude prépare ses suggestions…'
-    : sg && sg.resultat && sg.resultat.vins.length ? `✦ Claude a proposé ${sg.resultat.vins.length} vins` : 'Par domaine, appellation, cépage ou région';
+  const simTxt = sg && sg.statut === 'attente' ? 'Tastevin prépare ses suggestions…'
+    : sg && sg.resultat && sg.resultat.vins.length ? `Tastevin a proposé ${sg.resultat.vins.length} vins` : 'Par domaine, appellation, cépage ou région';
   const simHTML = !(w.domaine || w.appellation) ? '' : like
     ? `<section class="d-like" aria-label="Vins similaires"><p class="dl-k">${like.me ? "Tu l'as aimé" : "Vous l'avez aimé"} ${starsHTML(Math.round(like.note))}</p>
         <p class="dl-t">Retrouve ce plaisir : des vins dans le même esprit, dans ta cave et à découvrir.${sg && sg.resultat && sg.statut !== 'attente' ? ` ${esc(simTxt)}.` : ''}</p>
@@ -2852,11 +2866,11 @@ function priceTile(w, stock) {
   }
   // D'où vient la valeur : Claude (fourchette, mois, source), saisie à la main, rien trouvé, ou à venir.
   let src = '';
-  if (now != null && mine) src = ['Estimation de Claude', w.coteBas != null && w.coteHaut != null && w.coteBas !== w.coteHaut ? `${fmtEuro(w.coteBas)} à ${fmtEuro(w.coteHaut)}` : '', fmtMonth(w.coteDate), w.coteNote].filter(Boolean).join(' · ');
+  if (now != null && mine) src = ['Estimation de Tastevin', w.coteBas != null && w.coteHaut != null && w.coteBas !== w.coteHaut ? `${fmtEuro(w.coteBas)} à ${fmtEuro(w.coteHaut)}` : '', fmtMonth(w.coteDate), w.coteNote].filter(Boolean).join(' · ');
   else if (now != null) src = ['Saisie à la main', fmtMonth(w.coteDate)].filter(Boolean).join(' · ');
   else if (w.coteDate) src = `Valeur du jour : ${w.coteNote || 'aucun prix trouvé en ligne'} (${fmtMonth(w.coteDate)})`;
-  else if (stock > 0 && w.domaine && relaisOn()) src = "Valeur du jour : Claude la cherchera en ligne, depuis l'appareil du propriétaire.";
-  else if (stock > 0 && w.domaine && API.ready() && (S.serverVersion || 0) >= 13 && routineAlive()) src = 'Valeur du jour : Claude la cherchera en ligne cette nuit.';
+  else if (stock > 0 && w.domaine && relaisOn()) src = "Valeur du jour : Tastevin la cherchera en ligne, depuis l'appareil du propriétaire.";
+  else if (stock > 0 && w.domaine && API.ready() && (S.serverVersion || 0) >= 13 && routineAlive()) src = 'Valeur du jour : Tastevin la cherchera en ligne cette nuit.';
   if (!lines.length && !src) return '';
   return `<div class="wide d-price"><dt>Prix</dt><dd>${lines.join('')}${src ? `<span class="pr-src">${esc(src)}</span>` : ''}</dd></div>`;
 }
@@ -3265,23 +3279,23 @@ function simClaudeHTML(w, sg) {
   const sending = SUGG.busy.has(w.id), waiting = sending || (sg && sg.statut === 'attente');
   let wait = '';
   if (waiting) {
-    wait = sending ? 'Demande envoyée à Claude…' : sg.mode === 'nuit' ? 'Claude répondra cette nuit, au passage de la routine.'
-      : "Claude répond d'ici une à deux minutes. Tu peux fermer cette fenêtre : sa réponse restera dans la fiche.";
+    wait = sending ? 'Demande envoyée à Tastevin…' : sg.mode === 'nuit' ? 'Tastevin répondra cette nuit, au passage de la routine.'
+      : "Tastevin répond d'ici une à deux minutes. Tu peux fermer cette fenêtre : sa réponse restera dans la fiche.";
     wait = `<p class="sim-wait"><span class="pw-spin" aria-hidden="true"></span><span>${esc(wait)}${sg && sg.note && !sending ? `<br><small>${esc(sg.note)}</small>` : ''}</span></p>`;
   }
   const hasAvis = db.avis.some(a => a.vinId === w.id && (a.note || a.commentaire));
   if (!r) {
     let body;
-    if (!API.ready()) body = '<p class="hint">Relie l\'appli à la cave (Réglages) pour demander aussi l\'avis de Claude.</p>';
-    else if ((S.serverVersion || 0) < 15) body = '<p class="hint">L\'avis de Claude sera disponible quand le script de la cave sera passé en version 15 (Réglages).</p>';
+    if (!API.ready()) body = '<p class="hint">Relie l\'appli à la cave (Réglages) pour demander aussi l\'avis de Tastevin.</p>';
+    else if ((S.serverVersion || 0) < 15) body = '<p class="hint">L\'avis de Tastevin sera disponible quand le script de la cave sera passé en version 15 (Réglages).</p>';
     else if (!claudeOn()) return '';
-    else body = waiting ? wait : `<button type="button" class="btn btn-primary" data-act="sim-ask">Demander à Claude · 0,5 crédit</button>`;
-    return `<section class="sim-sec sim-ask"><h3 class="sim-h">✦ L'avis de Claude</h3>
+    else body = waiting ? wait : `<button type="button" class="btn btn-primary" data-act="sim-ask">Demander à Tastevin · ${bouchons(cout('suggest'))}</button>`;
+    return `<section class="sim-sec sim-ask"><h3 class="sim-h">${ICO_TV}L'avis de Tastevin</h3>
       <p class="sim-intro">Cinq vins à découvrir, choisis d'après ce vin${hasAvis ? ' et vos avis' : ''}. Sa réponse reste dans la fiche, pour tous.</p>${body}
       ${sg && sg.statut === 'echec' && !waiting ? `<p class="hint">La dernière demande n'a pas abouti${sg.note ? ` : ${esc(sg.note)}` : '.'}</p>` : ''}</section>`;
   }
   const when = sg.date ? new Date(sg.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-  return `<section class="sim-sec sim-claude"><h3 class="sim-h">✦ L'avis de Claude</h3>
+  return `<section class="sim-sec sim-claude"><h3 class="sim-h">${ICO_TV}L'avis de Tastevin</h3>
     <p class="sim-meta">${esc([when && `Le ${when}`, sg.par && `demandé par ${sg.par}`].filter(Boolean).join(' · '))}</p>
     ${r.intro ? `<p class="sim-intro">${esc(r.intro)}</p>` : ''}
     <div class="sim-list">${r.vins.map((v, i) => simItem(`g${i}`, { ...v, src: 'claude' }, v.appellation || v.domaine, [v.appellation ? v.domaine : '', v.cuvee].filter(Boolean).join(', '),
@@ -3299,10 +3313,10 @@ function suggestNextDate(w, sg) {
 }
 function redemanderHTML(w, sg) {
   const next = suggestNextDate(w, sg);
-  if (!next) return '<p class="sim-more"><button type="button" class="btn" data-act="sim-ask">Redemander à Claude · 0,5 crédit</button></p>';
+  if (!next) return `<p class="sim-more"><button type="button" class="btn" data-act="sim-ask">Redemander à Tastevin · ${bouchons(cout('suggest'))}</button></p>`;
   const d = new Date(next).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   return `<p class="hint sim-next">Tu pourras redemander à partir du ${d}, ou dès que la fiche ou vos avis changent.</p>`
-    + (S.role === 'proprio' ? '<p class="sim-more"><button type="button" class="btn" data-act="sim-ask" data-force="1">Redemander quand même · 0,5 crédit</button></p>' : '');
+    + (S.role === 'proprio' ? `<p class="sim-more"><button type="button" class="btn" data-act="sim-ask" data-force="1">Redemander quand même · ${bouchons(cout('suggest'))}</button></p>` : '');
 }
 
 /** « Ajouter à la cave » : le formulaire « Nouveau vin », prérempli par le catalogue ou par Claude. */
@@ -3315,7 +3329,7 @@ function addFromSimilar(k) {
   const radio = v.couleur && f.querySelector(`input[name="couleur"][value="${v.couleur}"]`);
   if (radio) { radio.checked = true; FORM.colorTouched = true; }
   renderGrapes();
-  setAiStatus(v.src === 'claude' ? "Fiche préremplie d'après la suggestion de Claude : vérifie-la, indique le nombre de bouteilles, puis ajoute-la."
+  setAiStatus(v.src === 'claude' ? "Fiche préremplie d'après la suggestion de Tastevin : vérifie-la, indique le nombre de bouteilles, puis ajoute-la."
     : 'Fiche préremplie depuis le catalogue LWIN : vérifie-la, indique le nombre de bouteilles, puis ajoute-la.');
   updateFormPreview();
 }
@@ -3365,7 +3379,7 @@ function takeSuggestion(o, mine) {
   const ready = s.statut === 'fait' && (!old || old.statut === 'attente');
   if (old) Object.assign(old, s); else db.suggestions.push(s);
   const w = db.wines.find(x => x.id === s.vinId);
-  if (ready && !mine && w && s.par === S.device && !(UI.simWine === s.vinId && $('#dlg-similar').open)) toast(`Claude a proposé des vins similaires à ${wineTitle(w)} : ouvre sa fiche.`);
+  if (ready && !mine && w && s.par === S.device && !(UI.simWine === s.vinId && $('#dlg-similar').open)) toast(`Tastevin a proposé des vins similaires à ${wineTitle(w)} : ouvre sa fiche.`);
 }
 /** Suivi des demandes en attente de la routine : toutes les 10 s les 5 premières minutes, puis toutes les 30 s, 20 minutes au plus. */
 function watchSuggestions() {
@@ -3466,7 +3480,7 @@ function refreshClaudeTag(k) {
   const f = $('#wine-form'), host = claudeHost(f, k);
   if (!host) return;
   const v = formVal(f, k), on = FORM.claude.has(k) && v !== '' && v === FORM.orig[k], tag = $(':scope > .by-claude', host);
-  if (on && !tag) host.insertAdjacentHTML('beforeend', '<span class="by-claude" title="Valeur proposée par Claude. Modifie-la pour la reprendre à ton compte.">✦ Claude</span>');
+  if (on && !tag) host.insertAdjacentHTML('beforeend', `<span class="by-claude" title="Valeur proposée par Tastevin. Modifie-la pour la reprendre à ton compte.">${ICO_TV}Tastevin</span>`);
   else if (!on && tag) tag.remove();
 }
 const refreshClaudeTags = () => CLAUDE_FIELDS.forEach(refreshClaudeTag);
@@ -3487,7 +3501,7 @@ function openWineForm(id) {
     claude: new Set(claudeKeys(w)), orig: {}, grapes: [], allGrapes: false };
   $$('.is-guess', f).forEach(el => el.classList.remove('is-guess'));
   setAiStatus(!w ? '' : w.lecture === 'attente' ? "L'étiquette sera lue cette nuit."
-    : w.lecture === 'faite' && guessList(w).length ? 'Les champs en orange ont été estimés par Claude : vérifie-les, puis enregistre.' : '');
+    : w.lecture === 'faite' && guessList(w).length ? 'Les champs en orange ont été estimés par Tastevin : vérifie-les, puis enregistre.' : '');
   $('#wf-dup').hidden = true;
   $('#wf-cat').hidden = true;
   fillDatalists();
@@ -3591,7 +3605,7 @@ function requestNightRead() {
 function photoStatus() {
   if (!API.ready()) setAiStatus("Photo prête. Relie l'appli au script (Réglages) pour faire lire les étiquettes.");
   else if (S.labelOn && navigator.onLine) readLabel();
-  else if (!claudeOn()) setAiStatus("Photo enregistrée. Aucun Claude n'est branché sur cette cave : remplis la fiche à la main.");
+  else if (!claudeOn()) setAiStatus("Photo enregistrée. Tastevin n'est pas branché sur cette cave : remplis la fiche à la main.");
   else {
     setAiStatus(`L'étiquette sera lue ${plusTard()} : tu peux enregistrer sans remplir le reste.`);
     if (!FORM.id && !FORM.colorTouched) { $$('#wf-colors input').forEach(r => (r.checked = false)); renderGrapes(); updateFormPreview(); }
@@ -3772,7 +3786,7 @@ async function submitWineForm(e) {
   $('#dlg-form').close();
   commit();
   toast((isNew ? `Vin ajouté à la cave${forTxt(owner)}` : split ? 'Modifications et répartition enregistrées' : 'Modifications enregistrées')
-    + (review ? `. Claude ${isNew ? 'complétera la fiche' : 'mettra à jour ses estimations'} ${plusTard()}.` : ''));
+    + (review ? `. Tastevin ${isNew ? 'complétera la fiche' : 'mettra à jour ses estimations'} ${plusTard()}.` : ''));
 }
 
 function deleteWine(id) {
@@ -3876,7 +3890,7 @@ function openAddMenu() {
   const on = claudeOn();
   $('#add-bulk').hidden = !on;
   $('#add-scan-sub').textContent = !on ? "La photo va sur la fiche, que tu remplis à la main"
-    : Scanner.on ? "Le scanner recadre l'étiquette, Claude remplit la fiche" : 'Claude remplit la fiche';
+    : Scanner.on ? "Le scanner recadre l'étiquette, Tastevin remplit la fiche" : 'Tastevin remplit la fiche';
   $('#dlg-add').showModal();
 }
 function pickAdd(k) {
@@ -3888,7 +3902,7 @@ function pickAdd(k) {
 }
 
 function openBulk() {
-  if (!claudeOn()) { toast("L'ajout par photos demande Claude (clé API ou routine) : ajoute les vins un par un."); return; }
+  if (!claudeOn()) { toast("L'ajout par photos demande Tastevin (clé API Claude ou routine) : ajoute les vins un par un."); return; }
   if ($('#dlg-form').open) $('#dlg-form').close();
   BULK.items.forEach(it => URL.revokeObjectURL(it.url));
   BULK = { items: [], busy: 0, token: uid() };
@@ -3998,7 +4012,7 @@ function scanReset() {
   SCAN.items.forEach(it => URL.revokeObjectURL(it.url));
   SCAN = { items: [], busy: 0, token: uid() };
 }
-const leaveScan = () => !SCAN.items.length || confirm(`Abandonner ${SCAN.items.length > 1 ? `ces ${SCAN.items.length} photos` : 'cette photo'} ? Rien n'a encore été envoyé à Claude.`);
+const leaveScan = () => !SCAN.items.length || confirm(`Abandonner ${SCAN.items.length > 1 ? `ces ${SCAN.items.length} photos` : 'cette photo'} ? Rien n'a encore été envoyé à Tastevin.`);
 /** Fermer une fenêtre où des photos attendent : on demande d'abord. */
 const mayLeave = d => (d.id === 'dlg-bulk' ? leaveBulk() : d.id === 'dlg-scan' ? leaveScan() : true);
 
@@ -4056,7 +4070,7 @@ async function submitScan(e) {
   e.preventDefault();
   const err = msg => { const p = $('#scan-err'); p.textContent = msg; p.hidden = false; };
   if (!SCAN.items.length || SCAN.busy) return;
-  if (!API.ready()) return err("Relie d'abord l'appli au script (Réglages) : c'est lui qui transmet les photos à Claude.");
+  if (!API.ready()) return err("Relie d'abord l'appli au script (Réglages) : c'est lui qui transmet les photos à Tastevin.");
   const y = thisYear();
   for (const [i, it] of SCAN.items.entries()) {
     const m = int(it.millesime);
@@ -4103,7 +4117,7 @@ async function processConseils() {
         await Photos.put({ ...rec, driveId: res.id });
         persist();
       }
-      step(c.resultat ? 'Envoi de tes corrections à Claude…' : `${n > 1 ? 'Photos bien reçues' : 'Photo bien reçue'}. Demande d'analyse à Claude…`);
+      step(c.resultat ? 'Envoi de tes corrections à Tastevin…' : `${n > 1 ? 'Photos bien reçues' : 'Photo bien reçue'}. Demande d'analyse à Tastevin…`);
       const r = await API.call('conseil', { conseil: { ...c, statut: 'attente' } }, 180e3);
       UI.csProgress = null;
       takeConseil(r.conseil);
@@ -4131,7 +4145,7 @@ function takeConseil(c) {
 }
 function conseilReady(c) {
   if (UI.openConseil === c.id && $('#dlg-conseil').open) markSeen(c.id);
-  else if (c.par === S.device) toast(c.statut === 'fait' ? 'Le conseil de Claude est prêt : ouvre l\'onglet Conseil.' : "L'analyse n'a pas abouti : ouvre l'onglet Conseil.");
+  else if (c.par === S.device) toast(c.statut === 'fait' ? 'Le conseil de Tastevin est prêt : ouvre l\'onglet Conseil.' : "L'analyse n'a pas abouti : ouvre l'onglet Conseil.");
 }
 
 /** Suivi des conseils en attente : toutes les 10 s les 5 premières minutes, puis toutes les 30 s, 20 minutes au plus. */
@@ -4188,7 +4202,7 @@ function renderConseil() {
     const rs = (c.resultat && c.resultat.bouteilles) || [], n = c.bouteilles.length;
     // Une analyse en cours de mise à jour garde son ancien résultat ; les corrections de la personne l'emportent.
     const title = c.resultat ? rs.map((r, i) => conseilTitle({ ...csView(r, c.bouteilles[i]), estEtiquette: r.estEtiquette !== false || csFixed(c.bouteilles[i]).length > 0 })).join(' · ')
-      : c.statut === 'echec' ? "L'analyse n'a pas abouti" : 'Claude analyse…';
+      : c.statut === 'echec' ? "L'analyse n'a pas abouti" : 'Tastevin analyse…';
     const added = c.bouteilles.filter(b => b.vinId && db.wines.some(w => w.id === b.vinId)).length;
     const busy = csBusy(c);
     const state = c.statut === 'envoi' ? (c.resultat ? 'mise à jour en cours' : 'photos en cours d\'envoi')
@@ -4248,7 +4262,7 @@ function csEditor(c, i, r) {
   const ident = (S.serverVersion || 0) >= 12;
   return `<details class="cs-edit" data-ckey="${key}"${UI.csOpen.has(key) ? ' open' : ''}>
     <summary>Compléter ou corriger</summary>
-    <p class="hint">Ce que tu indiques ici l'emporte sur la lecture de Claude.</p>
+    <p class="hint">Ce que tu indiques ici l'emporte sur la lecture de Tastevin.</p>
     ${ident ? field('domaine', 'Domaine') + field('cuvee', 'Cuvée') + field('appellation', 'Appellation') : ''}
     <div class="row2">${field('millesime', 'Millésime', 'inputmode="numeric" maxlength="4" placeholder="ex. 2019"')}${field('prix', 'Prix affiché (€)', 'inputmode="decimal"')}</div>
     <div class="colors" role="radiogroup" aria-label="Couleur">${COLORS.map(col => `<label class="cchip"><input type="radio" name="ce-${key}" data-ce="couleur" data-cid="${c.id}" data-i="${i}" value="${col.key}"${v.couleur === col.key ? ' checked' : ''}><span><span class="dot" style="--c:${col.hex}"></span>${col.label}</span></label>`).join('')}</div>
@@ -4290,7 +4304,7 @@ function editConseil(el) {
 function relaunchConseil(id) {
   const c = db.conseils.find(x => x.id === id);
   if (!c || csBusy(c)) return;
-  if (!API.ready()) { toast("Relie d'abord l'appli au script (Réglages) : c'est lui qui transmet les photos à Claude."); return; }
+  if (!API.ready()) { toast("Relie d'abord l'appli au script (Réglages) : c'est lui qui transmet les photos à Tastevin."); return; }
   Object.assign(c, { statut: 'envoi', note: '', modifie: false, updatedAt: nowISO() });
   seenConseils.delete(id);
   lsSet('macave:conseils-vus', [...seenConseils].slice(-300));
@@ -4312,8 +4326,8 @@ function renderConseilDetail() {
   const q = c.question ? `<p class="hint">Ta question : « ${esc(c.question)} »</p>` : '';
   const prog = UI.csProgress && UI.csProgress.id === c.id ? UI.csProgress.txt : '';
   const when = c.statut === 'envoi' ? prog || 'Envoi des photos au script…'
-    : `Photos bien reçues. ${c.mode === 'nuit' ? 'Claude analysera ces bouteilles cette nuit, lors du passage de la routine.'
-      : c.mode === 'api' ? 'Claude analyse tes bouteilles…' : "Claude analyse tes bouteilles : le résultat arrive d'ici une à deux minutes. Tu peux fermer cette fenêtre, il t'attendra dans l'onglet Conseil."}`;
+    : `Photos bien reçues. ${c.mode === 'nuit' ? 'Tastevin analysera ces bouteilles cette nuit, lors du passage de la routine.'
+      : c.mode === 'api' ? 'Tastevin analyse tes bouteilles…' : "Tastevin analyse tes bouteilles : le résultat arrive d'ici une à deux minutes. Tu peux fermer cette fenêtre, il t'attendra dans l'onglet Conseil."}`;
   let body;
   if (busy && !c.resultat) {
     body = `<div class="d-note is-wait cs-wait">${thumbs}<p>${esc(when)}${c.note ? ` <br><small>${esc(c.note)}</small>` : ''}</p></div>${q}`;
@@ -4323,8 +4337,8 @@ function renderConseilDetail() {
       + c.bouteilles.map((b, i) => `<article class="cs-bottle"><div class="cs-head"><div class="cs-pic" data-cs="${c.id}:${i}" role="img" aria-label="Photo de la bouteille ${i + 1}"></div>
           <div><h3 data-cs-title="${c.id}:${i}">${esc(csFixed(b).length ? conseilTitle(csView({}, b)) : `Bouteille ${i + 1}`)}</h3></div></div>${csEditor(c, i, {})}</article>`).join('');
   } else {
-    body = (busy ? `<div class="d-note is-wait cs-wait"><p>${esc(c.statut === 'envoi' ? prog || 'Envoi de la demande…' : 'Claude met à jour son analyse avec tes corrections. ' + when.replace(/^Photos bien reçues\. /, ''))}</p></div>`
-      : `<div class="d-note cs-relaunch" id="cs-relaunch"${c.modifie ? '' : ' hidden'}><p>Tu as complété cette analyse. Claude peut la refaire en tenant compte de tes corrections.</p>
+    body = (busy ? `<div class="d-note is-wait cs-wait"><p>${esc(c.statut === 'envoi' ? prog || 'Envoi de la demande…' : 'Tastevin met à jour son analyse avec tes corrections. ' + when.replace(/^Photos bien reçues\. /, ''))}</p></div>`
+      : `<div class="d-note cs-relaunch" id="cs-relaunch"${c.modifie ? '' : ' hidden'}><p>Tu as complété cette analyse. Tastevin peut la refaire en tenant compte de tes corrections.</p>
           <div class="btn-row"><button class="btn btn-primary" data-act="cs-relaunch" data-cid="${c.id}">Mettre à jour l'analyse</button></div></div>`)
       + q + c.resultat.bouteilles.map((r0, i) => {
         const b = c.bouteilles[i] || {}, r = csView(r0, b), col = colorOf(r.couleur), ok = r0.estEtiquette !== false || csFixed(b).length > 0;
@@ -4342,7 +4356,7 @@ function renderConseilDetail() {
           ${busy ? '' : csEditor(c, i, r0)}
           ${ok && !busy ? `<div class="btn-row">${wine ? `<button class="btn" data-open="${wine.id}">Dans ta cave ✓ Voir la fiche</button>` : `<button class="btn btn-primary" data-act="cs-add" data-cid="${c.id}" data-i="${i}">Ajouter à la cave</button>`}</div>` : ''}
         </article>`;
-      }).join('') + (c.resultat.recommandation ? `<div class="d-note"><p><strong>L'avis de Claude</strong></p><p>${esc(c.resultat.recommandation)}</p></div>` : '');
+      }).join('') + (c.resultat.recommandation ? `<div class="d-note"><p class="tv-h"><strong>${ICO_TV}L'avis de Tastevin</strong></p><p>${esc(c.resultat.recommandation)}</p></div>` : '');
   }
   det.innerHTML = body + `<div class="d-foot">${busy ? '' : `<button class="btn" data-act="cs-relaunch" data-cid="${c.id}">Relancer l'analyse</button>`}<button class="btn btn-danger" data-act="cs-del" data-cid="${c.id}">Supprimer cette analyse</button></div>`;
   hydrateScans(det);
@@ -4391,7 +4405,7 @@ async function addFromConseil(cid, i) {
   const mine = b.couleur && f.querySelector(`input[name="couleur"][value="${b.couleur}"]`);
   if (mine) { mine.checked = true; FORM.colorTouched = true; renderGrapes(); }
   applyLabel({ ...r, estEtiquette: true });
-  setAiStatus("Fiche préremplie par le conseil de Claude : vérifie-la, indique le nombre de bouteilles, puis ajoute-la.");
+  setAiStatus("Fiche préremplie par le conseil de Tastevin : vérifie-la, indique le nombre de bouteilles, puis ajoute-la.");
   updateFormPreview();
 }
 function linkConseil({ cid, i }, vinId) {
@@ -4739,7 +4753,7 @@ const Drive = {
     if (action === 'setCredits') { const r = await relais('reglages', payload); return { credits: creditsRelais(r.credits), coteMois: r.credits.coteMois }; }
     if (action === 'conseil') return driveConseil(payload.conseil);
     if (action === 'suggest') return driveSuggest(payload);
-    if (action !== 'sync' && action !== 'ping') throw Object.assign(new Error("Claude n'est pas encore disponible dans une cave Google Drive."), { code: 'drive' });
+    if (action !== 'sync' && action !== 'ping') throw Object.assign(new Error("Tastevin n'est pas encore disponible dans une cave Google Drive."), { code: 'drive' });
     const { meta, cave, merged } = action === 'sync' ? await Drive.sync(payload.db || {}) : await Drive.read();
     const r = {
       ok: true, version: SCRIPT_VERSION, nom: cave.nom || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true,
@@ -4885,7 +4899,7 @@ async function pullPhotosDrive() {
 const relaisOn = () => isDrive() && !!GOOGLE.relais;
 const plusTard = () => (relaisOn() ? 'dans un instant' : 'cette nuit');
 async function relais(action, p = {}, timeout = 150e3, again = true) {
-  if (!GOOGLE.relais) throw Object.assign(new Error("Claude n'est pas encore branché sur les caves Google Drive."), { code: 'drive' });
+  if (!GOOGLE.relais) throw Object.assign(new Error("Tastevin n'est pas encore branché sur les caves Google Drive."), { code: 'drive' });
   if (!Drive.token || Date.now() > Drive.until) await Drive.signIn();
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), timeout);
   let r, j = {};
@@ -4896,11 +4910,11 @@ async function relais(action, p = {}, timeout = 150e3, again = true) {
     });
     j = await r.json().catch(() => ({}));
   } catch (e) {
-    throw new Error(e.name === 'AbortError' ? 'Claude met trop de temps à répondre.' : navigator.onLine ? 'Le relais de Claude ne répond pas.' : 'Pas de connexion internet.');
+    throw new Error(e.name === 'AbortError' ? 'Tastevin met trop de temps à répondre.' : navigator.onLine ? 'Le relais de Tastevin ne répond pas.' : 'Pas de connexion internet.');
   } finally { clearTimeout(timer); }
   // Jeton expiré : on se reconnecte une fois, sans rien demander si c'est possible.
   if (r.status === 401 && again) { Drive.token = ''; return relais(action, p, timeout, false); }
-  if (!r.ok || !j.ok) throw Object.assign(new Error(j.error || `Le relais de Claude a répondu une erreur (${r.status}).`), { code: j.code || '', status: r.status, auth: r.status === 401 });
+  if (!r.ok || !j.ok) throw Object.assign(new Error(j.error || `Le relais de Tastevin a répondu une erreur (${r.status}).`), { code: j.code || '', status: r.status, auth: r.status === 401 });
   if (j.credits) { S.credits = creditsRelais(j.credits); S.coteMois = j.credits.coteMois || S.coteMois; saveSettings(); }
   return j;
 }
@@ -4953,10 +4967,10 @@ async function driveSuggest({ vinId, force }) {
   const old = db.suggestions.find(x => x.vinId === vinId);
   const next = old && old.statut === 'fait' && old.resultat ? suggestNextDate(w, old) : 0;
   if (next && !(force && S.role === 'proprio')) {
-    throw Object.assign(new Error(`Claude a déjà proposé des vins pour celui-ci le ${fmtDate(old.date)}. Tu pourras redemander à partir du ${fmtDate(new Date(next).toISOString())}, ou dès que sa fiche ou ses avis changent.`), { code: 'recent' });
+    throw Object.assign(new Error(`Tastevin a déjà proposé des vins pour celui-ci le ${fmtDate(old.date)}. Tu pourras redemander à partir du ${fmtDate(new Date(next).toISOString())}, ou dès que sa fiche ou ses avis changent.`), { code: 'recent' });
   }
   const r = await relais('similaires', { contexte: suggestContexte(w) }, 150e3);
-  if (!r.result || !(r.result.vins || []).length) throw new Error('Claude n\'a proposé aucun vin. Réessaie plus tard.');
+  if (!r.result || !(r.result.vins || []).length) throw new Error('Tastevin n\'a proposé aucun vin. Réessaie plus tard.');
   const now = nowISO();
   return { suggestion: { id: 'sg-' + vinId, vinId, date: now, par: S.device, statut: 'fait', mode: 'api', note: '', resultat: r.result, updatedAt: now } };
 }
@@ -5071,7 +5085,7 @@ async function driveClaude() {
     driveClaudeBusy = false;
     if (changed) { persist(); render(); scheduleSync(800); }
     // Une seule fois par raison : pas de message à chaque synchro.
-    if (stop && driveClaudeDit !== stop) { driveClaudeDit = stop; toast(`Claude n'a pas encore pu lire toutes les fiches : ${stop}`); }
+    if (stop && driveClaudeDit !== stop) { driveClaudeDit = stop; toast(`Tastevin n'a pas encore pu lire toutes les fiches : ${stop}`); }
   }
 }
 
@@ -5482,7 +5496,7 @@ async function sync({ interactive = false } = {}) {
     // Photos de vins arrivées sur le serveur : on le dit, sinon rien ne montre que l'envoi a réussi.
     if (sent.length) {
       const toRead = sent.filter(id => (db.wines.find(w => w.id === id) || {}).lecture === 'attente').length;
-      toast(`${sent.length > 1 ? `${sent.length} photos bien envoyées` : 'Photo bien envoyée'}${toRead ? ` : Claude lira ${toRead > 1 ? 'les étiquettes' : "l'étiquette"}.` : '.'}`);
+      toast(`${sent.length > 1 ? `${sent.length} photos bien envoyées` : 'Photo bien envoyée'}${toRead ? ` : Tastevin lira ${toRead > 1 ? 'les étiquettes' : "l'étiquette"}.` : '.'}`);
     }
   } catch (e) {
     console.error(e);
@@ -5786,7 +5800,7 @@ function wire() {
         case 'not-dup': setReading(id, { doublonDe: '', doublonType: '' }, 'Noté : ce sont deux vins différents.'); break;
         // Alerte retirée par la personne : « non », que Claude ne remettra pas.
         case 'clear-alert': setReading(id, w => ({ alerte: 'non', claude: claudeKeys(w).filter(k => k !== 'alerte').join(',') }), 'Alerte retirée'); break;
-        case 'ask-claude': setReading(id, { lecture: 'revoir' }, `Claude repassera sur cette fiche ${plusTard()}.`); break;
+        case 'ask-claude': setReading(id, { lecture: 'revoir' }, `Tastevin repassera sur cette fiche ${plusTard()}.`); break;
         case 'cancel-review': setReading(id, w => ({ lecture: claudeKeys(w).length ? 'faite' : '' }), 'Demande annulée'); break;
         case 'merge': mergeTwin(id); break;
         case 'same-bottle': mergeTwin(id, true); break;
