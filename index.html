@@ -435,6 +435,8 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .cave-del{flex:none;font-size:.9rem}
 .caves-add{margin-top:18px;display:grid;gap:8px}
 .caves-find{margin:12px 0 0}
+.optin{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:12px 14px;border-radius:12px;background:var(--accent-tint);font-size:.92rem;line-height:1.45}
+.optin input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent)}
 .caves-add .btn{justify-self:start}
 /* Claude et crédits */
 .cr-gauges{display:grid;gap:12px;margin:12px 0}
@@ -897,6 +899,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
           </label>
           <p class="hint">Il lui faut un compte Google (souvent son adresse Gmail). La cave est partagée avec ce compte, puis tu lui envoies le lien : elle le colle dans l'appli et confirme la cave, sans rien installer.</p>
           <button class="btn" data-act="drive-invite">Partager la cave</button>
+          <label class="optin" style="margin-top:16px"><input type="checkbox" id="drive-photos"><span><strong>Partager mes photos d'étiquettes avec la cave.</strong> Elles sont rangées dans le Google Drive de la cave et partagées par lien : seule une personne qui connaît leur adresse, impossible à deviner, peut les voir. Sans cela, tes photos restent sur cet appareil.</span></label>
         </div>
         <div id="script-set">
         <label class="f" style="margin-top:14px">Adresse du script
@@ -1468,7 +1471,7 @@ const UI = { view: 'cave', q: '', color: '', sort: 'nom', showEmpty: false, peri
 
 function loadAll() {
   const d = lsGet(LS_DATA, {});
-  db = { wines: d.wines || [], moves: d.moves || [], trash: d.trash || [], people: d.people || [], avis: d.avis || [], conseils: d.conseils || [], suggestions: d.suggestions || [] };
+  db = { wines: d.wines || [], moves: d.moves || [], trash: d.trash || [], people: d.people || [], avis: d.avis || [], conseils: d.conseils || [], suggestions: d.suggestions || [], photos: d.photos || [] };
   S = { ...S, ...lsGet(LS_SET, {}) };
   if (!Array.isArray(S.photoDeletes)) S.photoDeletes = [];
 }
@@ -2470,6 +2473,7 @@ function renderReglages() {
   // Cave Google Drive : ni adresse de script ni code, la cave est un fichier du Drive de la personne qui l'a créée.
   $('#script-set').hidden = isDrive();
   $('#drive-set').hidden = !isDrive();
+  $('#drive-photos').checked = !!S.photoShare;
   $('#sync-intro').textContent = isDrive()
     ? `La cave est un fichier de ${S.role === 'proprio' ? 'ton Google Drive' : S.driveOwner ? `du Google Drive de ${S.driveOwner}` : 'Google Drive'}. L'appli s'y connecte avec ton compte Google, et n'a accès qu'aux fichiers de la cave.`
     : "La cave est enregistrée dans un Google Sheet, à travers un petit script Google installé une seule fois par la personne qui l'héberge. Chaque appareil n'a besoin que de l'adresse du script et du code secret : aucun compte Google à connecter.";
@@ -2673,7 +2677,7 @@ function renderSyncBox() {
       : k === 'offline' ? 'Hors ligne : tes modifications sont gardées sur cet appareil.'
       : S.lastSync ? `Reliée à Google Drive. Dernière synchro ${rel(S.lastSync)}.` : 'Reliée à Google Drive, pas encore synchronisée.';
     let d = `<p class="status" data-k="${k}"><span class="sync-dot"></span>${st}</p>`;
-    d += '<p class="hint">Lecture des étiquettes : à la main pour l\'instant. Claude arrivera dans les caves Google Drive avec le relais ; les photos restent sur cet appareil.</p>';
+    d += `<p class="hint">Lecture des étiquettes : à la main pour l'instant, Claude arrivera dans les caves Google Drive avec le relais. ${S.photoShare ? 'Tes photos sont partagées avec la cave.' : 'Tes photos restent sur cet appareil (voir plus bas).'}</p>`;
     d += '<div class="btn-row"><button class="btn btn-primary" data-act="sync-now">Synchroniser maintenant</button>';
     if (/^https:\/\/drive\.google\.com\//.test(S.driveUrl)) d += `<a class="btn" href="${esc(S.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Google Drive</a>`;
     box.innerHTML = d + '</div>';
@@ -4726,6 +4730,126 @@ const Drive = {
     return r;
   },
 };
+/* ---------- Photos d'une cave Drive ----------
+   Avec l'accord de la personne (Réglages › « Partager mes photos d'étiquettes »), chaque photo est rangée dans le dossier
+   Photos de la cave et partagée par lien : les autres membres la lisent avec la clé de l'appli, sans aucun accès au Drive
+   de celui qui l'a prise. Une photo d'invité reste à son nom : l'appli du propriétaire la recopie à son nom (adoption),
+   puis l'appli de l'invité supprime l'original. db.photos note chaque photo envoyée : qui, pour quel vin, et où en est
+   l'adoption ('' à adopter, 'proprio' au propriétaire, 'adoptee' recopiée, 'supprimee'). */
+async function drivePublicBlob(id) {
+  let r;
+  try { r = await fetch(`${DRIVE_API}/files/${id}?alt=media&key=${encodeURIComponent(GOOGLE.apiKey)}`); }
+  catch { throw new Error('Google Drive ne répond pas.'); }
+  if (!r.ok) throw Object.assign(new Error(`Photo illisible (${r.status}).`), { status: r.status });
+  return r.blob();
+}
+async function driveUploadPhoto(name, blob, parent) {
+  const up = parents => {
+    const fd = new FormData();
+    fd.append('metadata', new Blob([JSON.stringify({ name, mimeType: 'image/jpeg', ...(parents ? { parents } : {}) })], { type: 'application/json' }));
+    fd.append('file', blob);
+    return Drive.req('POST', `${DRIVE_UP}/files?uploadType=multipart&fields=id`, { body: fd });
+  };
+  let f;
+  try { f = await up(parent ? [parent] : null); }
+  // Dossier Photos pas accessible (partage retiré, dossier supprimé) : la photo va dans son propre Drive.
+  catch (e) { if (!parent || (e.status !== 403 && e.status !== 404)) throw e; f = await up(null); }
+  try { await Drive.req('POST', `${DRIVE_API}/files/${f.id}/permissions?fields=id`, { json: { type: 'anyone', role: 'reader' } }); }
+  catch (e) {
+    await Drive.req('DELETE', `${DRIVE_API}/files/${f.id}`).catch(() => {});
+    throw new Error(e.status === 403 ? "Ton compte Google refuse le partage par lien (compte professionnel ?) : tes photos restent sur cet appareil." : e.message);
+  }
+  return f.id;
+}
+function notePhoto(id, vinId, par, etat) {
+  db.photos = (db.photos || []).filter(p => p.id !== id);
+  db.photos.push({ id, vinId, par, etat, updatedAt: nowISO() });
+}
+/** Avant la fusion : supprimer ce qu'on a retiré, puis envoyer ses nouvelles photos (si on a donné son accord). */
+async function pushPhotosDrive() {
+  // Le compte Google n'est demandé que s'il y a des photos à traiter.
+  const busy = S.photoDeletes.length || S.photoShare;
+  const me = busy ? await Drive.whoami() : '';
+  for (const id of [...S.photoDeletes]) {
+    // Seulement ses propres fichiers : ceux des autres, Drive refuse de les supprimer, et c'est bien ainsi.
+    try { await Drive.req('DELETE', `${DRIVE_API}/files/${id}`); } catch (e) { if (e.status !== 403 && e.status !== 404) throw e; }
+    const e = (db.photos || []).find(p => p.id === id);
+    if (e && e.par === me) Object.assign(e, { etat: 'supprimee', updatedAt: nowISO() });
+    S.photoDeletes = S.photoDeletes.filter(x => x !== id); saveSettings(); persist();
+  }
+  if (!S.photoShare) return [];
+  let recs;
+  try { recs = await Photos.all(); } catch { return []; }
+  const todo = recs.filter(r => !isScanKey(r.id) && (r.dirty || (!r.driveId && db.wines.some(w => w.id === r.id && !w.photoId))));
+  const sent = [];
+  for (const r of todo) {
+    const w = db.wines.find(x => x.id === r.id);
+    if (!w) continue;
+    const id = await driveUploadPhoto(`${slug(wineLabel(w)) || 'vin'}-${w.id}.jpg`, r.blob, S.photosId);
+    if (!db.wines.includes(w)) { S.photoDeletes.push(id); saveSettings(); continue; }
+    if (w.photoId && w.photoId !== id) S.photoDeletes.push(w.photoId);
+    w.photoId = id; w.updatedAt = nowISO();
+    notePhoto(id, w.id, me, S.role === 'proprio' ? 'proprio' : '');
+    persist(); saveSettings();
+    sent.push(w.id);
+    // Si la photo a encore changé pendant l'envoi, la nouvelle partira à la prochaine synchro.
+    const cur = await Photos.get(r.id).catch(() => null);
+    if (cur && cur.v === r.v) await Photos.put({ ...cur, driveId: id, dirty: false });
+  }
+  return sent;
+}
+/** Après la fusion : le propriétaire adopte les photos des invités ; chacun retire de son Drive ses photos qui ne servent
+    plus (remplacées, adoptées, vin supprimé) ; puis on récupère les photos qui manquent sur l'appareil. Vrai s'il reste
+    des photos à récupérer, ou si la cave a changé et doit repartir. */
+async function pullPhotosDrive() {
+  const me = (db.photos || []).length ? await Drive.whoami() : '';
+  let changed = false;
+  // Adopter, c'est ranger la copie dans son Drive, partagée par lien : il faut aussi l'accord du propriétaire.
+  if (S.role === 'proprio' && S.photoShare) {
+    for (const e of (db.photos || []).filter(p => !p.etat && p.par !== me)) {
+      const w = db.wines.find(x => x.id === e.vinId && x.photoId === e.id);
+      if (!w) continue;  // remplacée entre-temps : plus rien à adopter
+      let blob;
+      try { blob = await drivePublicBlob(e.id); } catch { continue; }
+      const id = await driveUploadPhoto(`${slug(wineLabel(w)) || 'vin'}-${w.id}.jpg`, blob, S.photosId);
+      w.photoId = id; w.updatedAt = nowISO();
+      Object.assign(e, { etat: 'adoptee', copie: id, updatedAt: nowISO() });
+      notePhoto(id, w.id, me, 'proprio');
+      await Photos.put({ id: w.id, blob, driveId: id, dirty: false }); Photos.forget(w.id); photoIds.add(w.id);
+      changed = true;
+    }
+  }
+  const used = new Set(db.wines.map(w => w.photoId).filter(Boolean));
+  for (const e of (db.photos || []).filter(p => p.par === me && p.etat !== 'supprimee' && !used.has(p.id))) {
+    try { await Drive.req('DELETE', `${DRIVE_API}/files/${e.id}`); } catch (err) { if (err.status !== 404) continue; }
+    Object.assign(e, { etat: 'supprimee', updatedAt: nowISO() });
+    changed = true;
+  }
+  if (changed) persist();
+  let recs;
+  try { recs = await Photos.all(); } catch { return changed; }
+  const byId = new Map(recs.map(r => [r.id, r]));
+  const ids = new Set([...db.wines.map(w => w.id), ...otherCaveIds()]);
+  const todo = [];
+  for (const w of db.wines) {
+    const r = byId.get(w.id);
+    if (w.photoId && (!r || (!r.dirty && r.driveId !== w.photoId))) { if (!photoMissing.has(w.photoId)) todo.push(w); }
+    else if (!w.photoId && r && !r.dirty && r.driveId) { await Photos.del(w.id); Photos.forget(w.id); photoIds.delete(w.id); }
+  }
+  for (const r of recs) if (!ids.has(r.id) && !isScanKey(r.id)) { await Photos.del(r.id); Photos.forget(r.id); photoIds.delete(r.id); }
+  const batch = todo.slice(0, 24);
+  for (const w of batch) {
+    const fid = w.photoId;
+    try {
+      const blob = await drivePublicBlob(fid);
+      const cur = await Photos.get(w.id).catch(() => null);
+      if (w.photoId !== fid || (cur && cur.dirty)) continue;
+      await Photos.put({ id: w.id, blob, driveId: fid, dirty: false }); Photos.forget(w.id); photoIds.add(w.id);
+    } catch (e) { if (e.status === 404 || e.status === 403) photoMissing.add(fid); }
+  }
+  return changed || todo.length > batch.length;
+}
+
 /** Rejoindre une cave Drive (lien d'invitation) : connexion, puis le sélecteur de Google limité au fichier de la cave,
     où l'invité n'a qu'à confirmer. Une cave déjà désignée sur un autre appareil s'ouvre sans sélecteur. */
 async function joinDriveCave(d) {
@@ -4942,6 +5066,8 @@ function mergeDb(local, remote) {
   out.avis = mergeList(local.avis, remote.avis).filter(a => outs.has(a.mvId));
   out.avis.forEach(a => { a.vinId = outs.get(a.mvId); });
   out.conseils = mergeList(local.conseils, remote.conseils);
+  // Photos envoyées dans une cave Google Drive : qui, pour quel vin, et où en est l'adoption (vide pour une cave à script).
+  out.photos = mergeList(local.photos, remote.photos);
   // Vins similaires : seul le serveur les écrit (réponses de Claude) ; un script trop ancien n'en renvoie pas.
   out.suggestions = mergeList(local.suggestions, remote.suggestions).map(cleanSuggestion).filter(x => x && ids.has(x.vinId));
   out.trash = [...trash.values()].filter(t => Date.now() - Date.parse(t.at) < 365 * 864e5);
@@ -4950,8 +5076,7 @@ function mergeDb(local, remote) {
 
 /* Photos : envoyées au script avant la synchro, téléchargées après. */
 async function pushPhotos() {
-  // Cave Google Drive : les photos restent sur l'appareil pour l'instant (partage avec l'accord de chacun à venir).
-  if (isDrive()) return [];
+  if (isDrive()) return pushPhotosDrive();
   if (S.photoDeletes.length) {
     const ids = [...S.photoDeletes];
     await API.call('photoDel', { ids });
@@ -4986,7 +5111,7 @@ async function pushPhotos() {
 
 const photoMissing = new Set();
 async function pullPhotos() {
-  if (isDrive()) return false;
+  if (isDrive()) return pullPhotosDrive();
   let recs;
   try { recs = await Photos.all(); } catch { return false; }
   const byId = new Map(recs.map(r => [r.id, r]));
@@ -5121,7 +5246,7 @@ async function sync({ interactive = false } = {}) {
     migrateNotes();
     // Un conseil pas encore envoyé (photos en route) n'existe que sur cet appareil.
     const conseils = db.conseils.filter(c => c.statut !== 'envoi');
-    const r = await API.call('sync', { db: { wines: db.wines, moves: db.moves, trash: db.trash, people: db.people, avis: db.avis, conseils }, ...pageInfo() });
+    const r = await API.call('sync', { db: { wines: db.wines, moves: db.moves, trash: db.trash, people: db.people, avis: db.avis, conseils, ...(isDrive() ? { photos: db.photos || [] } : {}) }, ...pageInfo() });
     // Garde-fou : on a changé de cave pendant l'envoi ; la réponse appartient à l'autre cave.
     if (caveRef() !== forCave) return;
     mergeInto(r.db || {});
@@ -5216,7 +5341,7 @@ async function acceptInvite() {
    identifiants sont propres à chaque vin et à chaque conseil.
    ========================================================= */
 const LS_CAVES = 'macave:caves';
-const CAVE_FIELDS = ['kind', 'apiUrl', 'secret', 'fileId', 'folderId', 'photosId', 'driveUrl', 'driveOwner', 'proprio', 'role', 'proprioActif', 'credits', 'coteMois', 'device', 'lastSync', 'sheetUrl', 'webUrl', 'labelOn', 'routineOn', 'routineVu', 'serverVersion', 'photoDeletes', 'nom'];
+const CAVE_FIELDS = ['kind', 'apiUrl', 'secret', 'fileId', 'folderId', 'photosId', 'driveUrl', 'driveOwner', 'photoShare', 'proprio', 'role', 'proprioActif', 'credits', 'coteMois', 'device', 'lastSync', 'sheetUrl', 'webUrl', 'labelOn', 'routineOn', 'routineVu', 'serverVersion', 'photoDeletes', 'nom'];
 const caveKey = u => 'c' + [...String(u)].reduce((h, c) => (Math.imul(h, 33) + c.charCodeAt(0)) >>> 0, 5381).toString(36);
 let CAVES = lsGet(LS_CAVES, []);
 const saveCaves = () => lsSet(LS_CAVES, CAVES);
@@ -5225,7 +5350,7 @@ const refOf = c => (c.kind === 'drive' ? (c.fileId ? 'drive:' + c.fileId : '') :
 const caveRef = () => refOf(S);
 const curKey = () => (caveRef() ? caveKey(caveRef()) : '');
 const caveName = e => (e && e.nom) || 'Ma cave';
-const emptyDb = () => ({ wines: [], moves: [], trash: [], people: [], avis: [], conseils: [], suggestions: [] });
+const emptyDb = () => ({ wines: [], moves: [], trash: [], people: [], avis: [], conseils: [], suggestions: [], photos: [] });
 function caveCounts(d) {
   const st = new Map();
   (d.moves || []).forEach(m => st.set(m.vinId, (st.get(m.vinId) || 0) + (m.type === 'entree' ? 1 : -1) * (m.qte || 0)));
@@ -5521,6 +5646,13 @@ function wire() {
     UI.owner = e.target.value; lsSet('macave:owner', UI.owner); render();
   });
   $('#show-empty').addEventListener('change', e => { UI.showEmpty = e.target.checked; renderCave(); });
+  // Cave Google Drive : partager ses photos, seulement avec l'accord de la personne.
+  $('#drive-photos').addEventListener('change', e => {
+    S.photoShare = e.target.checked; saveSettings(); rememberCave();
+    renderSyncBox();
+    if (S.photoShare) { toast('Tes photos vont partir dans le Google Drive de la cave.'); scheduleSync(300); }
+    else toast('Tes prochaines photos resteront sur cet appareil.');
+  });
   $('#filters-btn').addEventListener('click', () => { UI.filtersOpen = !UI.filtersOpen; renderCave(); });
   $('#bfilters-btn').addEventListener('click', () => { UI.boireFiltersOpen = !UI.boireFiltersOpen; renderBoire(); });
   $('#bregion').addEventListener('change', e => { UI.region = e.target.value; render(); });
