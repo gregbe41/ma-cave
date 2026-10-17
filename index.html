@@ -437,6 +437,16 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .caves-find{margin:12px 0 0}
 .optin{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:12px 14px;border-radius:12px;background:var(--accent-tint);font-size:.92rem;line-height:1.45}
 .optin input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent)}
+/* Bascule d'une cave sur Google Drive : où on en est, puis le bilan table par table */
+.bascule-etat{margin:14px 0 4px}
+.bascule-step{color:var(--muted)}
+.bascule-step.is-ko{color:var(--late-fg)}
+.bascule-bilan{width:100%;border-collapse:collapse;font-size:.92rem}
+.bascule-bilan th,.bascule-bilan td{padding:6px 4px;border-bottom:1px solid var(--soft);text-align:right}
+.bascule-bilan th:first-child{text-align:left;font-weight:600}
+.bascule-bilan thead th{color:var(--muted);font-weight:600;font-size:.8rem}
+.bascule-bilan .is-ok td:last-child{color:var(--accent-ink);font-weight:700}
+.bascule-bilan .is-ko td:last-child{color:var(--late-fg);font-weight:700}
 .caves-add .btn{justify-self:start}
 /* Tastevin et bouchons */
 .ico-tv,.ico-bo{display:inline-block;width:1.2em;height:1.2em;vertical-align:-.25em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -1227,6 +1237,18 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
       <button type="button" class="add-opt" data-add="bulk" id="add-bulk"><b>Ajouter par photos</b><span>Jusqu'à 15 bouteilles d'un coup</span></button>
       <button type="button" class="add-opt" data-add="manual"><b>Saisir à la main</b><span>Domaine, millésime, nombre de bouteilles…</span></button>
       <button type="button" class="btn add-cancel" data-close>Annuler</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="sheet" id="dlg-bascule" aria-labelledby="bascule-title">
+  <div class="sheet-wrap">
+    <div class="sheet-head"><h2 id="bascule-title">Passer la cave sur Google Drive</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body">
+      <p>L'appli recopie toute la cave dans ton Google Drive : vins, mouvements, avis, personnes, conseils, vins similaires. Ta cave actuelle ne change pas : son Google Sheet, son script et ses photos restent tels quels, et tu peux continuer à t'en servir.</p>
+      <label class="optin" style="margin-top:12px"><input type="checkbox" id="bascule-photos" checked><span><strong>Recopier aussi les photos d'étiquettes.</strong> Elles sont rangées dans le dossier Photos de la nouvelle cave et partagées par lien : seule une personne qui connaît leur adresse, impossible à deviner, peut les voir.</span></label>
+      <div id="bascule-etat" class="bascule-etat"></div>
+      <div class="btn-row"><button type="button" class="btn btn-primary" data-act="bascule-go">Lancer la bascule</button><button type="button" class="btn" id="bascule-ouvrir" data-act="bascule-ouvrir" hidden>Ouvrir la cave Google Drive</button></div>
     </div>
   </div>
 </dialog>
@@ -2726,6 +2748,8 @@ function renderSyncBox() {
   // Tant que le propriétaire ne s'est déclaré sur aucun appareil, chacun a tous les droits (script v17).
   const bulkOk = (S.serverVersion || 0) < 16 || S.role === 'proprio' || !S.proprioActif;
   if (missing && (S.serverVersion || 0) >= 12 && claudeOn()) h += `<p class="hint">${missing} ${plural(missing, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${bulkOk ? '' : ' Le propriétaire de la cave peut les faire compléter par Tastevin.'}</p>${bulkOk ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Tastevin</button></div>' : ''}`;
+  // Passer sur Google Drive, sans script : une copie, la cave actuelle ne change pas.
+  if (basculeOk()) h += `<p class="hint">Cette cave peut passer sur Google Drive, sans script : l'appli la recopie, et la cave actuelle ne change pas.</p><div class="btn-row"><button class="btn" data-act="bascule-open">Passer cette cave sur Google Drive</button></div>`;
   box.innerHTML = h;
 }
 /** Vins en cave sans style ni accords, que Claude peut compléter (pas déjà en attente de lecture). */
@@ -4873,7 +4897,7 @@ async function pullPhotosDrive() {
   const todo = [];
   for (const w of db.wines) {
     const r = byId.get(w.id);
-    if (w.photoId && (!r || (!r.dirty && r.driveId !== w.photoId))) { if (!photoMissing.has(w.photoId)) todo.push(w); }
+    if (w.photoId && (!r || (!r.dirty && r.driveId !== w.photoId && !(r.aliases || []).includes(w.photoId)))) { if (!photoMissing.has(w.photoId)) todo.push(w); }
     else if (!w.photoId && r && !r.dirty && r.driveId) { await Photos.del(w.id); Photos.forget(w.id); photoIds.delete(w.id); }
   }
   for (const r of recs) if (!ids.has(r.id) && !isScanKey(r.id)) { await Photos.del(r.id); Photos.forget(r.id); photoIds.delete(r.id); }
@@ -5105,6 +5129,119 @@ async function driveClaude() {
     if (changed) { persist(); render(); scheduleSync(800); }
     // Une seule fois par raison : pas de message à chaque synchro.
     if (stop && driveClaudeDit !== stop) { driveClaudeDit = stop; toast(`Tastevin n'a pas encore pu lire toutes les fiches : ${stop}`); }
+  }
+}
+
+/* ---------- Bascule : une cave à script recopiée dans une cave Google Drive ----------
+   Rien n'est modifié ni supprimé dans la cave à script : son Google Sheet, son script et ses photos restent tels quels,
+   et on peut continuer à s'en servir. L'appli relit tout (synchro), recrée la cave dans le Drive de la personne avec les
+   mêmes identifiants, recopie les photos si elle le veut, puis relit cave.json et compare, table par table.
+   Interrompue, la bascule reprend là où elle en était (cave déjà créée, photos déjà recopiées). */
+const basculeCle = () => 'macave:bascule:' + curKey();
+const basculeOk = () => Drive.available() && !isDrive() && API.ready() && (S.role === 'proprio' || !S.proprioActif);
+const BASCULE_TABLES = [['wines', 'Vins'], ['moves', 'Mouvements'], ['avis', 'Avis'], ['people', 'Personnes'], ['conseils', 'Conseils'], ['suggestions', 'Vins similaires'], ['trash', 'Corbeille']];
+function openBascule() {
+  if (!basculeOk()) return;
+  const prog = lsGet(basculeCle(), {});
+  $('#bascule-etat').innerHTML = prog.fini ? '<p class="hint">Cette cave a déjà été recopiée dans Google Drive. Relancer la bascule met la copie à jour.</p>'
+    : prog.fileId ? '<p class="hint">Une bascule a été commencée : la relancer reprend là où elle en était.</p>' : '';
+  $('#bascule-ouvrir').hidden = !prog.fini;
+  $('#dlg-bascule').showModal();
+}
+async function basculer() {
+  if (!basculeOk()) return;
+  const out = $('#bascule-etat'), btn = $('[data-act="bascule-go"]'), avecPhotos = $('#bascule-photos').checked;
+  const etape = t => { out.innerHTML = `<p class="bascule-step">${esc(t)}</p>`; };
+  const cle = basculeCle(), prog = lsGet(cle, {});
+  btn.disabled = true; $('#bascule-ouvrir').hidden = true;
+  try {
+    etape('Synchronisation de la cave actuelle…');
+    if (!(await quietSync())) throw new Error(BUSY_MSG);
+    if (syncState.k !== 'ok') throw new Error('La cave actuelle ne se synchronise pas : réessaie une fois la synchro réussie.');
+    const src = JSON.parse(JSON.stringify({ wines: db.wines, moves: db.moves, trash: db.trash, people: db.people, avis: db.avis, conseils: db.conseils, suggestions: db.suggestions || [] }));
+    etape('Connexion à Google…');
+    await Drive.connected();
+    const me = await Drive.whoami();
+    if (!prog.fileId) {
+      etape('Création de la cave dans ton Google Drive…');
+      Object.assign(prog, await Drive.createCave(S.nom || 'Ma cave'));
+    }
+    prog.photos = prog.photos || {};
+    lsSet(cle, prog);
+
+    // Les photos : prises sur l'appareil quand elles y sont, sinon demandées au script.
+    const vins = avecPhotos ? src.wines.filter(w => w.photoId) : [];
+    for (const [i, w] of vins.entries()) {
+      if (prog.photos[w.id]) continue;
+      etape(`Photos : ${i + 1} sur ${vins.length}…`);
+      const rec = await Photos.get(w.id).catch(() => null);
+      let blob = rec && rec.blob && (rec.driveId === w.photoId || (rec.aliases || []).includes(w.photoId)) ? rec.blob : null;
+      if (!blob) { const r = await API.call('photoGet', { id: w.photoId }, 90e3); blob = b64ToBlob(r.data, r.mime); }
+      prog.photos[w.id] = await driveUploadPhoto(`${slug(wineLabel(w)) || 'vin'}-${w.id}.jpg`, blob, prog.photosId);
+      lsSet(cle, prog);
+      // Sur cet appareil, la même photo sert aux deux caves : elle garde ses deux adresses, sans téléchargement en double.
+      if (rec && rec.blob) await Photos.put({ ...rec, aliases: [...new Set([...(rec.aliases || []), w.photoId, prog.photos[w.id]])] });
+    }
+
+    etape('Écriture de la cave dans Google Drive…');
+    const copie = {
+      ...src,
+      wines: src.wines.map(w => ({ ...w, photoId: (avecPhotos && prog.photos[w.id]) || '' })),
+      // Les photos d'un conseil restent sur l'appareil dans une cave Drive.
+      conseils: src.conseils.map(c => ({ ...c, bouteilles: (c.bouteilles || []).map(b => ({ ...b, photoId: '' })) })),
+      photos: avecPhotos ? Object.entries(prog.photos).filter(([vinId]) => src.wines.some(w => w.id === vinId)).map(([vinId, id]) => ({ id, vinId, par: me, etat: 'proprio', updatedAt: nowISO() })) : [],
+    };
+    // Une bascule relancée fusionne avec ce qu'il y a déjà dans Google Drive : rien de ce qui y a été ajouté n'est perdu.
+    const { cave } = await Drive.read(prog.fileId);
+    const fusion = mergeDb(copie, cave.db || {});
+    await Drive.req('PATCH', `${DRIVE_UP}/files/${prog.fileId}?uploadType=media&fields=id`, {
+      body: JSON.stringify({ ...cave, nom: S.nom || cave.nom, format: CAVE_FORMAT, db: fusion, basculeLe: nowISO(), majPar: S.device || '' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    // Vérification : cave.json relu depuis Google Drive ; chaque fiche de la cave actuelle doit y être, à jour.
+    etape('Vérification…');
+    const relu = (await Drive.read(prog.fileId)).cave.db || {};
+    const date = x => x.updatedAt || x.at || '';
+    const lignes = BASCULE_TABLES.map(([k, nom]) => {
+      const a = src[k] || [], b = new Map((relu[k] || []).map(x => [x.id, x]));
+      const ok = a.every(x => b.has(x.id) && date(b.get(x.id)) >= date(x));
+      return { nom, n: a.length, m: b.size, ok };
+    });
+    if (avecPhotos) {
+      let vues = 0;
+      for (const w of vins) {
+        const id = ((relu.wines || []).find(x => x.id === w.id) || {}).photoId;
+        if (id && await Drive.req('GET', `${DRIVE_API}/files/${id}?fields=id`).then(() => true, () => false)) vues++;
+      }
+      lignes.push({ nom: 'Photos', n: vins.length, m: vues, ok: vues === vins.length });
+    }
+    const toutBon = lignes.every(l => l.ok);
+    out.innerHTML = `<table class="bascule-bilan"><thead><tr><th></th><th>Cave actuelle</th><th>Google Drive</th><th></th></tr></thead><tbody>${lignes.map(l =>
+      `<tr class="${l.ok ? 'is-ok' : 'is-ko'}"><th>${esc(l.nom)}</th><td>${fmtNum(l.n)}</td><td>${fmtNum(l.m)}</td><td>${l.ok ? '✓' : '✗'}</td></tr>`).join('')}</tbody></table>`
+      + (toutBon ? `<p class="hint">Tout est recopié : chaque fiche de la cave actuelle est dans Google Drive, à jour. Ta cave actuelle n'a pas changé. Pour que les autres membres passent sur la nouvelle cave, invite-les depuis ses Réglages.</p>`
+        : '<p class="hint">Des écarts : la cave actuelle n\'a pas changé. Relance la bascule pour réessayer.</p>');
+    if (!toutBon) return;
+
+    // La nouvelle cave entre dans « Mes caves », prête à ouvrir : même personne, photos déjà sur l'appareil.
+    const key = caveKey('drive:' + prog.fileId);
+    const entree = {
+      key, kind: 'drive', fileId: prog.fileId, folderId: prog.folderId, photosId: prog.photosId, nom: S.nom || 'Ma cave', role: 'proprio', proprioActif: true,
+      device: S.device, photoShare: avecPhotos, aLire: copie.wines.filter(w => ['attente', 'revoir'].includes(w.lecture)).map(w => w.id), ...caveCounts(copie), vu: '',
+    };
+    if (key !== curKey()) {
+      // Déjà sur l'appareil (bascule relancée) : ses réglages restent, seules ses données sont mises à jour.
+      const deja = CAVES.find(c => c.key === key);
+      CAVES = CAVES.filter(c => c.key !== key).concat(deja ? { ...deja, ...caveCounts(fusion), aLire: [...new Set([...(deja.aLire || []), ...entree.aLire])] } : entree);
+      saveCaves();
+      lsSet('macave:cave:' + key, { ...lsGet('macave:cave:' + key, {}), db: fusion, vus: [...seenConseils], owner: UI.owner });
+    }
+    prog.fini = true; prog.key = key; lsSet(cle, prog);
+    $('#bascule-ouvrir').hidden = false;
+  } catch (e) {
+    out.innerHTML = `<p class="bascule-step is-ko">${esc(e.auth ? 'Connexion à Google annulée.' : e.message)} Tu peux relancer la bascule : elle reprendra là où elle en était, et ta cave actuelle n'a pas changé.</p>`;
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -5378,7 +5515,7 @@ async function pullPhotos() {
   const todo = [];
   for (const w of db.wines) {
     const r = byId.get(w.id);
-    if (w.photoId && (!r || (!r.dirty && r.driveId !== w.photoId))) { if (!photoMissing.has(w.photoId)) todo.push(w); }
+    if (w.photoId && (!r || (!r.dirty && r.driveId !== w.photoId && !(r.aliases || []).includes(w.photoId)))) { if (!photoMissing.has(w.photoId)) todo.push(w); }
     else if (!w.photoId && r && !r.dirty && r.driveId) { await Photos.del(w.id); Photos.forget(w.id); photoIds.delete(w.id); }
   }
   // Les photos des conseils (« cs-… ») ne sont pas celles d'un vin : elles restent.
@@ -5802,6 +5939,9 @@ function wire() {
         case 'caves-join': joinFromMenu(); break;
         case 'caves-create': createDriveCave(); break;
         case 'caves-find': findDriveCaves(); break;
+        case 'bascule-open': openBascule(); break;
+        case 'bascule-go': basculer(); break;
+        case 'bascule-ouvrir': { const k = lsGet(basculeCle(), {}).key; $('#dlg-bascule').close(); if (k) openCave(k); break; }
         case 'drive-invite': inviteDrive(); break;
         case 'edit': openWineForm(id); break;
         case 'in': openMove(id, 'entree'); break;
