@@ -434,6 +434,7 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .cave-row.is-cur .cv-name{color:var(--accent-ink)}
 .cave-del{flex:none;font-size:.9rem}
 .caves-add{margin-top:18px;display:grid;gap:8px}
+.caves-find{margin:12px 0 0}
 .caves-add .btn{justify-self:start}
 /* Claude et crédits */
 .cr-gauges{display:grid;gap:12px;margin:12px 0}
@@ -890,6 +891,13 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
         <h2>Partage et synchronisation</h2>
         <p id="sync-intro">La cave est enregistrée dans un Google Sheet, à travers un petit script Google installé une seule fois par la personne qui l'héberge. Chaque appareil n'a besoin que de l'adresse du script et du code secret : aucun compte Google à connecter.</p>
         <div id="sync-box"></div>
+        <div id="drive-set" hidden>
+          <label class="f" style="margin-top:14px">Inviter quelqu'un
+            <input id="drive-invite" type="email" placeholder="Adresse du compte Google de la personne" autocomplete="off" spellcheck="false" autocapitalize="off" inputmode="email">
+          </label>
+          <p class="hint">Il lui faut un compte Google (souvent son adresse Gmail). La cave est partagée avec ce compte, puis tu lui envoies le lien : elle le colle dans l'appli et confirme la cave, sans rien installer.</p>
+          <button class="btn" data-act="drive-invite">Partager la cave</button>
+        </div>
         <div id="script-set">
         <label class="f" style="margin-top:14px">Adresse du script
           <input id="api-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false" autocapitalize="off" inputmode="url">
@@ -1219,6 +1227,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
     <div class="sheet-head"><h2 id="caves-title">Mes caves</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body">
       <div class="caves-list" id="caves-list"></div>
+      <p class="caves-find" id="caves-find" hidden><button type="button" class="link" data-act="caves-find">Retrouver mes caves Google Drive</button> <span class="hint">celles créées ou rejointes sur un autre appareil</span></p>
       <div class="caves-add" id="caves-new" hidden>
         <h3 class="cv-h">Créer une cave</h3>
         <p class="hint">Elle est rangée dans ton Google Drive, dans un dossier à son nom. Rien à installer : il suffit de te connecter à Google. L'appli n'a accès qu'aux fichiers qu'elle crée, rien d'autre de ton Drive.</p>
@@ -2460,6 +2469,7 @@ function renderReglages() {
   if (!API.ready()) $('#howto').open = true;
   // Cave Google Drive : ni adresse de script ni code, la cave est un fichier du Drive de la personne qui l'a créée.
   $('#script-set').hidden = isDrive();
+  $('#drive-set').hidden = !isDrive();
   $('#sync-intro').textContent = isDrive()
     ? `La cave est un fichier de ${S.role === 'proprio' ? 'ton Google Drive' : S.driveOwner ? `du Google Drive de ${S.driveOwner}` : 'Google Drive'}. L'appli s'y connecte avec ton compte Google, et n'a accès qu'aux fichiers de la cave.`
     : "La cave est enregistrée dans un Google Sheet, à travers un petit script Google installé une seule fois par la personne qui l'héberge. Chaque appareil n'a besoin que de l'adresse du script et du code secret : aucun compte Google à connecter.";
@@ -4569,6 +4579,10 @@ const Drive = {
       }).requestAccessToken({ prompt: '' });
     });
   },
+  /** Connecté, après un geste de la personne : la fenêtre de Google ne s'ouvre que si la connexion manque ou a expiré. */
+  connected() {
+    return Drive.token && Date.now() < Drive.until ? Promise.resolve(Drive.token) : Drive.signIn(true);
+  },
   loadGis() {
     if (window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
     return Drive.gisReady = Drive.gisReady || new Promise((resolve, reject) => {
@@ -4591,7 +4605,7 @@ const Drive = {
     if (r.status === 401 && again) { Drive.token = ''; return Drive.req(method, url, { json, body, headers, raw }, false); }
     if (!r.ok) {
       const t = await r.text().catch(() => '');
-      throw Object.assign(new Error(r.status === 401 ? driveAuthErr().message : driveMsg(r.status, t)), { status: r.status, auth: r.status === 401, code: r.status === 404 ? 'notfound' : '' });
+      throw Object.assign(new Error(r.status === 401 ? driveAuthErr().message : driveMsg(r.status, t)), { status: r.status, auth: r.status === 401, code: r.status === 404 ? 'notfound' : '', text: t.slice(0, 500) });
     }
     if (raw) return r;
     const t = await r.text();
@@ -4640,6 +4654,64 @@ const Drive = {
     }
     throw new Error("La cave change sans arrêt sur un autre appareil : nouvel essai à la prochaine synchro.");
   },
+  /** L'adresse du compte Google connecté (gardée sur l'appareil : elle sert à toutes ses caves Drive). */
+  async whoami() {
+    let me = lsGet('macave:google-me', '');
+    if (!me) {
+      const a = await Drive.req('GET', `${DRIVE_API}/about?fields=user(emailAddress,displayName)`);
+      me = (a.user && a.user.emailAddress) || '';
+      lsSet('macave:google-me', me);
+    }
+    return me;
+  },
+  /** Le sélecteur de Google, limité au fichier d'une cave : rejoindre se fait en confirmant ce seul fichier. Renvoie les
+      ID choisis. Dans l'appli Android, celui des services Google du téléphone ; sur le web, celui de Google Picker. */
+  async pick(fileId) {
+    if (Drive.native()) {
+      let r;
+      try { r = await Native.P.GoogleDrive.pick({ fileIds: fileId, mimeTypes: 'application/json' }); }
+      catch (e) { throw new Error(e && e.code === 'cancelled' ? 'Rejoindre annulé.' : 'Le sélecteur de Google ne répond pas.'); }
+      if (r.accessToken) { Drive.token = r.accessToken; Drive.until = Date.now() + 50 * 60e3; }
+      return r.pickedIds || [];
+    }
+    await Drive.loadPicker();
+    return new Promise((resolve, reject) => {
+      const view = new google.picker.DocsView(google.picker.ViewId.DOCS).setMode(google.picker.DocsViewMode.LIST).setFileIds(fileId);
+      new google.picker.PickerBuilder().addView(view).setOAuthToken(Drive.token).setDeveloperKey(GOOGLE.apiKey).setAppId(GOOGLE.appId)
+        .setLocale('fr').setTitle('Confirme la cave à rejoindre')
+        .setCallback(d => {
+          if (d.action === google.picker.Action.PICKED) resolve((d.docs || []).map(x => x.id));
+          else if (d.action === google.picker.Action.CANCEL) reject(new Error('Rejoindre annulé.'));
+        }).build().setVisible(true);
+    });
+  },
+  loadPicker() {
+    if (window.google && google.picker) return Promise.resolve();
+    return Drive.pickerReady = Drive.pickerReady || new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://apis.google.com/js/api.js';
+      s.onload = () => gapi.load('picker', () => resolve());
+      s.onerror = () => { Drive.pickerReady = null; reject(new Error('Impossible de charger le sélecteur de Google.')); };
+      document.head.appendChild(s);
+    });
+  },
+  /** Partage le dossier de la cave avec une personne (en modification), sans l'e-mail de Google : l'invitation, c'est le
+      lien de l'appli. */
+  async share(folderId, email) {
+    try {
+      await Drive.req('POST', `${DRIVE_API}/files/${folderId}/permissions?sendNotificationEmail=false&fields=id`, { json: { type: 'user', role: 'writer', emailAddress: email } });
+    } catch (e) {
+      if (e.status === 400 || (e.status === 403 && /Google Account|invalidSharingRequest/i.test(e.text || ''))) throw new Error("Cette adresse n'a pas de compte Google. Demande à la personne l'adresse de son compte Google (souvent son adresse Gmail).");
+      if (e.status === 403) throw new Error("Google Drive refuse ce partage : seul le propriétaire de la cave peut peut-être inviter.");
+      throw e;
+    }
+  },
+  /** Les cave.json que l'appli voit dans le Drive : celles qu'on a créées, et celles qu'on a rejointes (sur n'importe quel
+      appareil, avec ce compte Google). */
+  async list() {
+    const r = await Drive.req('GET', `${DRIVE_API}/files?q=${encodeURIComponent("name = 'cave.json' and trashed = false")}&fields=files(id,ownedByMe,owners(displayName,emailAddress))&pageSize=100`);
+    return r.files || [];
+  },
   /** Ce que l'appli demandait au script, pour une cave Drive : la synchro et l'état de la cave. Claude viendra avec le relais. */
   async call(action, payload = {}) {
     if (action !== 'sync' && action !== 'ping') throw Object.assign(new Error("Claude n'est pas encore disponible dans une cave Google Drive."), { code: 'drive' });
@@ -4647,13 +4719,87 @@ const Drive = {
     const r = {
       ok: true, version: SCRIPT_VERSION, nom: cave.nom || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true,
       label: false, routineOn: false, routineVu: '', credits: null, webUrl: '',
-      driveUrl: cave.dossier ? `https://drive.google.com/drive/folders/${cave.dossier}` : '',
+      driveUrl: cave.dossier ? `https://drive.google.com/drive/folders/${cave.dossier}` : '', folderId: cave.dossier || '', photosId: cave.dossierPhotos || '',
       driveOwner: (meta.owners && meta.owners[0] && (meta.owners[0].displayName || meta.owners[0].emailAddress)) || '',
     };
     if (merged) r.db = merged;
     return r;
   },
 };
+/** Rejoindre une cave Drive (lien d'invitation) : connexion, puis le sélecteur de Google limité au fichier de la cave,
+    où l'invité n'a qu'à confirmer. Une cave déjà désignée sur un autre appareil s'ouvre sans sélecteur. */
+async function joinDriveCave(d) {
+  if (!Drive.available()) { toast("Cette version de l'appli n'ouvre pas encore les caves Google Drive."); return 'no'; }
+  const key = caveKey('drive:' + d.d);
+  if (key === curKey()) return 'same';
+  if (CAVES.some(c => c.key === key)) return (await openCave(key)) ? 'known' : 'no';
+  try {
+    await Drive.connected();
+    let got;
+    try { got = await Drive.read(d.d); }
+    catch (e) {
+      if (e.code !== 'notfound') throw e;
+      let picked;
+      try { picked = await Drive.pick(d.d); }
+      catch (e2) {
+        const me = await Drive.whoami().catch(() => '');
+        throw new Error(`${e2.message} Si la cave n'apparaissait pas, vérifie qu'elle a bien été partagée avec ${me || 'ton compte Google'}.`);
+      }
+      if (!picked.includes(d.d)) throw new Error("Le fichier choisi n'est pas celui de la cave du lien.");
+      got = await Drive.read(d.d);
+    }
+    const { meta, cave } = got;
+    return addCave({ kind: 'drive', fileId: d.d, folderId: cave.dossier || '', photosId: cave.dossierPhotos || '', nom: cave.nom || d.n || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true });
+  } catch (e) {
+    toast(e.auth ? 'Connexion à Google annulée : la cave n\'a pas été rejointe.' : e.message);
+    return 'no';
+  }
+}
+/** Inviter dans une cave Drive : partager son dossier avec le compte Google de la personne, puis lui envoyer le lien. */
+async function inviteDrive() {
+  const input = $('#drive-invite'), email = input.value.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("Indique l'adresse du compte Google de la personne (souvent son adresse Gmail)."); input.focus(); return; }
+  const btn = $('[data-act="drive-invite"]');
+  btn.disabled = true; btn.textContent = 'Partage…';
+  try {
+    await Drive.connected();
+    if (email === (await Drive.whoami()).toLowerCase()) { toast("C'est ton adresse : indique celle de la personne à inviter."); return; }
+    if (!S.folderId) throw new Error('Le dossier de la cave est inconnu : synchronise, puis réessaie.');
+    await Drive.share(S.folderId, email);
+    input.value = '';
+    await shareInvite({ d: S.fileId, n: S.nom || '' }, `Rejoins ma cave « ${S.nom || 'Ma cave'} » dans Ma cave. Dans l'appli, touche le nom de la cave en haut de l'écran, puis colle ce lien dans « Rejoindre une autre cave » :`, email);
+  } catch (e) {
+    toast(e.auth ? 'Connexion à Google annulée.' : e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Partager la cave';
+  }
+}
+/** « Mes caves » › Retrouver : les caves Drive de ce compte Google, créées ou rejointes sur un autre appareil. */
+async function findDriveCaves() {
+  const btn = $('[data-act="caves-find"]');
+  btn.disabled = true;
+  try {
+    await Drive.connected();
+    let added = 0;
+    for (const f of await Drive.list()) {
+      const key = caveKey('drive:' + f.id);
+      if (key === curKey() || CAVES.some(c => c.key === key)) continue;
+      let got;
+      try { got = await Drive.read(f.id); } catch { continue; }  // pas une cave de l'appli (un prototype, par exemple)
+      const o = f.owners && f.owners[0];
+      CAVES.push({ key, kind: 'drive', fileId: f.id, folderId: got.cave.dossier || '', photosId: got.cave.dossierPhotos || '', nom: got.cave.nom || 'Ma cave',
+        role: f.ownedByMe ? 'proprio' : 'app', proprioActif: true, driveOwner: (o && (o.displayName || o.emailAddress)) || '', ...caveCounts(got.cave.db || {}), vu: '' });
+      added++;
+    }
+    saveCaves();
+    renderCaves();
+    toast(added ? `${added} ${plural(added, 'cave retrouvée', 'caves retrouvées')} dans ton Google Drive.` : 'Aucune autre cave dans ton Google Drive.');
+  } catch (e) {
+    toast(e.auth ? 'Connexion à Google annulée.' : e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
 /** « Mes caves » › Créer une cave : dans le Google Drive de la personne, en un geste, sans rien installer. */
 async function createDriveCave() {
   const nom = $('#caves-name').value.trim().replace(/\s+/g, ' ').slice(0, 60);
@@ -4661,7 +4807,7 @@ async function createDriveCave() {
   const btn = $('[data-act="caves-create"]');
   btn.disabled = true; btn.textContent = 'Création…';
   try {
-    await Drive.signIn(true);
+    await Drive.connected();
     const ids = await Drive.createCave(nom);
     const r = await addCave({ kind: 'drive', ...ids, nom, role: 'proprio', proprioActif: true });
     if (r !== 'no') toast(`« ${nom} » est créée dans ton Google Drive. Synchronisation…`);
@@ -4909,6 +5055,8 @@ function serverInfo(r) {
   if ('coteMois' in r) S.coteMois = r.coteMois || 12;
   if ('driveUrl' in r) S.driveUrl = r.driveUrl || '';
   if ('driveOwner' in r) S.driveOwner = r.driveOwner || '';
+  if (r.folderId) S.folderId = r.folderId;
+  if (r.photosId) S.photosId = r.photosId;
   saveSettings();
   rememberCave();
 }
@@ -5001,15 +5149,20 @@ async function sync({ interactive = false } = {}) {
 /* =========================================================
    Invitation
    ========================================================= */
-async function invite() {
+function invite() {
+  return shareInvite({ u: S.apiUrl, s: S.secret, n: S.nom || '' }, 'Rejoins notre cave dans Ma cave :');
+}
+/** Le lien d'invitation, envoyé par la feuille de partage (ou copié). Cave à script : { u, s, n } ; cave Drive : { d, n }. */
+async function shareInvite(payload, intro, who = '') {
   let code;
-  try { code = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify({ u: S.apiUrl, s: S.secret, n: S.nom || '' }))))); }
+  try { code = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload))))); }
   catch { toast("Impossible de créer le lien d'invitation."); return; }
   // Dans l'appli Android, la page n'a pas d'adresse publique : on utilise celle de l'appli web, connue du script.
   const base = Native.on ? S.webUrl || PUBLIC_URL : location.origin + location.pathname;
   const link = base ? `${base}#rejoindre=${code}` : '';
-  const text = link ? 'Rejoins notre cave dans Ma cave :'
-    : `Pour rejoindre notre cave, colle ce code dans Ma cave › Réglages › Adresse du script : #rejoindre=${code}`;
+  const text = link ? intro
+    : `Pour rejoindre notre cave, colle ce code dans Ma cave › Mes caves › Rejoindre une autre cave : #rejoindre=${code}`;
+  if (who) toast(`Cave partagée avec ${who}. Envoie-lui maintenant le lien.`);
   if (Native.on && Native.P.Share) {
     try { await Native.P.Share.share({ title: 'Ma cave', text, url: link || undefined, dialogTitle: 'Inviter quelqu\'un' }); } catch {}
     return;
@@ -5025,7 +5178,7 @@ async function invite() {
 function parseInvite(text) {
   const m = String(text || '').match(/rejoindre=([A-Za-z0-9%+/=_-]+)/);
   if (!m) return null;
-  try { const d = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1]))))); return d && d.u && d.s ? d : null; } catch { return null; }
+  try { const d = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1]))))); return d && ((d.u && d.s) || d.d) ? d : null; } catch { return null; }
 }
 
 /* Appli Android installée à la main chez les proches : l'adresse du script et le code des appareils sont intégrés
@@ -5039,9 +5192,19 @@ function applyPreset() {
 
 async function acceptInvite() {
   if (!/^#rejoindre=/.test(location.hash)) return false;
-  const d = parseInvite(location.hash);
+  const raw = location.hash, d = parseInvite(raw);
   history.replaceState(null, '', location.pathname + location.search);
   if (!d) { toast("Ce lien d'invitation est illisible."); return false; }
+  // Cave Google Drive : il faut se connecter à Google et confirmer la cave, ce qui demande un geste. On ouvre « Mes
+  // caves » avec le lien déjà collé : il ne reste qu'à toucher « Rejoindre ».
+  if (d.d) {
+    setTimeout(() => {
+      openCaves();
+      $('#caves-link').value = raw;
+      toast(`Invitation dans « ${d.n || 'une cave'} » : touche « Rejoindre » pour te connecter à Google et confirmer.`);
+    }, 300);
+    return false;
+  }
   if (S.apiUrl === d.u && S.secret === d.s) return false;
   return (await addCave({ apiUrl: d.u, secret: d.s, nom: d.n })) !== 'no';
 }
@@ -5189,12 +5352,18 @@ function openCaves() {
   renderCaves();
   $('#caves-link').value = '';
   $('#caves-new').hidden = !Drive.available();
+  $('#caves-find').hidden = !Drive.available();
   $('#dlg-caves').showModal();
 }
 async function joinFromMenu() {
   const d = parseInvite($('#caves-link').value);
   if (!d) { toast("Ce lien d'invitation est illisible : colle-le en entier."); return; }
-  const r = await addCave({ apiUrl: d.u, secret: d.s, nom: d.n });
+  let r;
+  if (d.d) {
+    const btn = $('[data-act="caves-join"]');
+    btn.disabled = true;
+    try { r = await joinDriveCave(d); } finally { btn.disabled = false; }
+  } else r = await addCave({ apiUrl: d.u, secret: d.s, nom: d.n });
   if (r === 'no') return;
   toast(r === 'same' ? 'Cette cave est déjà ouverte.' : r === 'known' ? 'Cette cave était déjà sur cet appareil : elle est ouverte.' : 'Cave ajoutée à « Mes caves ». Synchronisation…');
 }
@@ -5249,6 +5418,8 @@ function wire() {
         case 'caves': openCaves(); break;
         case 'caves-join': joinFromMenu(); break;
         case 'caves-create': createDriveCave(); break;
+        case 'caves-find': findDriveCaves(); break;
+        case 'drive-invite': inviteDrive(); break;
         case 'edit': openWineForm(id); break;
         case 'in': openMove(id, 'entree'); break;
         case 'out': openMove(id, 'sortie'); break;
@@ -5619,6 +5790,7 @@ function wire() {
   $('#save-api').addEventListener('click', async e => {
     const btn = e.currentTarget;
     const inv = parseInvite($('#api-url').value);
+    if (inv && inv.d) { toast("C'est l'invitation d'une cave Google Drive : colle-la dans « Mes caves » (le nom de la cave, en haut de l'écran)."); return; }
     if (inv) { $('#api-url').value = inv.u; $('#api-secret').value = inv.s; }
     const url = $('#api-url').value.trim(), secret = $('#api-secret').value.trim();
     if (url && !/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) { toast("L'adresse doit commencer par https://script.google.com/ et se terminer par /exec."); return; }
