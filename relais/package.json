@@ -1,0 +1,13 @@
+{
+  "name": "ma-cave-relais",
+  "private": true,
+  "description": "Relais Claude des caves Google Drive de Ma cave : garde la clé API, vérifie les membres, compte les crédits.",
+  "type": "module",
+  "scripts": {
+    "regles": "node genere-regles.js",
+    "local": "node serveur-local.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.131.0"
+  }
+}
