@@ -39,6 +39,13 @@ if (process.argv.includes('--essai')) {
   p.innerHTML = '<a href="essai-drive/index.html">Essai : une cave dans Google Drive</a>'; v.appendChild(p); });</script>\n`;
   html = html.replace('</body>', link + '</body>');
   console.log(`prototype Google Drive copié dans www/essai-drive/${fs.existsSync(cfg) ? ', avec config.local.js' : ' (sans config.local.js : pas de lecture des photos par lien)'}`);
+  // Les caves Google Drive de l'appli : la configuration du projet Google Cloud (identifiant du client web, clé API
+  // limitée par site, numéro du projet). Sa présence active « Créer une cave » dans « Mes caves ».
+  const sandbox = { window: {} };
+  if (fs.existsSync(cfg)) require('vm').runInNewContext(fs.readFileSync(cfg, 'utf8'), sandbox);
+  const g = sandbox.window.PROTO_CONFIG || {};
+  html = html.replace('</head>', `<script>window.MACAVE_GOOGLE = ${JSON.stringify({ clientId: g.clientId || '', apiKey: g.apiKey || '', appId: g.appId || '' })};</script>\n</head>`);
+  console.log('caves Google Drive activées dans cet APK');
 }
 fs.writeFileSync(path.join(dir, 'index.html'), html);
 // Le catalogue des vins français (« Vins similaires »), lu par l'appli à côté de index.html.

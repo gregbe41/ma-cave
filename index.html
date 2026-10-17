@@ -888,8 +888,9 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
     <section class="view" id="v-reglages" hidden>
       <div class="set">
         <h2>Partage et synchronisation</h2>
-        <p>La cave est enregistrée dans un Google Sheet, à travers un petit script Google installé une seule fois par la personne qui l'héberge. Chaque appareil n'a besoin que de l'adresse du script et du code secret : aucun compte Google à connecter.</p>
+        <p id="sync-intro">La cave est enregistrée dans un Google Sheet, à travers un petit script Google installé une seule fois par la personne qui l'héberge. Chaque appareil n'a besoin que de l'adresse du script et du code secret : aucun compte Google à connecter.</p>
         <div id="sync-box"></div>
+        <div id="script-set">
         <label class="f" style="margin-top:14px">Adresse du script
           <input id="api-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false" autocapitalize="off" inputmode="url">
         </label>
@@ -907,6 +908,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
           <p class="after">La page publiée ne contient aucune donnée : tes vins restent dans le Google Sheet et sur tes appareils. Hors connexion, les modifications sont gardées sur l'appareil et partent à la synchro suivante.</p>
           <p class="after">Dans le Sheet, tu peux corriger une valeur directement (un prix, une appellation…). Pour ajouter ou supprimer un vin, passe par l'appli. Le stock se calcule à partir de l'onglet Mouvements.</p>
         </details>
+        </div>
       </div>
 
       <div class="set" id="credits-set" hidden>
@@ -1217,6 +1219,12 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
     <div class="sheet-head"><h2 id="caves-title">Mes caves</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body">
       <div class="caves-list" id="caves-list"></div>
+      <div class="caves-add" id="caves-new" hidden>
+        <h3 class="cv-h">Créer une cave</h3>
+        <p class="hint">Elle est rangée dans ton Google Drive, dans un dossier à son nom. Rien à installer : il suffit de te connecter à Google. L'appli n'a accès qu'aux fichiers qu'elle crée, rien d'autre de ton Drive.</p>
+        <label class="f">Nom de la cave<input id="caves-name" placeholder="ex. Cave de Greg" autocomplete="off" maxlength="60"></label>
+        <button type="button" class="btn btn-primary" data-act="caves-create">Créer dans mon Google Drive</button>
+      </div>
       <div class="caves-add">
         <h3 class="cv-h">Rejoindre une autre cave</h3>
         <p class="hint">Ouvre le lien d'invitation reçu, ou colle-le ici. La cave ouverte reste sur cet appareil : tu pourras y revenir à tout moment.</p>
@@ -2450,6 +2458,11 @@ function renderReglages() {
   const fill = (sel, v) => { const el = $(sel); if (document.activeElement !== el) el.value = v || ''; };
   fill('#api-url', S.apiUrl); fill('#api-secret', S.secret);
   if (!API.ready()) $('#howto').open = true;
+  // Cave Google Drive : ni adresse de script ni code, la cave est un fichier du Drive de la personne qui l'a créée.
+  $('#script-set').hidden = isDrive();
+  $('#sync-intro').textContent = isDrive()
+    ? `La cave est un fichier de ${S.role === 'proprio' ? 'ton Google Drive' : S.driveOwner ? `du Google Drive de ${S.driveOwner}` : 'Google Drive'}. L'appli s'y connecte avec ton compte Google, et n'a accès qu'aux fichiers de la cave.`
+    : "La cave est enregistrée dans un Google Sheet, à travers un petit script Google installé une seule fois par la personne qui l'héberge. Chaque appareil n'a besoin que de l'adresse du script et du code secret : aucun compte Google à connecter.";
   $('#local-info').textContent = `${db.wines.length} ${plural(db.wines.length, 'vin', 'vins')}, ${db.moves.length} ${plural(db.moves.length, 'mouvement', 'mouvements')} et ${photoIds.size} ${plural(photoIds.size, 'photo', 'photos')} enregistrés sur cet appareil.`;
   // Scanner d'étiquette : seulement dans l'appli Android qui l'embarque.
   $('#scanner-set').hidden = !Scanner.available;
@@ -2643,6 +2656,19 @@ function renderSyncBox() {
     return;
   }
   const { k, msg } = syncState;
+  if (isDrive()) {
+    const st = k === 'auth' ? 'Connexion à Google nécessaire : touche « Synchroniser maintenant ».'
+      : k === 'error' ? `Échec de la dernière synchro : ${esc(msg)}`
+      : k === 'busy' ? 'Synchronisation en cours…'
+      : k === 'offline' ? 'Hors ligne : tes modifications sont gardées sur cet appareil.'
+      : S.lastSync ? `Reliée à Google Drive. Dernière synchro ${rel(S.lastSync)}.` : 'Reliée à Google Drive, pas encore synchronisée.';
+    let d = `<p class="status" data-k="${k}"><span class="sync-dot"></span>${st}</p>`;
+    d += '<p class="hint">Lecture des étiquettes : à la main pour l\'instant. Claude arrivera dans les caves Google Drive avec le relais ; les photos restent sur cet appareil.</p>';
+    d += '<div class="btn-row"><button class="btn btn-primary" data-act="sync-now">Synchroniser maintenant</button>';
+    if (/^https:\/\/drive\.google\.com\//.test(S.driveUrl)) d += `<a class="btn" href="${esc(S.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Google Drive</a>`;
+    box.innerHTML = d + '</div>';
+    return;
+  }
   const line = k === 'auth' ? `${esc(msg || 'Code secret refusé.')} Vérifie-le ci-dessous.`
     : k === 'error' ? `Échec de la dernière synchro : ${esc(msg)}`
     : k === 'busy' ? 'Synchronisation en cours…'
@@ -4496,11 +4522,163 @@ function deleteMove() {
 }
 
 /* =========================================================
+   Cave Google Drive : la cave est un fichier cave.json dans le Drive de la personne qui l'a créée, sans script.
+   L'appli n'a que l'accès « fichiers créés ou désignés dans l'appli » (drive.file). Elle fusionne elle-même, comme le
+   script le faisait (mergeDb) : lire cave.json, fusionner, réécrire seulement si quelque chose a changé, et relire si
+   un autre appareil a écrit entre-temps. Connexion : dans l'appli Android, par les services Google du téléphone
+   (plugin GoogleDrive) ; sur le web, par la bibliothèque de connexion de Google. Les photos restent sur l'appareil
+   pour l'instant.
+   ========================================================= */
+const GOOGLE = Object.assign({ clientId: '', apiKey: '', appId: '' }, window.MACAVE_GOOGLE || {});
+const DRIVE_API = 'https://www.googleapis.com/drive/v3', DRIVE_UP = 'https://www.googleapis.com/upload/drive/v3';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file', DRIVE_FOLDER = 'application/vnd.google-apps.folder';
+const CAVE_FORMAT = 1;
+const isDrive = () => S.kind === 'drive';
+const driveAuthErr = () => Object.assign(new Error('Connexion à Google nécessaire : touche « Synchroniser maintenant ».'), { auth: true, code: 'google' });
+function driveMsg(status, text) {
+  if (status === 404) return 'La cave est introuvable dans Google Drive : elle a été supprimée, ou son partage retiré.';
+  if (status === 403) return /storageQuota|quotaExceeded/.test(text) ? 'Ton Google Drive est plein.' : "Google Drive refuse l'accès à la cave.";
+  return `Google Drive a répondu une erreur (${status}). Nouvel essai à la prochaine synchro.`;
+}
+const Drive = {
+  token: '', until: 0, gesture: false, gisReady: null,
+  native: () => !!(Native.on && Native.P.GoogleDrive),
+  /** Seulement dans les versions qui embarquent la configuration Google (l'APK d'essai, pour l'instant). */
+  available: () => !!window.MACAVE_GOOGLE && (Drive.native() || !!GOOGLE.clientId),
+  async signIn(interactive = Drive.gesture) {
+    if (Drive.native()) {
+      let r;
+      // Sans écran si l'accès est déjà accordé ; sinon, les écrans de Google s'ouvrent par-dessus l'appli.
+      try { r = await Native.P.GoogleDrive.connect(); }
+      catch { throw driveAuthErr(); }
+      Drive.token = r.accessToken || ''; Drive.until = Date.now() + 50 * 60e3;
+      return Drive.token;
+    }
+    // Sur le web, la fenêtre de Google ne s'ouvre qu'après un geste : sinon, on attend que la personne touche la pastille.
+    if (!interactive) throw driveAuthErr();
+    await Drive.loadGis();
+    return new Promise((resolve, reject) => {
+      google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE.clientId, scope: DRIVE_SCOPE, login_hint: S.driveMe || undefined,
+        callback: r => {
+          if (r.error) { reject(driveAuthErr()); return; }
+          Drive.token = r.access_token; Drive.until = Date.now() + ((+r.expires_in || 3600) - 120) * 1e3;
+          resolve(Drive.token);
+        },
+        error_callback: () => reject(driveAuthErr()),
+      }).requestAccessToken({ prompt: '' });
+    });
+  },
+  loadGis() {
+    if (window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
+    return Drive.gisReady = Drive.gisReady || new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.onload = () => resolve();
+      s.onerror = () => { Drive.gisReady = null; reject(new Error('Impossible de charger la connexion Google.')); };
+      document.head.appendChild(s);
+    });
+  },
+  async req(method, url, { json, body, headers = {}, raw } = {}, again = true) {
+    if (!Drive.token || Date.now() > Drive.until) await Drive.signIn();
+    const h = { Authorization: 'Bearer ' + Drive.token, ...headers };
+    let b = body;
+    if (json !== undefined) { h['Content-Type'] = 'application/json'; b = JSON.stringify(json); }
+    let r;
+    try { r = await fetch(url, { method, headers: h, body: b }); }
+    catch { throw new Error(navigator.onLine ? 'Google Drive ne répond pas.' : 'Pas de connexion internet.'); }
+    // Jeton expiré ou retiré : on se reconnecte une fois, sans rien demander si c'est possible.
+    if (r.status === 401 && again) { Drive.token = ''; return Drive.req(method, url, { json, body, headers, raw }, false); }
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      throw Object.assign(new Error(r.status === 401 ? driveAuthErr().message : driveMsg(r.status, t)), { status: r.status, auth: r.status === 401, code: r.status === 404 ? 'notfound' : '' });
+    }
+    if (raw) return r;
+    const t = await r.text();
+    return t ? JSON.parse(t) : {};
+  },
+  upload(meta, obj) {
+    const fd = new FormData();
+    fd.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+    fd.append('file', new Blob([JSON.stringify(obj)], { type: 'application/json' }));
+    return Drive.req('POST', `${DRIVE_UP}/files?uploadType=multipart&fields=id`, { body: fd });
+  },
+  /** Une nouvelle cave : un dossier « Ma cave – nom », son sous-dossier Photos et cave.json. */
+  async createCave(nom) {
+    const folder = await Drive.req('POST', `${DRIVE_API}/files?fields=id`, { json: { name: `Ma cave – ${nom}`, mimeType: DRIVE_FOLDER } });
+    const photos = await Drive.req('POST', `${DRIVE_API}/files?fields=id`, { json: { name: 'Photos', mimeType: DRIVE_FOLDER, parents: [folder.id] } });
+    const cave = { app: 'ma-cave', format: CAVE_FORMAT, nom, creeeLe: nowISO(), dossier: folder.id, dossierPhotos: photos.id, db: emptyDb() };
+    const f = await Drive.upload({ name: 'cave.json', parents: [folder.id], mimeType: 'application/json', description: `Cave « ${nom} » de l'appli Ma cave.` }, cave);
+    return { fileId: f.id, folderId: folder.id, photosId: photos.id };
+  },
+  /** cave.json et l'état du fichier (révision, propriétaire). L'état d'abord : un contenu lu après ne peut qu'être plus récent. */
+  async read(id = S.fileId) {
+    const meta = await Drive.req('GET', `${DRIVE_API}/files/${id}?fields=id,name,headRevisionId,ownedByMe,owners(displayName,emailAddress)`);
+    const r = await Drive.req('GET', `${DRIVE_API}/files/${id}?alt=media`, { raw: true });
+    let cave = null;
+    try { cave = JSON.parse(await r.text()); } catch { /* traité ci-dessous */ }
+    if (!cave || cave.app !== 'ma-cave') throw new Error("Ce fichier n'est pas une cave de l'appli (cave.json illisible ou modifié à la main).");
+    return { meta, cave };
+  },
+  /** Fusionne la cave de l'appareil avec cave.json et réécrit le fichier si besoin. Si un autre appareil a écrit entre la
+      lecture et l'écriture, on relit : rien n'est écrasé. */
+  async sync(local) {
+    for (let i = 0; i < 4; i++) {
+      const { meta, cave } = await Drive.read();
+      const remote = cave.db || {};
+      const before = JSON.stringify(mergeDb({}, JSON.parse(JSON.stringify(remote))));
+      const merged = mergeDb(local, remote);
+      if (JSON.stringify(merged) !== before) {
+        const now = await Drive.req('GET', `${DRIVE_API}/files/${S.fileId}?fields=headRevisionId`);
+        if (now.headRevisionId !== meta.headRevisionId) continue;
+        await Drive.req('PATCH', `${DRIVE_UP}/files/${S.fileId}?uploadType=media&fields=id`, {
+          body: JSON.stringify({ ...cave, format: CAVE_FORMAT, db: merged, majLe: nowISO(), majPar: S.device || '' }),
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return { meta, cave, merged };
+    }
+    throw new Error("La cave change sans arrêt sur un autre appareil : nouvel essai à la prochaine synchro.");
+  },
+  /** Ce que l'appli demandait au script, pour une cave Drive : la synchro et l'état de la cave. Claude viendra avec le relais. */
+  async call(action, payload = {}) {
+    if (action !== 'sync' && action !== 'ping') throw Object.assign(new Error("Claude n'est pas encore disponible dans une cave Google Drive."), { code: 'drive' });
+    const { meta, cave, merged } = action === 'sync' ? await Drive.sync(payload.db || {}) : await Drive.read();
+    const r = {
+      ok: true, version: SCRIPT_VERSION, nom: cave.nom || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true,
+      label: false, routineOn: false, routineVu: '', credits: null, webUrl: '',
+      driveUrl: cave.dossier ? `https://drive.google.com/drive/folders/${cave.dossier}` : '',
+      driveOwner: (meta.owners && meta.owners[0] && (meta.owners[0].displayName || meta.owners[0].emailAddress)) || '',
+    };
+    if (merged) r.db = merged;
+    return r;
+  },
+};
+/** « Mes caves » › Créer une cave : dans le Google Drive de la personne, en un geste, sans rien installer. */
+async function createDriveCave() {
+  const nom = $('#caves-name').value.trim().replace(/\s+/g, ' ').slice(0, 60);
+  if (!nom) { toast('Donne un nom à la cave.'); $('#caves-name').focus(); return; }
+  const btn = $('[data-act="caves-create"]');
+  btn.disabled = true; btn.textContent = 'Création…';
+  try {
+    await Drive.signIn(true);
+    const ids = await Drive.createCave(nom);
+    const r = await addCave({ kind: 'drive', ...ids, nom, role: 'proprio', proprioActif: true });
+    if (r !== 'no') toast(`« ${nom} » est créée dans ton Google Drive. Synchronisation…`);
+  } catch (e) {
+    toast(e.auth ? 'Connexion à Google annulée : la cave n\'a pas été créée.' : `Création impossible : ${e.message}`);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Créer dans mon Google Drive';
+  }
+}
+
+/* =========================================================
    Script Google (serveur de la cave)
    ========================================================= */
 const API = {
-  ready: () => !!(S.apiUrl && S.secret),
+  ready: () => (isDrive() ? !!S.fileId : !!(S.apiUrl && S.secret)),
   async call(action, payload = {}, timeout = 60e3) {
+    if (isDrive()) return Drive.call(action, payload);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeout);
     let r;
@@ -4587,14 +4765,20 @@ function cleanAvis(o) {
     note: n ? Math.min(5, Math.max(1, n)) : null, commentaire: str(o.commentaire), updatedAt: str(o.updatedAt) || nowISO() } : null;
 }
 
-/* Fusion : la version la plus récente gagne ; à égalité, celle du Sheet (pour respecter les corrections faites à la main). */
+/* Fusion : la version la plus récente gagne ; à égalité, celle du serveur (pour respecter les corrections faites à la
+   main dans le Sheet). Elle sert aussi aux caves Google Drive, où l'appli fusionne elle-même avant d'écrire cave.json. */
 function mergeInto(remote) {
+  Object.assign(db, mergeDb(db, remote));
+  persist();
+}
+function mergeDb(local, remote) {
+  const out = {};
   const trash = new Map();
-  for (const t of [...db.trash, ...(remote.trash || [])]) { const p = trash.get(t.id); if (!p || t.at > p.at) trash.set(t.id, t); }
-  const mergeList = (local, rem) => {
+  for (const t of [...(local.trash || []), ...(remote.trash || [])]) { const p = trash.get(t.id); if (!p || t.at > p.at) trash.set(t.id, t); }
+  const mergeList = (loc, rem) => {
     const m = new Map();
     for (const r of rem || []) m.set(r.id, r);
-    for (const l of local) {
+    for (const l of loc || []) {
       const r = m.get(l.id);
       if (!r || (l.updatedAt || '') > (r.updatedAt || '')) m.set(l.id, l);
       // Même version : un champ vide côté serveur mais rempli ici vient d'un script pas encore mis à jour.
@@ -4602,24 +4786,26 @@ function mergeInto(remote) {
     }
     return [...m.values()].filter(x => { const t = trash.get(x.id); return !(t && t.at >= (x.updatedAt || '')); });
   };
-  db.wines = mergeList(db.wines, remote.wines);
-  const ids = new Set(db.wines.map(w => w.id));
-  db.moves = mergeList(db.moves, remote.moves).filter(m => ids.has(m.vinId));
+  out.wines = mergeList(local.wines, remote.wines);
+  const ids = new Set(out.wines.map(w => w.id));
+  out.moves = mergeList(local.moves, remote.moves).filter(m => ids.has(m.vinId));
   // Un script pas encore mis à jour ne renvoie pas la liste : on garde celle de l'appareil.
-  db.people = mergeList(db.people, remote.people);
+  out.people = mergeList(local.people, remote.people);
   // Un avis suit sa sortie : supprimée (ou son vin), l'avis disparaît aussi.
-  const outs = new Map(db.moves.filter(m => m.type === 'sortie').map(m => [m.id, m.vinId]));
-  db.avis = mergeList(db.avis, remote.avis).filter(a => outs.has(a.mvId));
-  db.avis.forEach(a => { a.vinId = outs.get(a.mvId); });
-  db.conseils = mergeList(db.conseils, remote.conseils);
-  // Vins similaires : seul le script les écrit (réponses de Claude) ; un script trop ancien n'en renvoie pas.
-  db.suggestions = mergeList(db.suggestions || [], remote.suggestions).map(cleanSuggestion).filter(x => x && ids.has(x.vinId));
-  db.trash = [...trash.values()].filter(t => Date.now() - Date.parse(t.at) < 365 * 864e5);
-  persist();
+  const outs = new Map(out.moves.filter(m => m.type === 'sortie').map(m => [m.id, m.vinId]));
+  out.avis = mergeList(local.avis, remote.avis).filter(a => outs.has(a.mvId));
+  out.avis.forEach(a => { a.vinId = outs.get(a.mvId); });
+  out.conseils = mergeList(local.conseils, remote.conseils);
+  // Vins similaires : seul le serveur les écrit (réponses de Claude) ; un script trop ancien n'en renvoie pas.
+  out.suggestions = mergeList(local.suggestions, remote.suggestions).map(cleanSuggestion).filter(x => x && ids.has(x.vinId));
+  out.trash = [...trash.values()].filter(t => Date.now() - Date.parse(t.at) < 365 * 864e5);
+  return out;
 }
 
 /* Photos : envoyées au script avant la synchro, téléchargées après. */
 async function pushPhotos() {
+  // Cave Google Drive : les photos restent sur l'appareil pour l'instant (partage avec l'accord de chacun à venir).
+  if (isDrive()) return [];
   if (S.photoDeletes.length) {
     const ids = [...S.photoDeletes];
     await API.call('photoDel', { ids });
@@ -4654,6 +4840,7 @@ async function pushPhotos() {
 
 const photoMissing = new Set();
 async function pullPhotos() {
+  if (isDrive()) return false;
   let recs;
   try { recs = await Photos.all(); } catch { return false; }
   const byId = new Map(recs.map(r => [r.id, r]));
@@ -4700,7 +4887,7 @@ function setSync(k, msg = '') { syncState = { k, msg }; updateSyncUI(); }
 
 function updateSyncUI() {
   const p = $('#sync-pill'), { k, msg } = syncState;
-  const t = { off: 'Synchro non configurée', auth: 'Code refusé', busy: 'Synchronisation…', offline: 'Hors ligne', error: 'Échec de la synchro',
+  const t = { off: 'Synchro non configurée', auth: isDrive() ? 'Se reconnecter à Google' : 'Code refusé', busy: 'Synchronisation…', offline: 'Hors ligne', error: 'Échec de la synchro',
     ok: S.lastSync ? `Synchronisé ${rel(S.lastSync)}` : 'Synchronisé' }[k];
   p.dataset.k = k;
   $('.sync-txt', p).textContent = t;
@@ -4720,6 +4907,8 @@ function serverInfo(r) {
   if (r.nom) S.nom = r.nom;
   if ('credits' in r) S.credits = r.credits || null;
   if ('coteMois' in r) S.coteMois = r.coteMois || 12;
+  if ('driveUrl' in r) S.driveUrl = r.driveUrl || '';
+  if ('driveOwner' in r) S.driveOwner = r.driveOwner || '';
   saveSettings();
   rememberCave();
 }
@@ -4775,7 +4964,9 @@ async function sync({ interactive = false } = {}) {
   if (syncing) { syncAgain = true; return; }
   syncing = true; setSync('busy');
   let more = false;
-  const forCave = S.apiUrl;
+  const forCave = caveRef();
+  // Cave Google Drive sur le web : la fenêtre de connexion de Google ne s'ouvre qu'après un geste de la personne.
+  Drive.gesture = interactive;
   try {
     const sent = await pushPhotos() || [];
     registerPeople();
@@ -4784,7 +4975,7 @@ async function sync({ interactive = false } = {}) {
     const conseils = db.conseils.filter(c => c.statut !== 'envoi');
     const r = await API.call('sync', { db: { wines: db.wines, moves: db.moves, trash: db.trash, people: db.people, avis: db.avis, conseils }, ...pageInfo() });
     // Garde-fou : on a changé de cave pendant l'envoi ; la réponse appartient à l'autre cave.
-    if (S.apiUrl !== forCave) return;
+    if (caveRef() !== forCave) return;
     mergeInto(r.db || {});
     serverInfo(r);
     more = await pullPhotos();
@@ -4800,7 +4991,7 @@ async function sync({ interactive = false } = {}) {
     setSync(e.auth ? 'auth' : 'error', e.message);
     if (interactive) toast(`Synchro impossible : ${e.message}`);
   } finally {
-    syncing = false;
+    syncing = false; Drive.gesture = false;
     render();
     if (syncAgain || more) { syncAgain = false; scheduleSync(more ? 1500 : 600); }
     if (syncState.k === 'ok') { maybeAskWho(); processConseils(); watchSuggestions(); }
@@ -4841,7 +5032,7 @@ function parseInvite(text) {
    à l'APK (android-app/cave.local.json). Un appareil déjà relié garde ses réglages. */
 function applyPreset() {
   const p = window.MACAVE_PRESET;
-  if (!p || !p.u || !p.s || S.apiUrl) return false;
+  if (!p || !p.u || !p.s || caveRef() || CAVES.length) return false;
   S.apiUrl = p.u; S.secret = p.s; saveSettings();
   return true;
 }
@@ -4852,7 +5043,7 @@ async function acceptInvite() {
   history.replaceState(null, '', location.pathname + location.search);
   if (!d) { toast("Ce lien d'invitation est illisible."); return false; }
   if (S.apiUrl === d.u && S.secret === d.s) return false;
-  return (await addCave(d.u, d.s, d.n)) !== 'no';
+  return (await addCave({ apiUrl: d.u, secret: d.s, nom: d.n })) !== 'no';
 }
 
 /* =========================================================
@@ -4862,11 +5053,14 @@ async function acceptInvite() {
    identifiants sont propres à chaque vin et à chaque conseil.
    ========================================================= */
 const LS_CAVES = 'macave:caves';
-const CAVE_FIELDS = ['apiUrl', 'secret', 'proprio', 'role', 'proprioActif', 'credits', 'coteMois', 'device', 'lastSync', 'sheetUrl', 'webUrl', 'labelOn', 'routineOn', 'routineVu', 'serverVersion', 'photoDeletes', 'nom'];
+const CAVE_FIELDS = ['kind', 'apiUrl', 'secret', 'fileId', 'folderId', 'photosId', 'driveUrl', 'driveOwner', 'proprio', 'role', 'proprioActif', 'credits', 'coteMois', 'device', 'lastSync', 'sheetUrl', 'webUrl', 'labelOn', 'routineOn', 'routineVu', 'serverVersion', 'photoDeletes', 'nom'];
 const caveKey = u => 'c' + [...String(u)].reduce((h, c) => (Math.imul(h, 33) + c.charCodeAt(0)) >>> 0, 5381).toString(36);
 let CAVES = lsGet(LS_CAVES, []);
 const saveCaves = () => lsSet(LS_CAVES, CAVES);
-const curKey = () => (S.apiUrl ? caveKey(S.apiUrl) : '');
+/** Ce qui désigne une cave : l'adresse de son script, ou son fichier cave.json dans Google Drive. */
+const refOf = c => (c.kind === 'drive' ? (c.fileId ? 'drive:' + c.fileId : '') : c.apiUrl || '');
+const caveRef = () => refOf(S);
+const curKey = () => (caveRef() ? caveKey(caveRef()) : '');
 const caveName = e => (e && e.nom) || 'Ma cave';
 const emptyDb = () => ({ wines: [], moves: [], trash: [], people: [], avis: [], conseils: [], suggestions: [] });
 function caveCounts(d) {
@@ -4877,7 +5071,7 @@ function caveCounts(d) {
 }
 /** La cave ouverte dans la liste : ses réglages et son résumé, à jour. */
 function rememberCave() {
-  if (!S.apiUrl) return;
+  if (!caveRef()) return;
   const key = curKey();
   let e = CAVES.find(c => c.key === key);
   if (!e) { e = { key }; CAVES.push(e); }
@@ -4887,7 +5081,7 @@ function rememberCave() {
 }
 /** Met de côté la cave ouverte : ses données, ce qu'on y a déjà vu, le filtre « Bouteilles de ». */
 function stashCave() {
-  if (!S.apiUrl) return true;
+  if (!caveRef()) return true;
   rememberCave();
   return lsSet('macave:cave:' + curKey(), { db, vus: [...seenConseils], owner: UI.owner });
 }
@@ -4904,7 +5098,7 @@ const BUSY_MSG = 'La synchronisation est encore en cours : réessaie dans un ins
 async function openCave(key) {
   const e = CAVES.find(c => c.key === key);
   if (!e || key === curKey()) return false;
-  if (!S.apiUrl && db.wines.length && !confirm("Les vins de cet appareil ne sont reliés à aucune cave : ils seront effacés. Ouvrir quand même l'autre cave ?")) return false;
+  if (!caveRef() && db.wines.length && !confirm("Les vins de cet appareil ne sont reliés à aucune cave : ils seront effacés. Ouvrir quand même l'autre cave ?")) return false;
   if (!(await quietSync())) { toast(BUSY_MSG); return false; }
   if (!stashCave()) return false;  // stockage plein : on reste sur la cave ouverte, rien n'est perdu
   const st = lsGet('macave:cave:' + key, {});
@@ -4920,15 +5114,16 @@ async function openCave(key) {
   toast(`« ${caveName(S)} » est ouverte.`);
   return true;
 }
-/** Une cave de plus sur l'appareil (lien d'invitation, ou adresse et code) : la cave ouverte est mise de côté, rien n'est
+/** Une cave de plus sur l'appareil : { apiUrl, secret, nom } pour une cave à script (lien d'invitation, ou adresse et
+    code), { kind: 'drive', fileId, … } pour une cave Google Drive. La cave ouverte est mise de côté, rien n'est
     effacé ni mélangé. Un appareil encore sans cave garde ses vins : ils rejoignent la nouvelle à la première synchro.
     Renvoie 'same', 'known' ou 'new', ou 'no' si l'on reste sur la cave ouverte (la raison a déjà été dite). */
-async function addCave(u, secret, nom) {
-  const key = caveKey(u);
-  if (key === curKey()) { if (secret && secret !== S.secret) { S.secret = secret; saveSettings(); } return 'same'; }
+async function addCave(target) {
+  const t = { kind: '', nom: '', ...target }, key = caveKey(refOf(t));
+  if (key === curKey()) { if (t.secret && t.secret !== S.secret) { S.secret = t.secret; saveSettings(); } return 'same'; }
   const known = CAVES.find(c => c.key === key);
-  if (known) { if (secret) known.secret = secret; saveCaves(); return (await openCave(key)) ? 'known' : 'no'; }
-  if (S.apiUrl) {
+  if (known) { if (t.secret) known.secret = t.secret; saveCaves(); return (await openCave(key)) ? 'known' : 'no'; }
+  if (caveRef()) {
     if (!(await quietSync())) { toast(BUSY_MSG); return 'no'; }
     if (!stashCave()) return 'no';
     db = emptyDb(); persist();
@@ -4936,7 +5131,7 @@ async function addCave(u, secret, nom) {
     UI.owner = ''; lsSet('macave:owner', '');
     S = { ...S_DEFAULTS, photoDeletes: [] };
   }
-  Object.assign(S, { apiUrl: u, secret, nom: nom || '' });
+  Object.assign(S, t);
   saveSettings();
   rememberCave();
   enterCave();
@@ -4957,7 +5152,7 @@ async function removeCave(key) {
   const st = lsGet('macave:cave:' + key, {}), d = st.db || {};
   const since = e.lastSync || '';
   const unsent = [...(d.wines || []), ...(d.moves || []), ...(d.avis || [])].some(x => (x.updatedAt || '') > since);
-  if (!confirm(`Retirer « ${caveName(e)} » de cet appareil ?${unsent ? ' Des modifications faites ici ne sont pas encore parties : elles seront perdues.' : ''} Ses vins restent dans son Google Sheet : tu pourras la rejoindre de nouveau avec un lien d'invitation.`)) return;
+  if (!confirm(`Retirer « ${caveName(e)} » de cet appareil ?${unsent ? ' Des modifications faites ici ne sont pas encore parties : elles seront perdues.' : ''} Ses vins restent ${e.kind === 'drive' ? 'dans Google Drive' : 'dans son Google Sheet'} : tu pourras la rejoindre de nouveau avec un lien d'invitation.`)) return;
   const ids = [...(d.wines || []).map(w => w.id), ...(d.conseils || []).flatMap(c => (c.bouteilles || []).map((_, i) => scanKey(c.id, i)))];
   for (const id of ids) { try { await Photos.del(id); photoIds.delete(id); Photos.forget(id); } catch {} }
   try { localStorage.removeItem('macave:cave:' + key); } catch {}
@@ -4973,7 +5168,7 @@ function otherCaveIds() {
 function renderCaveBtn() {
   const b = $('#cave-btn');
   if (!b) return;
-  b.hidden = !S.apiUrl && !CAVES.length;
+  b.hidden = !caveRef() && !CAVES.length && !Drive.available();
   $('#cave-btn-name').textContent = caveName(S);
 }
 /** « Mes caves » : celles où l'on est propriétaire, celles où l'on participe (quand le propriétaire s'est déclaré), les autres. */
@@ -4982,7 +5177,7 @@ function renderCaves() {
   const cur = curKey();
   const row = e => {
     const role = e.role === 'proprio' ? 'propriétaire' : e.proprioActif ? 'participant' : '';
-    const sub = [`${fmtNum(e.bouteilles || 0)} ${plural(e.bouteilles || 0, 'bouteille', 'bouteilles')}`, role, e.key === cur ? 'ouverte' : ''].filter(Boolean).join(' · ');
+    const sub = [`${fmtNum(e.bouteilles || 0)} ${plural(e.bouteilles || 0, 'bouteille', 'bouteilles')}`, role, e.kind === 'drive' ? 'Google Drive' : '', e.key === cur ? 'ouverte' : ''].filter(Boolean).join(' · ');
     return `<div class="cave-row${e.key === cur ? ' is-cur' : ''}"><button type="button" class="cave-open" data-cave="${e.key}"><span class="cv-name">${esc(caveName(e))}</span><span class="cv-sub">${esc(sub)}</span></button>${e.key === cur ? '' : `<button type="button" class="link cave-del" data-cave-del="${e.key}">Retirer</button>`}</div>`;
   };
   const sorted = CAVES.slice().sort((a, b) => (b.key === cur) - (a.key === cur) || (b.vu || '').localeCompare(a.vu || ''));
@@ -4993,12 +5188,13 @@ function renderCaves() {
 function openCaves() {
   renderCaves();
   $('#caves-link').value = '';
+  $('#caves-new').hidden = !Drive.available();
   $('#dlg-caves').showModal();
 }
 async function joinFromMenu() {
   const d = parseInvite($('#caves-link').value);
   if (!d) { toast("Ce lien d'invitation est illisible : colle-le en entier."); return; }
-  const r = await addCave(d.u, d.s, d.n);
+  const r = await addCave({ apiUrl: d.u, secret: d.s, nom: d.n });
   if (r === 'no') return;
   toast(r === 'same' ? 'Cette cave est déjà ouverte.' : r === 'known' ? 'Cette cave était déjà sur cet appareil : elle est ouverte.' : 'Cave ajoutée à « Mes caves ». Synchronisation…');
 }
@@ -5052,6 +5248,7 @@ function wire() {
         case 'add-menu': openAddMenu(); break;
         case 'caves': openCaves(); break;
         case 'caves-join': joinFromMenu(); break;
+        case 'caves-create': createDriveCave(); break;
         case 'edit': openWineForm(id); break;
         case 'in': openMove(id, 'entree'); break;
         case 'out': openMove(id, 'sortie'); break;
@@ -5408,7 +5605,9 @@ function wire() {
 
   $('#sync-pill').addEventListener('click', () => {
     const k = syncState.k;
-    if (k === 'off' || k === 'auth') setView('reglages');
+    // Cave Google Drive : la connexion a expiré, toucher la pastille suffit à se reconnecter.
+    if (k === 'auth' && isDrive()) sync({ interactive: true });
+    else if (k === 'off' || k === 'auth') setView('reglages');
     else if (k !== 'busy') sync({ interactive: true });
   });
 
@@ -5424,8 +5623,8 @@ function wire() {
     const url = $('#api-url').value.trim(), secret = $('#api-secret').value.trim();
     if (url && !/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) { toast("L'adresse doit commencer par https://script.google.com/ et se terminer par /exec."); return; }
     if (url && !secret) { toast('Indique aussi le code secret.'); return; }
-    if (url && S.apiUrl && url !== S.apiUrl) {
-      if ((await addCave(url, secret)) === 'no') return;
+    if (url && caveRef() && url !== S.apiUrl) {
+      if ((await addCave({ apiUrl: url, secret })) === 'no') return;
       toast('Cave ajoutée à « Mes caves ». Synchronisation…');
       setView('reglages');
     } else {
