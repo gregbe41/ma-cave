@@ -42,7 +42,9 @@ C'est une page web. Le même prototype tourne aussi dans l'APK d'essai, pour une
 
 ## Lancer le test
 
-Il faut deux comptes Google et deux profils de navigateur (ton profil habituel, et un autre profil ou une fenêtre InPrivate connectée au compte invité).
+Il faut deux comptes Google et deux profils de navigateur : ton profil habituel, et un **second profil** (Edge : icône du profil › Ajouter un profil) où seul le compte invité est connecté à Google. Pas de fenêtre InPrivate : elle bloque les cookies tiers, et le sélecteur de Google affiche alors « 403. Il s'agit d'une erreur ». Même message si plusieurs comptes Google sont connectés dans le même profil : le sélecteur s'ouvre sur le mauvais compte.
+
+Si le sélecteur affiche « Autorisez Google à accéder aux cookies nécessaires », touche son bouton **Autoriser** et accepte la demande du navigateur. Si rien ne change, autorise les cookies tiers pour le prototype dans **les deux profils** : `edge://settings/content/cookies` › dans la liste des sites autorisés, **Ajouter** `http://localhost:8765` en cochant **Inclure les cookies tiers sur ce site** (le libellé varie selon la version d'Edge), puis recharge la page.
 
 ```
 node prototypes/drive-direct/serve.js

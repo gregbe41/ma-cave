@@ -269,7 +269,9 @@ const A = {
     const email = $('#invite-email').value.trim();
     if (!S.folderId || !S.caveId) throw new Error('Crée d\'abord une cave (A).');
     if (!email) throw new Error('Indique l\'adresse Google du proche.');
-    await drive('POST', `${API}/files/${S.folderId}/permissions?sendNotificationEmail=true&emailMessage=${encodeURIComponent('Je t\'invite dans ma cave sur Ma cave (prototype).')}`, { json: { type: 'user', role: 'writer', emailAddress: email } });
+    if (email.toLowerCase() === (me || '').toLowerCase()) throw new Error('C\'est ton adresse : indique celle du compte invité.');
+    // Pas d'e-mail de Google : il ne mènerait qu'au dossier dans Drive. L'invitation, c'est le lien de l'appli.
+    await drive('POST', `${API}/files/${S.folderId}/permissions?sendNotificationEmail=false`, { json: { type: 'user', role: 'writer', emailAddress: email } });
     const link = inviteLink(S.caveId);
     $('#invite-link').textContent = `Lien à envoyer : ${link}`;
     try { await navigator.clipboard.writeText(link); } catch (e) { /* copie à la main */ }
