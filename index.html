@@ -687,6 +687,32 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .d-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:.82rem;font-weight:600}
 .d-chip .stars{letter-spacing:0}
 .d-garde{margin:0 0 12px;padding:14px 16px 8px;border-radius:18px;background:var(--sbg)}
+/* Profil du vin : une ligne de 24 px par jauge (nom, mot de gauche, 5 crans, mot de droite) */
+.d-prof{margin:0 0 12px;padding:12px 14px;border-radius:18px;background:var(--surface);box-shadow:var(--card-shadow)}
+.pf-head{display:flex;align-items:center;gap:8px;margin:0 0 6px}
+.pf-head h3{margin:0;flex:1;font-size:1.05rem}
+.pf-head .link{font-size:.9rem}
+.pf-row{display:grid;grid-template-columns:5.4em 4.8em minmax(0,1fr) 4.8em;align-items:center;column-gap:6px;min-height:24px;font-size:.85rem}
+.pf-k{font-weight:600}
+.pf-g,.pf-d{color:var(--muted);font-size:.74rem;line-height:1.15}
+.pf-g{text-align:right}
+.pf-bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+.pf-bar i{display:block;height:6px;border-radius:3px;background:var(--soft)}
+.pf-bar i.on{background:var(--accent)}
+.pf-row.is-mine .pf-bar i.on{background:var(--ink)}
+.pf-hint{margin:0;font-size:.85rem;color:var(--muted)}
+.pf-edit{display:grid;gap:10px}
+.pf-e-head{display:flex;align-items:baseline;gap:8px}
+.pf-e-head b{flex:1}
+.pf-e-head small{color:var(--muted);font-size:.78rem}
+.pf-mine{padding:1px 8px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:.7rem;font-weight:700}
+.pf-cells{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.pf-cells button{height:40px;padding:0;border:0;background:none;display:flex;align-items:center;cursor:pointer}
+.pf-cells button i{display:block;width:100%;height:10px;border-radius:5px;background:var(--soft)}
+.pf-cells button.on i{background:var(--accent)}
+.pf-cells.is-mine button.on i{background:var(--ink)}
+.pf-ends{display:flex;justify-content:space-between;margin-top:-6px;font-size:.75rem;color:var(--muted)}
+.pf-reset{margin:4px 0 0}
 .d-status{margin:0;font-weight:700;font-size:1.05rem;color:var(--sfg)}
 .d-why{margin:2px 0 0;font-size:.88rem;color:var(--ink)}
 .d-frise{position:relative;margin:30px 4px 0}
@@ -1206,6 +1232,15 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
   </form>
 </dialog>
 
+<!-- Profil du vin : corriger les jauges -->
+<dialog class="sheet" id="dlg-profil" aria-labelledby="pf-title">
+  <div class="sheet-wrap">
+    <div class="sheet-head"><h2 id="pf-title">Corriger le profil<span class="sub">Touche le cran qui te semble juste. Tastevin ne touchera plus aux jauges que tu as choisies.</span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body" id="pf-body"></div>
+    <div class="sheet-foot"><button type="button" class="btn" data-close>Annuler</button><span class="spacer"></span><button type="button" class="btn btn-primary" data-act="profil-save">Enregistrer</button></div>
+  </div>
+</dialog>
+
 <!-- Statistiques : détail d'un mois ou d'une année -->
 <dialog class="sheet" id="dlg-period" aria-labelledby="pd-title">
   <div class="sheet-wrap">
@@ -1303,7 +1338,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
    ========================================================= */
 const LS_DATA = 'macave:data', LS_SET = 'macave:settings', LS_TOKEN = 'macave:token';
 // L'appli publique (GitHub Pages), son dépôt, et la version du script Google qui va avec cette page.
-const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 18;
+const PUBLIC_URL = 'https://gregbe41.github.io/ma-cave/', REPO_URL = 'https://github.com/gregbe41/ma-cave', SCRIPT_VERSION = 19;
 const API_VERSION = 1;
 
 const COLORS = [
@@ -1427,19 +1462,45 @@ const wineLabel = w => w ? `${wineName(w)}${w.cuvee ? ', ' + w.cuvee : ''}${w.mi
 // Dans les listes et la fiche, un vin se présente par son appellation (« Touraine Mesland »), puis par son domaine.
 const wineTitle = w => w.appellation || wineName(w);
 const wineSub = w => (w.appellation ? [w.domaine, w.cuvee] : [w.cuvee]).filter(Boolean).join(', ');
-const FIELD_NAMES = { domaine: 'domaine', cuvee: 'cuvée', appellation: 'appellation', region: 'région', pays: 'pays', couleur: 'couleur', millesime: 'millésime', cepages: 'cépages', format: 'format', gardeDe: 'boire à partir de', gardeA: "boire jusqu'en", style: 'style', accords: 'accords', cote: 'valeur du jour' };
+const FIELD_NAMES = { domaine: 'domaine', cuvee: 'cuvée', appellation: 'appellation', region: 'région', pays: 'pays', couleur: 'couleur', millesime: 'millésime', cepages: 'cépages', format: 'format', gardeDe: 'boire à partir de', gardeA: "boire jusqu'en", style: 'style', accords: 'accords', profil: 'profil', cote: 'valeur du jour' };
 /** Les accords d'un vin (ou d'une liste « Poissons, Fromages ») : catégories connues, dans l'ordre de la liste. */
 const accordsOf = v => { const got = (Array.isArray(v) ? v : str(v && typeof v === 'object' ? v.accords : v).split(',')).map(norm); return ACCORDS.filter(a => got.includes(norm(a))); };
 const guessList = w => str(w.aVerifier).split(',').map(s => s.trim()).filter(k => FIELD_NAMES[k]);
 /* Qui a rempli quoi : la liste « claude » d'une fiche nomme les champs dont la valeur vient de Claude ; tout le reste a été
    saisi à la main. Claude ne remplit que les champs vides et les siens ; la personne a toujours le dernier mot. */
-const CLAUDE_FIELDS = ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'couleur', 'millesime', 'cepages', 'format', 'gardeDe', 'gardeA', 'alerte', 'style', 'accords', 'cote'];
+const CLAUDE_FIELDS = ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'couleur', 'millesime', 'cepages', 'format', 'gardeDe', 'gardeA', 'alerte', 'style', 'accords', 'profil', 'cote'];
 const claudeKeys = w => str(w && w.claude).split(',').map(s => s.trim()).filter((k, i, a) => CLAUDE_FIELDS.includes(k) && a.indexOf(k) === i);
 // Ce que Claude peut encore améliorer sur une fiche, et ce qui, modifié à la main, mérite qu'il repasse.
-const IMPROVABLE = ['appellation', 'region', 'pays', 'couleur', 'cepages', 'gardeDe', 'gardeA', 'style', 'accords'];
+const IMPROVABLE = ['appellation', 'region', 'pays', 'couleur', 'cepages', 'gardeDe', 'gardeA', 'style', 'accords', 'profil'];
 const REVIEW_TRIGGERS = ['domaine', 'cuvee', 'appellation', 'millesime', 'couleur'];
 const hasVal = (w, k) => (k === 'alerte' ? w.alerte === 'passe' : w[k] != null && w[k] !== '');
-const claudeRoom = w => IMPROVABLE.some(k => !hasVal(w, k) || claudeKeys(w).includes(k));
+const claudeRoom = w => IMPROVABLE.some(k => (k !== 'profil' || profilOn()) && (!hasVal(w, k) || claudeKeys(w).includes(k)));
+/* ---------- Profil du vin : quatre ou cinq jauges sur 5 crans selon la couleur (script v19, ou cave Google Drive) ----------
+   Rangé comme dans le script : « corps:3,tanins:3/4 », le chiffre avant « / » vient de Tastevin, celui d'après de la personne. */
+const PROFIL = {
+  rouge: [['corps', 'Corps', 'léger', 'puissant'], ['tanins', 'Tanins', 'souples', 'fermes'], ['acidite', 'Acidité', 'douce', 'vive'], ['boise', 'Boisé', 'aucun', 'marqué'], ['fruit', 'Fruit', 'frais', 'mûr']],
+  blanc: [['sucre', 'Sucre', 'sec', 'moelleux'], ['acidite', 'Acidité', 'douce', 'vive'], ['mineralite', 'Minéralité', 'discrète', 'marquée'], ['boise', 'Boisé', 'aucun', 'marqué'], ['aromes', 'Arômes', 'discrets', 'exubérants']],
+  rose: [['sucre', 'Sucre', 'sec', 'tendre'], ['acidite', 'Acidité', 'douce', 'vive'], ['fruit', 'Fruit', 'discret', 'intense'], ['corps', 'Corps', 'léger', 'vineux']],
+  effervescent: [['dosage', 'Dosage', 'brut nature', 'doux'], ['bulle', 'Bulle', 'crémeuse', 'vive'], ['vinosite', 'Vinosité', 'légère', 'ample'], ['evolution', 'Évolution', 'fraîche', 'briochée']],
+  liquoreux: [['sucre', 'Sucre', 'moelleux', 'liquoreux'], ['fraicheur', 'Fraîcheur', 'faible', 'vive'], ['botrytis', 'Botrytis', 'discret', 'marqué'], ['evolution', 'Évolution', 'fruit frais', 'confit']],
+};
+const PROFIL_KEYS = ['corps', 'tanins', 'acidite', 'boise', 'fruit', 'sucre', 'mineralite', 'aromes', 'dosage', 'bulle', 'vinosite', 'evolution', 'fraicheur', 'botrytis'];
+/** « corps:3,tanins:3/4 » (ou l'objet de Claude) → { corps: [3, null], tanins: [3, 4] } : [Tastevin, la personne]. */
+function profilLu(v) {
+  const o = {}, cran = x => { const n = int(x); return n != null && n >= 1 && n <= 5 ? n : null; };
+  if (v && typeof v === 'object' && !Array.isArray(v)) { PROFIL_KEYS.forEach(k => { const c = cran(v[k]); if (c != null) o[k] = [c, null]; }); return o; }
+  str(v).split(/[,;·]/).forEach(t => {
+    const m = norm(t).match(/^([a-z]+)\s*:?\s*(\d)?\s*(?:\/\s*(\d))?$/);
+    if (!m || !PROFIL_KEYS.includes(m[1])) return;
+    const c = cran(m[2]), p = cran(m[3]);
+    if (c != null || p != null) o[m[1]] = [c, p];
+  });
+  return o;
+}
+const profilTexte = o => PROFIL_KEYS.filter(k => o[k]).map(k => `${k}:${o[k][0] ?? ''}${o[k][1] != null ? '/' + o[k][1] : ''}`).join(',');
+const profilDeTastevin = v => Object.values(profilLu(v)).some(x => x[0] != null);
+/** Le profil se garde dans la cave : script v19 ou plus (colonne « Profil »), ou cave Google Drive. */
+const profilOn = () => isDrive() || (S.serverVersion || 0) >= 19;
 /** « appellation, région et fenêtre de garde » */
 function provNames(keys) {
   const names = keys.filter(k => k !== 'gardeDe' && k !== 'gardeA').map(k => (k === 'alerte' ? 'alerte « sans tarder »' : FIELD_NAMES[k]));
@@ -2196,6 +2257,56 @@ function readNote(w) {
   return out.join('');
 }
 
+/** Profil du vin : une ligne compacte par jauge ; ambre pour Tastevin, encre pour ce que la personne a choisi. */
+function profilHTML(w) {
+  const axes = PROFIL[w.couleur];
+  if (!axes) return '';
+  const p = profilLu(w.profil), has = axes.some(([k]) => p[k]);
+  const edit = profilOn() ? `<button type="button" class="link" data-act="profil-edit" data-id="${w.id}">${has ? 'Corriger' : 'Le décrire'}</button>` : '';
+  if (!has) return profilOn() ? `<section class="d-prof" aria-label="Profil"><div class="pf-head"><h3>Profil</h3>${edit}</div><p class="pf-hint">${claudeOn() ? 'Tastevin le remplira avec le style et les accords. Tu peux aussi le décrire toi-même.' : 'Décris-le en quelques crans : corps, acidité, boisé…'}</p></section>` : '';
+  // Un choix de la personne égal à l'estimation de Tastevin reste gardé (s'il révise, il tient), mais s'affiche comme le sien.
+  const tv = axes.some(([k]) => p[k] && p[k][0] != null && (p[k][1] == null || p[k][1] === p[k][0]));
+  return `<section class="d-prof" aria-label="Profil"><div class="pf-head"><h3>Profil</h3>${tv ? `<span class="by-claude">${ICO_TV}Tastevin</span>` : ''}${edit}</div>
+    ${axes.map(([k, label, g, d]) => {
+      const x = p[k] || [null, null], v = x[1] ?? x[0], mine = x[1] != null && x[1] !== x[0];
+      const aria = v ? `${label} : ${v} sur 5, de ${g} à ${d}${mine ? ', ta correction' : ''}` : `${label} : pas encore renseigné`;
+      return `<div class="pf-row${mine ? ' is-mine' : ''}"><span class="pf-k">${label}</span><span class="pf-g">${g}</span><span class="pf-bar" role="img" aria-label="${aria}">${[1, 2, 3, 4, 5].map(i => `<i${v && i <= v ? ' class="on"' : ''}></i>`).join('')}</span><span class="pf-d">${d}</span></div>`;
+    }).join('')}</section>`;
+}
+/* Corriger le profil : un cran touché devient le choix de la personne ; l'estimation de Tastevin reste gardée à côté. */
+const PF = { id: '', vals: {} };
+function openProfil(id) {
+  const w = db.wines.find(x => x.id === id);
+  if (!w || !PROFIL[w.couleur] || !profilOn()) return;
+  PF.id = id; PF.vals = profilLu(w.profil);
+  renderProfilEdit();
+  $('#dlg-profil').showModal();
+}
+function renderProfilEdit() {
+  const w = db.wines.find(x => x.id === PF.id);
+  if (!w) return;
+  const axes = PROFIL[w.couleur] || [], tv = Object.values(PF.vals).some(x => x[0] != null);
+  $('#pf-body').innerHTML = `<div class="pf-edit">${axes.map(([k, label, g, d]) => {
+    const x = PF.vals[k] || [null, null], v = x[1] ?? x[0], mine = x[1] != null && x[1] !== x[0];
+    return `<div class="pf-e"><div class="pf-e-head"><b>${label}</b>${mine ? '<span class="pf-mine">Ta correction</span>' : ''}${x[0] != null ? `<small>Tastevin : ${x[0]}</small>` : ''}</div>
+      <div class="pf-cells${mine ? ' is-mine' : ''}" role="group" aria-label="${label}, de ${g} à ${d}">${[1, 2, 3, 4, 5].map(i => `<button type="button" data-pf="${k}" data-n="${i}" aria-pressed="${v === i}" aria-label="${label} : ${i} sur 5"${v && i <= v ? ' class="on"' : ''}><i></i></button>`).join('')}</div>
+      <div class="pf-ends"><span>${g}</span><span>${d}</span></div></div>`;
+  }).join('')}${tv ? '<p class="pf-reset"><button type="button" class="link" data-act="profil-reset">Rétablir l\'estimation de Tastevin</button></p>' : ''}</div>`;
+}
+/** Le même cran que Tastevin : on est d'accord avec lui, rien n'est gardé en plus. */
+function setProfil(k, n) { const x = PF.vals[k] || [null, null]; PF.vals[k] = [x[0], x[0] === n ? null : n]; renderProfilEdit(); }
+function resetProfil() { for (const k of Object.keys(PF.vals)) { if (PF.vals[k][0] == null) delete PF.vals[k]; else PF.vals[k] = [PF.vals[k][0], null]; } renderProfilEdit(); }
+function saveProfil() {
+  const w = db.wines.find(x => x.id === PF.id), txt = profilTexte(PF.vals);
+  $('#dlg-profil').close();
+  if (!w || txt === (w.profil || '')) return;
+  w.profil = txt;
+  w.claude = [...claudeKeys(w).filter(k => k !== 'profil'), ...(profilDeTastevin(txt) ? ['profil'] : [])].join(',');
+  w.updatedAt = nowISO();
+  commit();
+  toast('Profil enregistré.');
+}
+
 /** Qui a rempli la fiche : Claude ou une personne. La personne garde la main. */
 function provHTML(w) {
   const mine = claudeKeys(w).filter(k => hasVal(w, k));
@@ -2724,7 +2835,7 @@ function renderSyncBox() {
     d += '</div>';
     // Style et accords des vins déjà en cave : Claude les ajoute aussitôt ; une action sur toute la cave, pour le propriétaire.
     const manque = tasteMissing().length;
-    if (manque && relaisOn()) d += `<p class="hint">${manque} ${plural(manque, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${S.role === 'proprio' ? '' : ' Le propriétaire de la cave peut les faire compléter par Tastevin.'}</p>${S.role === 'proprio' ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Tastevin</button></div>' : ''}`;
+    if (manque && relaisOn()) d += `<p class="hint">${tasteTxt(manque)}${S.role === 'proprio' ? '' : ' Le propriétaire de la cave peut les faire compléter par Tastevin.'}</p>${S.role === 'proprio' ? `<div class="btn-row"><button class="btn" data-act="fill-taste">${tasteBtn()}</button></div>` : ''}`;
     box.innerHTML = d;
     return;
   }
@@ -2747,13 +2858,15 @@ function renderSyncBox() {
   // Une action sur toute la cave : réservée au propriétaire à partir du script v16.
   // Tant que le propriétaire ne s'est déclaré sur aucun appareil, chacun a tous les droits (script v17).
   const bulkOk = (S.serverVersion || 0) < 16 || S.role === 'proprio' || !S.proprioActif;
-  if (missing && (S.serverVersion || 0) >= 12 && claudeOn()) h += `<p class="hint">${missing} ${plural(missing, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${bulkOk ? '' : ' Le propriétaire de la cave peut les faire compléter par Tastevin.'}</p>${bulkOk ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Tastevin</button></div>' : ''}`;
+  if (missing && (S.serverVersion || 0) >= 12 && claudeOn()) h += `<p class="hint">${tasteTxt(missing)}${bulkOk ? '' : ' Le propriétaire de la cave peut les faire compléter par Tastevin.'}</p>${bulkOk ? `<div class="btn-row"><button class="btn" data-act="fill-taste">${tasteBtn()}</button></div>` : ''}`;
   // Passer sur Google Drive, sans script : une copie, la cave actuelle ne change pas.
   if (basculeOk()) h += `<p class="hint">Cette cave peut passer sur Google Drive, sans script : l'appli la recopie, et la cave actuelle ne change pas.</p><div class="btn-row"><button class="btn" data-act="bascule-open">Passer cette cave sur Google Drive</button></div>`;
   box.innerHTML = h;
 }
-/** Vins en cave sans style ni accords, que Claude peut compléter (pas déjà en attente de lecture). */
-const tasteMissing = () => db.wines.filter(w => !w.style && !w.accords && (w.domaine || w.appellation) && !['attente', 'revoir'].includes(w.lecture));
+/** Vins en cave sans style ni accords, ou sans profil (script v19, cave Google Drive), que Claude peut compléter (pas déjà en attente de lecture). */
+const tasteMissing = () => db.wines.filter(w => ((!w.style && !w.accords) || (profilOn() && PROFIL[w.couleur] && !w.profil)) && (w.domaine || w.appellation) && !['attente', 'revoir'].includes(w.lecture));
+const tasteTxt = n => (profilOn() ? `${n} ${plural(n, 'vin attend encore son style, ses accords ou son profil.', 'vins attendent encore leur style, leurs accords ou leur profil.')}` : `${n} ${plural(n, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.`);
+const tasteBtn = () => (profilOn() ? 'Faire compléter style, accords et profil par Tastevin' : 'Faire compléter style et accords par Tastevin');
 function fillTaste() {
   if ((S.serverVersion || 0) >= 16 && S.role !== 'proprio') return;
   const ws = tasteMissing();
@@ -2844,6 +2957,7 @@ function renderDetail() {
       ${frise}
     </section>
     ${like ? simHTML : ''}
+    ${profilHTML(w)}
     ${tiles.length || price ? `<dl class="d-info d-tiles">${price}${tiles.map(([k, v]) => `<div${String(v).length > 22 ? ' class="wide"' : ''}><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
     ${accords.length ? `<h3 class="d-h3">Avec quoi le servir</h3><ul class="acc-chips">${accords.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
     ${w.commentaire ? `<h3 class="d-h3">Notes</h3><p class="d-com">${esc(w.commentaire)}</p>` : ''}
@@ -3721,6 +3835,9 @@ async function submitWineForm(e) {
     fournisseur: v('fournisseur'), emplacement: v('emplacement'), style: v('style'), accords: formAccords().join(', '),
     gardeDe: int(v('gardeDe')), gardeA: int(v('gardeA')), commentaire: v('commentaire'),
   };
+  // Le profil se corrige dans la fiche : le formulaire le garde tel quel.
+  const oldW = FORM.id ? db.wines.find(x => x.id === FORM.id) : null;
+  data.profil = oldW ? oldW.profil || '' : '';
   // « Sans tarder » : la fenêtre se termine au plus tard cette année.
   const old = FORM.id ? db.wines.find(x => x.id === FORM.id) : null;
   if (f.elements.sansTarder.checked) {
@@ -3762,7 +3879,7 @@ async function submitWineForm(e) {
 
   // Restent à Claude les champs qu'il a remplis et qu'on n'a pas changés ; tout le reste est saisi à la main.
   const saved = k => (k === 'alerte' ? (data.alerte === 'passe' ? 'passe' : '') : k === 'cepages' ? splitGrapes(data.cepages).join(', ') : String(data[k] ?? ''));
-  const claude = [...FORM.claude].filter(k => saved(k) !== '' && saved(k) === FORM.orig[k]).join(',');
+  const claude = [...FORM.claude].filter(k => k !== 'profil' && saved(k) !== '' && saved(k) === FORM.orig[k]).concat(profilDeTastevin(data.profil) && FORM.claude.has('profil') ? ['profil'] : []).join(',');
   // Valeur du jour changée à la main : elle devient la sienne, datée du mois ; vidée, Claude la cherchera de nouveau.
   if (saved('cote') !== (FORM.orig.cote ?? '')) {
     Object.assign(data, data.cote == null ? { coteBas: null, coteHaut: null, coteDate: '', coteNote: '' }
@@ -5020,7 +5137,7 @@ async function driveSuggest({ vinId, force }) {
 
 /* ---------- Lectures et fiches à revoir, valeur du jour : faites par l'appareil ---------- */
 // Les champs que Claude remplit sur une fiche (comme FILL_FIELDS dans le script) ; style et accords ne sont jamais « à vérifier ».
-const CLAUDE_FILL = ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'couleur', 'millesime', 'cepages', 'format', 'gardeDe', 'gardeA', 'style', 'accords'];
+const CLAUDE_FILL = ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'couleur', 'millesime', 'cepages', 'format', 'gardeDe', 'gardeA', 'style', 'accords', 'profil'];
 function queueClaude(ids) {
   if (!relaisOn() || !ids.length) return;
   S.aLire = [...new Set([...(S.aLire || []), ...ids])];
@@ -5040,7 +5157,16 @@ function applyClaudeResult(w, r, review) {
   if (!r.estEtiquette && !review) { Object.assign(w, { doublonType: '', lecture: 'echec', lectureNote: r.remarque || "L'étiquette n'a pas pu être lue." }); return; }
   const mine = claudeKeys(w), guessed = [], lus = r.champsLus || [];
   const take = k => { if (!mine.includes(k)) mine.push(k); };
+  // Profil : Tastevin met à jour ses jauges ; celles que la personne a choisies (après « / ») ne bougent pas.
+  if (r.profil) {
+    const old = profilLu(w.profil), neuf = profilLu(r.profil), aLaMain = !!w.profil && !mine.includes('profil');
+    for (const k of Object.keys(old)) if (aLaMain && old[k][1] == null) old[k] = [null, old[k][0]];
+    for (const k of Object.keys(neuf)) old[k] = [neuf[k][0], old[k] ? old[k][1] : null];
+    w.profil = profilTexte(old);
+    take('profil');
+  }
   for (const k of CLAUDE_FILL) {
+    if (k === 'profil') continue;
     const v = r[k], empty = w[k] == null || w[k] === '';
     if (v == null || v === '') continue;
     if (!empty && !mine.includes(k)) continue;  // saisi à la main
@@ -5398,7 +5524,7 @@ function cleanWine(o) {
     coteDate: /^\d{4}-\d{2}$/.test(str(o.coteDate)) ? str(o.coteDate) : '', coteNote: str(o.coteNote),
     emplacement: str(o.emplacement), gardeDe: int(o.gardeDe), gardeA: int(o.gardeA),
     alerte: ['passe', 'non'].includes(norm(o.alerte)) ? norm(o.alerte) : '',
-    commentaire: str(o.commentaire), style: str(o.style), accords: accordsOf(o.accords).join(', '), photoId: str(o.photoId),
+    commentaire: str(o.commentaire), style: str(o.style), accords: accordsOf(o.accords).join(', '), profil: profilTexte(profilLu(o.profil)), photoId: str(o.photoId),
     lecture: ['attente', 'revoir', 'faite', 'echec'].includes(norm(o.lecture)) ? norm(o.lecture) : '', claude: claudeKeys(o).join(','),
     aVerifier: str(o.aVerifier), doublonDe: str(o.doublonDe), doublonType: str(o.doublonType) === 'bouteille' ? 'bouteille' : '', lectureNote: str(o.lectureNote),
     createdAt: str(o.createdAt), updatedAt: str(o.updatedAt),
@@ -5959,6 +6085,9 @@ function wire() {
         case 'not-dup': setReading(id, { doublonDe: '', doublonType: '' }, 'Noté : ce sont deux vins différents.'); break;
         // Alerte retirée par la personne : « non », que Claude ne remettra pas.
         case 'clear-alert': setReading(id, w => ({ alerte: 'non', claude: claudeKeys(w).filter(k => k !== 'alerte').join(',') }), 'Alerte retirée'); break;
+        case 'profil-edit': openProfil(id); break;
+        case 'profil-save': saveProfil(); break;
+        case 'profil-reset': resetProfil(); break;
         case 'ask-claude': setReading(id, { lecture: 'revoir' }, `Tastevin repassera sur cette fiche ${plusTard()}.`); break;
         case 'cancel-review': setReading(id, w => ({ lecture: claudeKeys(w).length ? 'faite' : '' }), 'Demande annulée'); break;
         case 'merge': mergeTwin(id); break;
@@ -6019,6 +6148,8 @@ function wire() {
     if (per) { UI.period = per.dataset.period; renderStats(); return; }
     const th = e.target.closest('[data-theme-set]');
     if (th) { lsSet('macave:theme', th.dataset.themeSet); applyTheme(th.dataset.themeSet); return; }
+    const pf = e.target.closest('[data-pf]');
+    if (pf) { setProfil(pf.dataset.pf, +pf.dataset.n); return; }
     const sc = e.target.closest('[data-scanner-set]');
     if (sc) { lsSet('macave:scanner', sc.dataset.scannerSet === 'on'); Scanner.broken = false; renderReglages(); return; }
     const tq = e.target.closest('[data-tq]');

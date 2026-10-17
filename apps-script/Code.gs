@@ -33,7 +33,7 @@
  *   ROUTINE_VU         dernier passage de la routine (noté automatiquement)
  */
 
-const VERSION = 18;
+const VERSION = 19;
 const FOLDER_TITLE = 'Ma cave – étiquettes';
 const LOG_TITLE = 'Lectures IA';
 const OWNER_TITLE = 'Propriétaire';
@@ -70,6 +70,7 @@ const WINE_COLS = [
   { k: 'commentaire', h: 'Commentaire', t: 't' },
   { k: 'style', h: 'Style', t: 't' },                   // le vin qu'on peut en attendre, en une ou deux phrases
   { k: 'accords', h: 'Accords', t: 't' },               // catégories de plats (liste ACCORDS), séparées par des virgules
+  { k: 'profil', h: 'Profil', t: 't' },                 // jauges sur 5 crans selon la couleur : « corps:3,tanins:3/4 » (Tastevin 3, la personne 4)
   // Valeur du jour d'une bouteille : prix constaté en ligne par la routine (recherche web), ou saisi à la main.
   { k: 'cote', h: 'Valeur du jour (€)', t: 'p' },
   { k: 'coteBas', h: 'Valeur, fourchette basse (€)', t: 'p' },
@@ -459,8 +460,8 @@ function photoDel(p) {
    Lecture d'étiquette (API Claude)
    ========================================================= */
 const LABEL_FIELDS = ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'couleur', 'millesime', 'cepages', 'format'];
-// Style et accords : des avis de Claude, jamais lus sur l'étiquette, donc jamais « à vérifier ».
-const NO_CHECK = ['style', 'accords'];
+// Style, accords et profil : des avis de Claude, jamais lus sur l'étiquette, donc jamais « à vérifier ».
+const NO_CHECK = ['style', 'accords', 'profil'];
 const FILL_FIELDS = LABEL_FIELDS.concat(['gardeDe', 'gardeA'], NO_CHECK);
 // Catégories de plats pour les accords : une liste fixe, pour pouvoir filtrer la cave.
 const ACCORDS = ['Apéritif', 'Entrées', 'Poissons', 'Fruits de mer', 'Volailles', 'Viandes blanches', 'Viandes rouges', 'Gibier', 'Charcuterie', 'Fromages', 'Plats épicés', 'Cuisine végétarienne', 'Desserts'];
@@ -470,10 +471,32 @@ function accordList(v) {
   return ACCORDS.filter(a => got.indexOf(norm(a)) >= 0);
 }
 const nullable = schema => ({ anyOf: [schema, { type: 'null' }] });
+// Profil du vin : quatre ou cinq jauges sur 5 crans, selon sa couleur. Rangé en texte « corps:3,tanins:3/4 » : le chiffre
+// avant « / » vient de Tastevin, celui d'après a été choisi par la personne, qui a le dernier mot.
+const PROFIL_KEYS = ['corps', 'tanins', 'acidite', 'boise', 'fruit', 'sucre', 'mineralite', 'aromes', 'dosage', 'bulle', 'vinosite', 'evolution', 'fraicheur', 'botrytis'];
+/** Lit un profil (l'objet que renvoie Claude, ou le texte du Sheet) : { clé: [Tastevin, personne] }, crans de 1 à 5 ou null. */
+function profilLu(v) {
+  const o = {}, cran = x => { const n = int(x); return n != null && n >= 1 && n <= 5 ? n : null; };
+  if (v && typeof v === 'object' && !Array.isArray(v)) {
+    PROFIL_KEYS.forEach(k => { const c = cran(v[k]); if (c != null) o[k] = [c, null]; });
+    return o;
+  }
+  str(v).split(/[,;·]/).forEach(t => {
+    const m = norm(t).match(/^([a-z]+)\s*:?\s*(\d)?\s*(?:\/\s*(\d))?$/);
+    if (!m || PROFIL_KEYS.indexOf(m[1]) < 0) return;
+    const c = cran(m[2]), p = cran(m[3]);
+    if (c != null || p != null) o[m[1]] = [c, p];
+  });
+  return o;
+}
+/** Le profil en texte, dans l'ordre des clés : « corps:3,tanins:3/4,boise:/2 ». */
+function profilTexte(o) {
+  return PROFIL_KEYS.filter(k => o[k]).map(k => k + ':' + (o[k][0] != null ? o[k][0] : '') + (o[k][1] != null ? '/' + o[k][1] : '')).join(',');
+}
 const LABEL_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['estEtiquette', 'domaine', 'cuvee', 'appellation', 'region', 'pays', 'couleur', 'millesime', 'cepages', 'format', 'gardeDe', 'gardeA', 'peutEtrePasse', 'style', 'accords', 'champsLus', 'remarque'],
+  required: ['estEtiquette', 'domaine', 'cuvee', 'appellation', 'region', 'pays', 'couleur', 'millesime', 'cepages', 'format', 'gardeDe', 'gardeA', 'peutEtrePasse', 'style', 'accords', 'profil', 'champsLus', 'remarque'],
   properties: {
     estEtiquette: { type: 'boolean' },
     domaine: nullable({ type: 'string' }),
@@ -490,6 +513,7 @@ const LABEL_SCHEMA = {
     peutEtrePasse: { type: 'boolean' },
     style: nullable({ type: 'string' }),
     accords: { type: 'array', items: { type: 'string', enum: ACCORDS } },
+    profil: nullable({ type: 'object', additionalProperties: false, required: PROFIL_KEYS, properties: PROFIL_KEYS.reduce((o, k) => { o[k] = nullable({ type: 'integer' }); return o; }, {}) }),
     champsLus: { type: 'array', items: { type: 'string', enum: LABEL_FIELDS } },
     remarque: { type: 'string' },
   },
@@ -512,6 +536,7 @@ const LABEL_PROMPT = [
   "- peutEtrePasse : true si le vin doit être bu sans tarder parce qu'il a peut-être déjà dépassé son apogée (vin âgé pour son appellation, producteur ou négociant inconnu, millésime faible). Dans ce cas, gardeA = l'année en cours, jamais une année future, et la remarque explique pourquoi et rappelle de vérifier avant d'ouvrir le niveau du vin, sa couleur et le bouchon. Sinon false.",
   "- style : en une ou deux phrases, le vin qu'on peut en attendre (corps, fruit, tanins ou acidité, élevage), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. null si le vin n'est pas identifié.",
   "- accords : de une à quatre catégories de plats, parmi les valeurs autorisées, celles qui lui vont le mieux. Liste vide si le vin n'est pas identifié.",
+  "- profil : le profil probable du vin, en crans de 1 (le moins) à 5 (le plus), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. Rouge : corps (léger → puissant), tanins (souples → fermes), acidite (douce → vive), boise (aucun → marqué), fruit (frais → mûr). Blanc : sucre (sec → moelleux), acidite, mineralite (discrète → marquée), boise, aromes (discrets → exubérants). Rosé : sucre (sec → tendre), acidite, fruit (discret → intense), corps (léger → vineux). Effervescent : dosage (brut nature → doux), bulle (crémeuse → vive), vinosite (légère → ample), evolution (fraîche → briochée). Liquoreux : sucre (moelleux → liquoreux), fraicheur (faible → vive), botrytis (discret → marqué), evolution (fruit frais → confit). Les autres jauges à null ; profil à null si le vin n'est pas identifié.",
   "- champsLus : les noms des champs dont la valeur est écrite sur l'étiquette. N'y mets pas ceux que tu as déduits ou estimés.",
   '- remarque : une phrase courte et utile au propriétaire (ex. « Millésime non visible : regarde la collerette ou la contre-étiquette. »), ou une chaîne vide.',
   '',
@@ -531,6 +556,7 @@ const REVOIR_PROMPT = [
   "- connu : ce que la personne a saisi à la main. Elle a le dernier mot : reprends ces valeurs telles quelles et ne les contredis jamais.",
   "- precedent : tes propres valeurs d'une lecture précédente. Garde-les si elles restent justes ; révise-les quand les nouvelles informations le justifient. Exemple : la fenêtre de garde une fois le millésime connu, la région ou les cépages après un changement d'appellation.",
   "- Remplis aussi les champs vides que tu peux estimer avec confiance (mêmes règles que pour une étiquette).",
+  "- profil : dans connu ou precedent, « tanins:3/4 » veut dire que tu avais estimé 3 et que la personne a choisi 4. Elle a le dernier mot sur cette jauge : redonne quand même ton estimation, elle ne remplacera pas son choix.",
   "- estEtiquette : true. champsLus : les champs lus sur la photo s'il y en a une, sinon ceux recopiés de connu.",
   "- remarque : une phrase sur ce que tu as changé et pourquoi (ex. « Millésime 2015 : fenêtre de garde portée à 2022–2032. »), ou une chaîne vide si rien ne change.",
 ].join('\n');
@@ -541,7 +567,7 @@ const CONSEIL_BOTTLE = {
   additionalProperties: false,
   // Pour un conseil, style et accords sont du texte libre (idées de plats), pas les catégories de la cave.
   required: ['index'].concat(LABEL_SCHEMA.required.filter(k => NO_CHECK.indexOf(k) < 0), ['aBoire', 'style', 'accords', 'prix', 'avis']),
-  properties: Object.assign({ index: { type: 'integer' } }, LABEL_SCHEMA.properties, {
+  properties: Object.assign({ index: { type: 'integer' } }, Object.keys(LABEL_SCHEMA.properties).filter(k => k !== 'profil').reduce((o, k) => { o[k] = LABEL_SCHEMA.properties[k]; return o; }, {}), {
     aBoire: { type: 'string' }, style: { type: 'string' }, accords: { type: 'string' }, prix: { type: 'string' }, avis: { type: 'string' },
   }),
 };
@@ -555,7 +581,7 @@ const CONSEIL_PROMPT = [
   "Tu conseilles une personne qui hésite devant des bouteilles chez un caviste ou en magasin. Elle a photographié une ou plusieurs bouteilles, une par photo. Elle ne les a pas encore achetées. Réponds en français, uniquement selon le schéma JSON imposé : une entrée par photo dans bouteilles (index = numéro de la photo, à partir de 1), puis une recommandation.",
   '',
   "Pour reconnaître chaque vin, applique ces règles de lecture d'étiquette :",
-  LABEL_PROMPT.split('\n').filter(l => l.charAt(0) === '-' && !/^- (style|accords) :/.test(l)).join('\n'),
+  LABEL_PROMPT.split('\n').filter(l => l.charAt(0) === '-' && !/^- (style|accords|profil) :/.test(l)).join('\n'),
   '',
   'Puis, pour chaque bouteille :',
   "- connu : ce que la personne a indiqué elle-même (couleur, millésime, prix affiché, et parfois domaine, cuvée ou appellation qu'elle a complétés ou corrigés après une première analyse). Elle a le dernier mot : reprends ces valeurs telles quelles, ne les contredis pas, et tiens-en compte partout (fenêtre de garde, style, prix, avis), même si la photo ne permet pas de les lire.",
@@ -701,7 +727,17 @@ function applyLabels(p) {
       }
       const mine = keyList(w.claude), guessed = [];
       const take = k => { if (mine.indexOf(k) < 0) mine.push(k); };
+      // Profil : Tastevin met à jour ses jauges ; celles que la personne a choisies (après « / ») ne bougent pas. Un profil
+      // écrit à la main dans le Sheet, sans « / », devient celui de la personne.
+      if (r.profil) {
+        const old = profilLu(w.profil), neuf = profilLu(r.profil), aLaMain = !!w.profil && mine.indexOf('profil') < 0;
+        Object.keys(old).forEach(k => { if (aLaMain && old[k][1] == null) old[k] = [null, old[k][0]]; });
+        Object.keys(neuf).forEach(k => { old[k] = [neuf[k][0], old[k] ? old[k][1] : null]; });
+        w.profil = profilTexte(old);
+        take('profil');
+      }
       FILL_FIELDS.forEach(k => {
+        if (k === 'profil') return;
         const v = r[k], empty = w[k] == null || w[k] === '';
         if (v == null || v === '') return;
         if (!empty && mine.indexOf(k) < 0) return;  // saisi à la main : la personne a le dernier mot
@@ -1352,6 +1388,7 @@ function tidyLabel(r) {
     peutEtrePasse: r.peutEtrePasse === true,
     style: typeof r.style === 'string' && r.style.trim() ? r.style.trim().slice(0, 400) : null,
     accords: accordList(r.accords).slice(0, 4).join(', ') || null,
+    profil: profilTexte(profilLu(r.profil)) || null,
     champsLus: list(r.champsLus).filter(k => LABEL_FIELDS.indexOf(k) >= 0),
     remarque: typeof r.remarque === 'string' ? r.remarque.trim().slice(0, 300) : '',
   };
@@ -1606,7 +1643,7 @@ function cleanWine(o) {
     coteDate: /^\d{4}-\d{2}$/.test(str(o.coteDate)) ? str(o.coteDate) : '', coteNote: str(o.coteNote).slice(0, 300),
     emplacement: str(o.emplacement), gardeDe: int(o.gardeDe), gardeA: int(o.gardeA),
     alerte: ['passe', 'non'].indexOf(norm(o.alerte)) >= 0 ? norm(o.alerte) : '',
-    commentaire: str(o.commentaire), style: str(o.style).slice(0, 600), accords: accordList(o.accords).join(', '), photoId: str(o.photoId),
+    commentaire: str(o.commentaire), style: str(o.style).slice(0, 600), accords: accordList(o.accords).join(', '), profil: profilTexte(profilLu(o.profil)), photoId: str(o.photoId),
     lecture: LECTURES.indexOf(norm(o.lecture)) >= 0 ? norm(o.lecture) : '',
     aVerifier: str(o.aVerifier), claude: keyList(o.claude).join(','), doublonDe: str(o.doublonDe), doublonType: str(o.doublonType) === 'bouteille' ? 'bouteille' : '', lectureNote: str(o.lectureNote),
     createdAt: str(o.createdAt), updatedAt: str(o.updatedAt),

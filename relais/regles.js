@@ -44,7 +44,24 @@ export const LABEL_FIELDS = [
 ];
 export const NO_CHECK = [
  "style",
- "accords"
+ "accords",
+ "profil"
+];
+export const PROFIL_KEYS = [
+ "corps",
+ "tanins",
+ "acidite",
+ "boise",
+ "fruit",
+ "sucre",
+ "mineralite",
+ "aromes",
+ "dosage",
+ "bulle",
+ "vinosite",
+ "evolution",
+ "fraicheur",
+ "botrytis"
 ];
 export const BUDGETS = [
  "moins de 15 €",
@@ -83,6 +100,7 @@ export const LABEL_SCHEMA = {
   "peutEtrePasse",
   "style",
   "accords",
+  "profil",
   "champsLus",
   "remarque"
  ],
@@ -248,6 +266,175 @@ export const LABEL_SCHEMA = {
     ]
    }
   },
+  "profil": {
+   "anyOf": [
+    {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "corps",
+      "tanins",
+      "acidite",
+      "boise",
+      "fruit",
+      "sucre",
+      "mineralite",
+      "aromes",
+      "dosage",
+      "bulle",
+      "vinosite",
+      "evolution",
+      "fraicheur",
+      "botrytis"
+     ],
+     "properties": {
+      "corps": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "tanins": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "acidite": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "boise": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "fruit": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "sucre": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "mineralite": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "aromes": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "dosage": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "bulle": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "vinosite": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "evolution": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "fraicheur": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "botrytis": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "type": "null"
+    }
+   ]
+  },
   "champsLus": {
    "type": "array",
    "items": {
@@ -270,8 +457,8 @@ export const LABEL_SCHEMA = {
   }
  }
 };
-export const LABEL_PROMPT = "Tu lis la photo d'une étiquette de vin pour pré-remplir la fiche d'un inventaire de cave personnelle. Réponds en français, uniquement selon le schéma JSON imposé.\n\nRègles :\n- estEtiquette : false si la photo ne montre pas d'étiquette de vin lisible. Dans ce cas, mets tous les autres champs à null, champsLus vide, et explique en une phrase dans remarque.\n- domaine : le producteur, château ou domaine, tel qu'écrit sur l'étiquette (ex. « Château Musar », « Domaine Tempier »). Pas un négociant cité dans « mis en bouteille par », sauf s'il n'y a pas d'autre producteur.\n- cuvee : le nom de la cuvée s'il y en a un, sinon null. Ne répète ni le domaine ni l'appellation.\n- appellation : l'appellation ou l'indication géographique (ex. « Saint-Joseph », « Côtes du Rhône Villages », « IGP Pays d'Oc »), sans « Appellation … Contrôlée ».\n- region : pour la France, exactement l'une de : Alsace, Beaujolais, Bordeaux, Bourgogne, Champagne, Corse, Jura, Languedoc, Loire, Provence, Rhône, Roussillon, Savoie, Sud-Ouest. Ailleurs, le nom usuel en français (ex. « Toscane », « Rioja »).\n- pays : en français (ex. « France », « Italie »).\n- couleur : rouge, blanc, rose, effervescent (tout vin à bulles) ou liquoreux (vins doux et moelleux). Si l'étiquette ne l'écrit pas, donne quand même la couleur dès qu'elle est évidente ou nettement la plus probable : appellation d'une seule couleur (Pauillac, Chablis, Champagne…), appellation surtout rouge ou surtout blanche (Mercurey, Pommard → rouge ; Sancerre, Meursault → blanc), cépages, nom de la cuvée, couleur du vin visible à travers le verre. Ne la mets alors pas dans champsLus : elle sera signalée « à vérifier ». null seulement si plusieurs couleurs restent à peu près aussi plausibles.\n- millesime : l'année de récolte, seulement si elle est visible sur la photo. Sinon null.\n- cepages : les cépages séparés par des virgules (ex. « Syrah, Grenache »), écrits sur l'étiquette ou déduits de l'appellation quand c'est sans ambiguïté. Sinon null.\n- format : la contenance, seulement si elle est lisible, parmi les valeurs autorisées. Sinon null.\n- gardeDe et gardeA : la fenêtre de consommation que tu estimes, en années complètes. gardeDe = « boire à partir de », gardeA = « boire jusqu'en » (inclus). Appuie-toi sur l'appellation, la couleur, le millésime et la réputation du producteur. null si le millésime est inconnu.\n- peutEtrePasse : true si le vin doit être bu sans tarder parce qu'il a peut-être déjà dépassé son apogée (vin âgé pour son appellation, producteur ou négociant inconnu, millésime faible). Dans ce cas, gardeA = l'année en cours, jamais une année future, et la remarque explique pourquoi et rappelle de vérifier avant d'ouvrir le niveau du vin, sa couleur et le bouchon. Sinon false.\n- style : en une ou deux phrases, le vin qu'on peut en attendre (corps, fruit, tanins ou acidité, élevage), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. null si le vin n'est pas identifié.\n- accords : de une à quatre catégories de plats, parmi les valeurs autorisées, celles qui lui vont le mieux. Liste vide si le vin n'est pas identifié.\n- champsLus : les noms des champs dont la valeur est écrite sur l'étiquette. N'y mets pas ceux que tu as déduits ou estimés.\n- remarque : une phrase courte et utile au propriétaire (ex. « Millésime non visible : regarde la collerette ou la contre-étiquette. »), ou une chaîne vide.\n\nN'invente rien : en cas de doute sur ce qui est écrit, mets null.";
-export const REVOIR_PROMPT = "Certaines fiches sont marquées « à revoir » : la fiche a changé depuis ta dernière lecture (millésime, appellation ou domaine ajouté ou corrigé à la main), ou la personne demande ton avis. Il n'y a pas toujours de photo.\n- connu : ce que la personne a saisi à la main. Elle a le dernier mot : reprends ces valeurs telles quelles et ne les contredis jamais.\n- precedent : tes propres valeurs d'une lecture précédente. Garde-les si elles restent justes ; révise-les quand les nouvelles informations le justifient. Exemple : la fenêtre de garde une fois le millésime connu, la région ou les cépages après un changement d'appellation.\n- Remplis aussi les champs vides que tu peux estimer avec confiance (mêmes règles que pour une étiquette).\n- estEtiquette : true. champsLus : les champs lus sur la photo s'il y en a une, sinon ceux recopiés de connu.\n- remarque : une phrase sur ce que tu as changé et pourquoi (ex. « Millésime 2015 : fenêtre de garde portée à 2022–2032. »), ou une chaîne vide si rien ne change.";
+export const LABEL_PROMPT = "Tu lis la photo d'une étiquette de vin pour pré-remplir la fiche d'un inventaire de cave personnelle. Réponds en français, uniquement selon le schéma JSON imposé.\n\nRègles :\n- estEtiquette : false si la photo ne montre pas d'étiquette de vin lisible. Dans ce cas, mets tous les autres champs à null, champsLus vide, et explique en une phrase dans remarque.\n- domaine : le producteur, château ou domaine, tel qu'écrit sur l'étiquette (ex. « Château Musar », « Domaine Tempier »). Pas un négociant cité dans « mis en bouteille par », sauf s'il n'y a pas d'autre producteur.\n- cuvee : le nom de la cuvée s'il y en a un, sinon null. Ne répète ni le domaine ni l'appellation.\n- appellation : l'appellation ou l'indication géographique (ex. « Saint-Joseph », « Côtes du Rhône Villages », « IGP Pays d'Oc »), sans « Appellation … Contrôlée ».\n- region : pour la France, exactement l'une de : Alsace, Beaujolais, Bordeaux, Bourgogne, Champagne, Corse, Jura, Languedoc, Loire, Provence, Rhône, Roussillon, Savoie, Sud-Ouest. Ailleurs, le nom usuel en français (ex. « Toscane », « Rioja »).\n- pays : en français (ex. « France », « Italie »).\n- couleur : rouge, blanc, rose, effervescent (tout vin à bulles) ou liquoreux (vins doux et moelleux). Si l'étiquette ne l'écrit pas, donne quand même la couleur dès qu'elle est évidente ou nettement la plus probable : appellation d'une seule couleur (Pauillac, Chablis, Champagne…), appellation surtout rouge ou surtout blanche (Mercurey, Pommard → rouge ; Sancerre, Meursault → blanc), cépages, nom de la cuvée, couleur du vin visible à travers le verre. Ne la mets alors pas dans champsLus : elle sera signalée « à vérifier ». null seulement si plusieurs couleurs restent à peu près aussi plausibles.\n- millesime : l'année de récolte, seulement si elle est visible sur la photo. Sinon null.\n- cepages : les cépages séparés par des virgules (ex. « Syrah, Grenache »), écrits sur l'étiquette ou déduits de l'appellation quand c'est sans ambiguïté. Sinon null.\n- format : la contenance, seulement si elle est lisible, parmi les valeurs autorisées. Sinon null.\n- gardeDe et gardeA : la fenêtre de consommation que tu estimes, en années complètes. gardeDe = « boire à partir de », gardeA = « boire jusqu'en » (inclus). Appuie-toi sur l'appellation, la couleur, le millésime et la réputation du producteur. null si le millésime est inconnu.\n- peutEtrePasse : true si le vin doit être bu sans tarder parce qu'il a peut-être déjà dépassé son apogée (vin âgé pour son appellation, producteur ou négociant inconnu, millésime faible). Dans ce cas, gardeA = l'année en cours, jamais une année future, et la remarque explique pourquoi et rappelle de vérifier avant d'ouvrir le niveau du vin, sa couleur et le bouchon. Sinon false.\n- style : en une ou deux phrases, le vin qu'on peut en attendre (corps, fruit, tanins ou acidité, élevage), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. null si le vin n'est pas identifié.\n- accords : de une à quatre catégories de plats, parmi les valeurs autorisées, celles qui lui vont le mieux. Liste vide si le vin n'est pas identifié.\n- profil : le profil probable du vin, en crans de 1 (le moins) à 5 (le plus), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. Rouge : corps (léger → puissant), tanins (souples → fermes), acidite (douce → vive), boise (aucun → marqué), fruit (frais → mûr). Blanc : sucre (sec → moelleux), acidite, mineralite (discrète → marquée), boise, aromes (discrets → exubérants). Rosé : sucre (sec → tendre), acidite, fruit (discret → intense), corps (léger → vineux). Effervescent : dosage (brut nature → doux), bulle (crémeuse → vive), vinosite (légère → ample), evolution (fraîche → briochée). Liquoreux : sucre (moelleux → liquoreux), fraicheur (faible → vive), botrytis (discret → marqué), evolution (fruit frais → confit). Les autres jauges à null ; profil à null si le vin n'est pas identifié.\n- champsLus : les noms des champs dont la valeur est écrite sur l'étiquette. N'y mets pas ceux que tu as déduits ou estimés.\n- remarque : une phrase courte et utile au propriétaire (ex. « Millésime non visible : regarde la collerette ou la contre-étiquette. »), ou une chaîne vide.\n\nN'invente rien : en cas de doute sur ce qui est écrit, mets null.";
+export const REVOIR_PROMPT = "Certaines fiches sont marquées « à revoir » : la fiche a changé depuis ta dernière lecture (millésime, appellation ou domaine ajouté ou corrigé à la main), ou la personne demande ton avis. Il n'y a pas toujours de photo.\n- connu : ce que la personne a saisi à la main. Elle a le dernier mot : reprends ces valeurs telles quelles et ne les contredis jamais.\n- precedent : tes propres valeurs d'une lecture précédente. Garde-les si elles restent justes ; révise-les quand les nouvelles informations le justifient. Exemple : la fenêtre de garde une fois le millésime connu, la région ou les cépages après un changement d'appellation.\n- Remplis aussi les champs vides que tu peux estimer avec confiance (mêmes règles que pour une étiquette).\n- profil : dans connu ou precedent, « tanins:3/4 » veut dire que tu avais estimé 3 et que la personne a choisi 4. Elle a le dernier mot sur cette jauge : redonne quand même ton estimation, elle ne remplacera pas son choix.\n- estEtiquette : true. champsLus : les champs lus sur la photo s'il y en a une, sinon ceux recopiés de connu.\n- remarque : une phrase sur ce que tu as changé et pourquoi (ex. « Millésime 2015 : fenêtre de garde portée à 2022–2032. »), ou une chaîne vide si rien ne change.";
 export const CONSEIL_SCHEMA = {
  "type": "object",
  "additionalProperties": false,
@@ -643,6 +830,23 @@ export function accordList(v) {
   const got = (Array.isArray(v) ? v : str(v).split(',')).map(norm);
   return ACCORDS.filter(a => got.indexOf(norm(a)) >= 0);
 }
+export function profilLu(v) {
+  const o = {}, cran = x => { const n = int(x); return n != null && n >= 1 && n <= 5 ? n : null; };
+  if (v && typeof v === 'object' && !Array.isArray(v)) {
+    PROFIL_KEYS.forEach(k => { const c = cran(v[k]); if (c != null) o[k] = [c, null]; });
+    return o;
+  }
+  str(v).split(/[,;·]/).forEach(t => {
+    const m = norm(t).match(/^([a-z]+)\s*:?\s*(\d)?\s*(?:\/\s*(\d))?$/);
+    if (!m || PROFIL_KEYS.indexOf(m[1]) < 0) return;
+    const c = cran(m[2]), p = cran(m[3]);
+    if (c != null || p != null) o[m[1]] = [c, p];
+  });
+  return o;
+}
+export function profilTexte(o) {
+  return PROFIL_KEYS.filter(k => o[k]).map(k => k + ':' + (o[k][0] != null ? o[k][0] : '') + (o[k][1] != null ? '/' + o[k][1] : '')).join(',');
+}
 export function tidyLabel(r) {
   r = r || {};
   const y = new Date().getFullYear();
@@ -661,6 +865,7 @@ export function tidyLabel(r) {
     peutEtrePasse: r.peutEtrePasse === true,
     style: typeof r.style === 'string' && r.style.trim() ? r.style.trim().slice(0, 400) : null,
     accords: accordList(r.accords).slice(0, 4).join(', ') || null,
+    profil: profilTexte(profilLu(r.profil)) || null,
     champsLus: list(r.champsLus).filter(k => LABEL_FIELDS.indexOf(k) >= 0),
     remarque: typeof r.remarque === 'string' ? r.remarque.trim().slice(0, 300) : '',
   };

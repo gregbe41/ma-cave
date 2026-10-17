@@ -13,9 +13,9 @@ const ctx = vm.createContext({ console });
 vm.runInContext(code, ctx, { filename: 'Code.gs' });
 const val = n => vm.runInContext(n, ctx);
 
-const CONSTANTES = ['MODEL', 'MAX_TOKENS', 'COLORS', 'FORMATS', 'ACCORDS', 'LABEL_FIELDS', 'NO_CHECK', 'BUDGETS', 'LIENS', 'IMAGE_TYPES',
+const CONSTANTES = ['MODEL', 'MAX_TOKENS', 'COLORS', 'FORMATS', 'ACCORDS', 'LABEL_FIELDS', 'NO_CHECK', 'PROFIL_KEYS', 'BUDGETS', 'LIENS', 'IMAGE_TYPES',
   'LABEL_SCHEMA', 'LABEL_PROMPT', 'REVOIR_PROMPT', 'CONSEIL_SCHEMA', 'CONSEIL_PROMPT', 'SUGG_SCHEMA', 'SUGG_PROMPT', 'COTE_SCHEMA', 'COTE_PROMPT'];
-const FONCTIONS = ['list', 'num', 'int', 'str', 'norm', 'colorKey', 'accordList', 'tidyLabel', 'tidyConseil', 'tidySuggest'];
+const FONCTIONS = ['list', 'num', 'int', 'str', 'norm', 'colorKey', 'accordList', 'profilLu', 'profilTexte', 'tidyLabel', 'tidyConseil', 'tidySuggest'];
 
 let out = `// Fichier généré par relais/genere-regles.js à partir de apps-script/Code.gs : ne pas le modifier à la main.\n\n`;
 for (const n of CONSTANTES) out += `export const ${n} = ${JSON.stringify(val(n), null, 1)};\n`;
