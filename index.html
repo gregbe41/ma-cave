@@ -22,6 +22,8 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
   /* Thème clair de « Nuit de cave » : fond pierre, cartes blanches, accent ambre (texte foncé dessus, 9:1). */
   --bg:#F4F2EE; --surface:#FFFFFF; --field:#FFFFFF; --soft:#ECE8E1; --seg:#E6E1D8;
   --ink:#1A1F1C; --muted:#5D6660; --line:#DCD6CD;
+  /* Séparateurs dans une carte, contour de la carte de la cave, rail d'un interrupteur éteint */
+  --line2:#E7E2DA; --ring:#EED7B0; --off:#B5ADA2;
   --accent:#E8A13A; --on-accent:#1A1206; --accent-tint:color-mix(in srgb,var(--accent) 16%,var(--surface)); --accent-ink:#9A5B0C;
   --hero:#E8A13A; --on-hero:#1A1206;
   --ok:#3D7552; --warn:#B06F17; --late:#A33A22; --young:#6F88A0;
@@ -47,6 +49,7 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
   :root:not([data-theme="light"]){
     --bg:#0E1311; --surface:#171E1B; --field:#0F1512; --soft:#1F2824; --seg:#1C2420;
     --ink:#ECEFEA; --muted:#9AA59F; --line:#2C3631;
+    --line2:#222B27; --ring:#3A2E1A; --off:#3A4540;
     --accent:#E8A13A; --on-accent:#1A1206; --accent-tint:color-mix(in srgb,var(--accent) 16%,var(--surface)); --accent-ink:#E8A13A;
     --hero:#E8A13A; --on-hero:#1A1206;
     --ok:#6FAE86; --warn:#D99A45; --late:#C47B62; --young:#8FA7BC;
@@ -63,6 +66,7 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
 :root[data-theme="dark"]{
   --bg:#0E1311; --surface:#171E1B; --field:#0F1512; --soft:#1F2824; --seg:#1C2420;
   --ink:#ECEFEA; --muted:#9AA59F; --line:#2C3631;
+  --line2:#222B27; --ring:#3A2E1A; --off:#3A4540;
   --accent:#E8A13A; --on-accent:#1A1206; --accent-tint:color-mix(in srgb,var(--accent) 16%,var(--surface)); --accent-ink:#E8A13A;
   --hero:#E8A13A; --on-hero:#1A1206;
   --ok:#6FAE86; --warn:#D99A45; --late:#C47B62; --young:#8FA7BC;
@@ -383,12 +387,68 @@ legend{padding:0;margin:0 0 8px;font-size:.88rem;font-weight:500;color:var(--mut
 .stars .off{color:var(--star-off)}
 
 /* ---------- Réglages ---------- */
-.set{margin:0 0 14px;max-width:620px;padding:16px 16px 18px;border-radius:20px;background:var(--surface);box-shadow:var(--card-shadow)}
-.set h2{font-size:1.2rem;margin:0 0 6px}
-.set > p{color:var(--muted);margin:0 0 14px;line-height:1.55}
-.set > .seg{margin:0}
+/* Comme le prototype « Nuit de cave » : des groupes titrés en petites capitales, des cartes faites de lignes,
+   une ligne = un réglage (texte à gauche, action ou chevron à droite). */
+.rg{max-width:620px;display:flex;flex-direction:column}
+.rg-h{margin:26px 8px 8px;font:700 .75rem var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.rg-card{display:block;margin:0;border-radius:22px;background:var(--surface);box-shadow:var(--card-shadow);overflow:hidden}
+.rg-cave{box-shadow:inset 0 0 0 1px var(--ring),var(--card-shadow)}
+.rg-pad{padding:16px 18px;display:grid;gap:14px}
+.rg-cave-head{display:flex;align-items:flex-start;gap:12px;padding:18px 18px 14px}
+.rg-cave-id{flex:1;min-width:0}
+.rg-cave-id h2{margin:0;font:800 1.5rem/1.15 var(--display);letter-spacing:-.01em;overflow-wrap:anywhere}
+.rg-cave-id p{margin:3px 0 0;font-size:.9rem;color:var(--muted)}
+.btn-sm{min-height:36px;padding:0 14px;font-size:.82rem;font-weight:700}
+.rg-row{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;margin:0;padding:10px 14px 10px 18px;border:0;border-top:1px solid var(--line2);background:none;color:var(--ink);text-align:left;font:inherit;text-decoration:none}
+#people-box > .rg-row:first-child,.rg-card.rg-fold > summary,#credits-set[hidden] + #taste-box > :first-child{border-top:0}
+.rg-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.rg-txt b{font-size:.95rem;font-weight:600}
+.rg-txt small{margin-top:2px;font-size:.82rem;line-height:1.4;color:var(--muted)}
+.rg-val{flex:none;font-weight:700}
+.rg-row .btn{flex:none}
+/* Chevron des lignes qui ouvrent quelque chose ; il pivote quand le pli est ouvert. */
+.rg-go::after,.rg-fold > summary::after{content:"";flex:none;width:8px;height:8px;margin:0 6px 0 4px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg)}
+.rg-fold > summary{cursor:pointer;list-style:none}
+.rg-fold > summary::-webkit-details-marker{display:none}
+.rg-fold[open] > summary::after{transform:rotate(45deg)}
+.rg-fold-body{padding:4px 18px 16px}
+.rg-card.rg-fold > .rg-fold-body{border-top:1px solid var(--line2);padding-top:14px;display:grid;gap:10px}
+.rg-fold-body .f:last-of-type{margin-bottom:12px}
+.rg-link svg,.rg-round svg{flex:none;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rg-link{justify-content:space-between;font-weight:600}
+.rg-link svg{color:var(--muted)}
+.rg-sync .status{flex:1;min-width:0;margin:0}
+.rg-sync .sync-dot{width:10px;height:10px}
+.rg-sync .status small{font-size:inherit;color:var(--muted)}
+.rg-round{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--soft);color:var(--ink);display:grid;place-items:center}
+.rg-round:disabled{opacity:.5}
+.rg-hint{margin:0;padding:0 18px 12px 40px}
+.rg-note{margin:0;padding:14px 18px 16px;border-top:1px solid var(--line2);font-size:.85rem;line-height:1.45;color:var(--muted)}
+.rg-sync + .rg-note{border-top:0;padding-top:0}
+.rg-label{margin:0 0 10px;font-weight:600;font-size:.95rem}
+.rg-field + .rg-field{border-top:1px solid var(--line2);padding-top:14px}
+.rg .seg,.cr-form .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%;margin:0;border-radius:14px}
+.rg .seg button,.cr-form .seg button{height:38px;padding:0 6px;border-radius:10px;font-weight:700}
+.rg-actions{display:grid;gap:10px;padding:14px 18px 16px;border-top:1px solid var(--line2)}
+.rg-actions > .hint{margin:0}
+.rg-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rg-2 .btn{padding:0 10px}
+.rg-invite{color:var(--accent-ink)}
+.rg-invite[aria-expanded="true"]{border-color:var(--accent-ink)}
+.rg-invite-box{display:grid;gap:8px}
+.rg-invite-box .f{margin:0}
+.rg-invite-box .hint{margin:0}
+#data-set .btn-danger{margin-top:4px}
+#data-set p{margin:0}
+#local-info{color:var(--muted);font-size:.92rem}
+/* Interrupteur : la case elle-même, dessinée (rail coloré, pastille blanche qui glisse). */
+.sw{appearance:none;-webkit-appearance:none;flex:none;width:52px;height:32px;margin:0;border-radius:999px;cursor:pointer;
+  background:var(--off) radial-gradient(circle,#fff 0 12px,transparent 12.5px) no-repeat 3px 50%/26px 26px;transition:background-color .15s,background-position .15s}
+.sw:checked{background-color:var(--accent);background-position:calc(100% - 3px) 50%}
+.rg-switch{cursor:pointer}
 .status{display:flex;align-items:center;gap:10px;margin:0 0 4px;font-weight:500}
 .note{padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--warn) 13%,transparent);margin:0 0 14px;font-size:.92rem;line-height:1.5}
+.rg-cave .note{margin:0 18px 14px}
 .howto{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
 .howto summary{font-weight:600;cursor:pointer;padding:6px 0}
 .howto ol{padding-left:1.3em;margin:12px 0 0;line-height:1.6}
@@ -455,18 +515,43 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .by-claude .ico-tv{margin-right:3px;width:1.25em;height:1.25em}
 .sim-h .ico-tv,.tv-h .ico-tv{margin-right:6px;color:var(--accent-ink)}
 .cr-row b .ico-bo{width:.95em;height:.95em;margin:0 2px;color:var(--accent-ink)}
-.cr-gauges{display:grid;gap:12px;margin:12px 0}
-.cr-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.92rem}
-.cr-row b{font:800 1.15rem var(--display)}
+.tv-head{display:flex;align-items:center;gap:8px;margin:0;padding:16px 18px 0;color:var(--accent-ink)}
+.tv-head .ico-tv{width:22px;height:22px;stroke-width:1.6}
+.tv-head b{font-size:.95rem;color:var(--ink)}
+.tv-head + .rg-note{border-top:0;padding-top:8px}
+.cr-lead{margin:0 0 6px}
+.cr-gauges{display:grid;gap:14px;margin:0;padding:14px 18px 16px}
+.cr-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.9rem}
+.cr-row > span{color:var(--muted)}
+.cr-row b{font:800 1.25rem var(--display);white-space:nowrap}
 .cr-row small{font:500 .82rem var(--sans);color:var(--muted)}
-.cr-bar{display:block;height:8px;margin-top:5px;border-radius:4px;background:var(--soft);overflow:hidden}
+.cr-bar{display:block;height:8px;margin-top:6px;border-radius:4px;background:var(--soft);overflow:hidden}
 .cr-bar i{display:block;height:100%;border-radius:4px;background:var(--accent)}
-.cr-who-h{margin:14px 0 4px;font-weight:700}
-.cr-who{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:4px}
-.cr-who li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--soft)}
-.cr-form{display:grid;gap:4px;margin-top:10px}
-.cr-form .btn{justify-self:start;margin-top:6px}
-.cr-owner{margin-top:12px}
+.cr-tarifs-l{list-style:none;margin:0;padding:0}
+.cr-tarifs-l li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line2);font-size:.9rem}
+.cr-tarifs-l li span{color:var(--muted)}
+.cr-tarifs-l li b{white-space:nowrap}
+.cr-tarifs .hint{margin:10px 0 0}
+.cr-owner{margin:0;padding:12px 18px 16px;border-top:1px solid var(--line2)}
+.cr-owner summary{font-weight:600;cursor:pointer;padding:4px 0}
+.cr-owner .f{margin:10px 0 8px}
+/* Réglages des bouchons (fenêtre du propriétaire) : des lignes avec − et +, comme la quantité d'un mouvement */
+.bo-lead{margin:0 0 4px;color:var(--muted);line-height:1.5}
+.cr-form{display:grid;gap:0}
+.cr-form .rg-h{margin-left:2px}
+.cr-form .rg-card{background:var(--bg);box-shadow:inset 0 0 0 1px var(--line2)}
+.cr-form .rg-card > .hint{margin:0;padding:0 18px 14px}
+.bo-step{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 18px}
+.bo-step + .bo-step{border-top:1px solid var(--line2)}
+.bo-step input{width:64px;padding:6px 4px;border:0;border-radius:10px;background:none;text-align:center;font:800 1.4rem var(--display);color:var(--ink);-moz-appearance:textfield}
+.bo-step input::-webkit-inner-spin-button,.bo-step input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.bo-step input:focus{outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent)}
+.bo-btn{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--ink);font-size:1.35rem;line-height:1}
+.cr-who{list-style:none;margin:0;padding:0}
+.cr-who li{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:48px;padding:0 18px;border-top:1px solid var(--line2)}
+.cr-who li:first-child{border-top:0}
+.cr-form .bo-save{margin-top:20px;width:100%}
+.cr-form > .hint{margin:12px 2px 0}
 /* « Ajouter des bouteilles » : le + de la barre propose le scanner, l'ajout par photos ou la saisie */
 .add-opts{display:grid;gap:10px}
 .add-opt{display:grid;gap:2px;text-align:left;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:none;color:var(--ink)}
@@ -507,13 +592,11 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .who-list{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 22px}
 .who-list .btn{min-width:112px}
 .who-list .btn[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.people{list-style:none;padding:0;margin:14px 0 12px;border-top:1px solid var(--line)}
-.people li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
-.pp-id{flex:1;min-width:0}
-.pp-name{display:block;font-weight:600;overflow-wrap:anywhere}
-.pp-name small{font-weight:400;color:var(--muted);font-size:.85rem}
-.pp-n{display:block;color:var(--muted);font-size:.88rem}
-.pp-act{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 16px}
+.people{list-style:none;padding:0;margin:0}
+.pp-av{flex:none;width:36px;height:36px;border-radius:50%;background:var(--soft);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:.95rem}
+.pp-name{display:block;font-weight:600;font-size:1rem;overflow-wrap:anywhere}
+.pp-name small{font-weight:500;color:var(--muted);font-size:.9rem}
+.pp-n{display:block;color:var(--muted);font-size:.82rem;margin-top:1px}
 .sans-tarder{align-items:flex-start;margin:-4px 0 8px;font-size:.92rem;line-height:1.4;color:var(--ink)}
 /* Cépages : pastilles à cocher, filtrées par couleur et région */
 .g-hint{font-weight:400;font-size:.8rem}
@@ -931,83 +1014,108 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
     </section>
 
     <section class="view" id="v-reglages" hidden>
-      <div class="set">
-        <h2>Partage et synchronisation</h2>
-        <p id="sync-intro">La cave est enregistrée dans un Google Sheet, à travers un petit script Google installé une seule fois par la personne qui l'héberge. Chaque appareil n'a besoin que de l'adresse du script et du code secret : aucun compte Google à connecter.</p>
-        <div id="sync-box"></div>
-        <div id="drive-set" hidden>
-          <label class="f" style="margin-top:14px">Inviter quelqu'un
-            <input id="drive-invite" type="email" placeholder="Adresse du compte Google de la personne" autocomplete="off" spellcheck="false" autocapitalize="off" inputmode="email">
+      <div class="rg">
+        <!-- La cave ouverte : où elle est rangée, la synchro, mes photos -->
+        <section class="rg-card rg-cave" aria-labelledby="rg-cave-name">
+          <div class="rg-cave-head">
+            <div class="rg-cave-id">
+              <h2 id="rg-cave-name">Ma cave</h2>
+              <p id="sync-intro"></p>
+            </div>
+            <button type="button" class="btn btn-sm" data-act="caves">Mes caves</button>
+          </div>
+          <div id="sync-box"></div>
+          <label class="rg-row rg-switch" id="drive-set" hidden>
+            <span class="rg-txt"><b>Partager mes photos d'étiquettes</b><small>Rangées dans le Google Drive de la cave et partagées par un lien impossible à deviner. Sinon, elles restent sur cet appareil.</small></span>
+            <input type="checkbox" id="drive-photos" class="sw" role="switch">
           </label>
-          <p class="hint">Il lui faut un compte Google (souvent son adresse Gmail). La cave est partagée avec ce compte, puis tu lui envoies le lien : elle le colle dans l'appli et confirme la cave, sans rien installer.</p>
-          <button class="btn" data-act="drive-invite">Partager la cave</button>
-          <label class="optin" style="margin-top:16px"><input type="checkbox" id="drive-photos"><span><strong>Partager mes photos d'étiquettes avec la cave.</strong> Elles sont rangées dans le Google Drive de la cave et partagées par lien : seule une personne qui connaît leur adresse, impossible à deviner, peut les voir. Sans cela, tes photos restent sur cet appareil.</span></label>
-        </div>
-        <div id="script-set">
-        <label class="f" style="margin-top:14px">Adresse du script
-          <input id="api-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false" autocapitalize="off" inputmode="url">
-        </label>
-        <label class="f">Code secret
-          <input id="api-secret" placeholder="ex. 1a2b-3c4d-5e6f-7a8b" autocomplete="off" spellcheck="false" autocapitalize="off">
-        </label>
-        <button class="btn" id="save-api">Enregistrer et tester</button>
-        <details class="howto" id="howto">
-          <summary>Mise en place (une seule fois)</summary>
-          <ol>
-            <li><strong>Installer le script.</strong> La personne qui héberge la cave crée le Google Sheet, y colle le script et le publie en suivant le guide <a href="https://github.com/gregbe41/ma-cave/blob/main/INSTALLATION.md" target="_blank" rel="noopener">INSTALLATION.md</a>. Elle obtient une adresse qui se termine par <code>/exec</code> et un code secret.</li>
-            <li><strong>Ouvrir l'appli.</strong> Elle est en ligne sur <a href="https://gregbe41.github.io/ma-cave/" target="_blank" rel="noopener">gregbe41.github.io/ma-cave</a>, et existe pour Android : le fichier APK est dans <a href="https://github.com/gregbe41/ma-cave/releases/latest" target="_blank" rel="noopener">la dernière version</a>.</li>
-            <li><strong>Relier chaque appareil.</strong> Colle l'adresse du script et le code secret au-dessus, puis « Enregistrer et tester ». Plus simple : depuis un appareil déjà relié, touche « Inviter quelqu'un » et envoie le lien.</li>
-          </ol>
-          <p class="after">La page publiée ne contient aucune donnée : tes vins restent dans le Google Sheet et sur tes appareils. Hors connexion, les modifications sont gardées sur l'appareil et partent à la synchro suivante.</p>
-          <p class="after">Dans le Sheet, tu peux corriger une valeur directement (un prix, une appellation…). Pour ajouter ou supprimer un vin, passe par l'appli. Le stock se calcule à partir de l'onglet Mouvements.</p>
+          <details class="rg-fold" id="script-set">
+            <summary class="rg-row"><span class="rg-txt"><b>Adresse du script et code secret</b><small>Ce qui relie cet appareil à la cave</small></span></summary>
+            <div class="rg-fold-body">
+              <label class="f">Adresse du script
+                <input id="api-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false" autocapitalize="off" inputmode="url">
+              </label>
+              <label class="f">Code secret
+                <input id="api-secret" placeholder="ex. 1a2b-3c4d-5e6f-7a8b" autocomplete="off" spellcheck="false" autocapitalize="off">
+              </label>
+              <button class="btn" id="save-api">Enregistrer et tester</button>
+              <details class="howto" id="howto">
+                <summary>Mise en place (une seule fois)</summary>
+                <ol>
+                  <li><strong>Installer le script.</strong> La personne qui héberge la cave crée le Google Sheet, y colle le script et le publie en suivant le guide <a href="https://github.com/gregbe41/ma-cave/blob/main/INSTALLATION.md" target="_blank" rel="noopener">INSTALLATION.md</a>. Elle obtient une adresse qui se termine par <code>/exec</code> et un code secret.</li>
+                  <li><strong>Ouvrir l'appli.</strong> Elle est en ligne sur <a href="https://gregbe41.github.io/ma-cave/" target="_blank" rel="noopener">gregbe41.github.io/ma-cave</a>, et existe pour Android : le fichier APK est dans <a href="https://github.com/gregbe41/ma-cave/releases/latest" target="_blank" rel="noopener">la dernière version</a>.</li>
+                  <li><strong>Relier chaque appareil.</strong> Colle l'adresse du script et le code secret au-dessus, puis « Enregistrer et tester ». Plus simple : depuis un appareil déjà relié, touche « Inviter quelqu'un » et envoie le lien.</li>
+                </ol>
+                <p class="after">La page publiée ne contient aucune donnée : tes vins restent dans le Google Sheet et sur tes appareils. Hors connexion, les modifications sont gardées sur l'appareil et partent à la synchro suivante.</p>
+                <p class="after">Dans le Sheet, tu peux corriger une valeur directement (un prix, une appellation…). Pour ajouter ou supprimer un vin, passe par l'appli. Le stock se calcule à partir de l'onglet Mouvements.</p>
+              </details>
+            </div>
+          </details>
+        </section>
+
+        <!-- Les personnes de la cave ; inviter quelqu'un ou ajouter un prénom -->
+        <h2 class="rg-h" id="people-h">Personnes</h2>
+        <section class="rg-card" aria-labelledby="people-h">
+          <div id="people-box"></div>
+          <div class="rg-actions">
+            <div class="rg-2">
+              <button type="button" class="btn rg-invite" data-act="invite-open" id="invite-btn" aria-expanded="false">Inviter quelqu'un</button>
+              <button type="button" class="btn" data-act="add-person">Ajouter un prénom</button>
+            </div>
+            <div class="rg-invite-box" id="drive-invite-box" hidden>
+              <label class="f">Adresse du compte Google de la personne
+                <input id="drive-invite" type="email" placeholder="prenom@gmail.com" autocomplete="off" spellcheck="false" autocapitalize="off" inputmode="email">
+              </label>
+              <button class="btn btn-primary" data-act="drive-invite">Partager la cave et envoyer le lien</button>
+              <p class="hint">Il lui faut un compte Google (souvent son adresse Gmail). La cave est partagée avec ce compte, puis tu lui envoies le lien : elle le colle dans l'appli, sans rien installer.</p>
+            </div>
+            <p class="hint" id="people-hint"></p>
+          </div>
+        </section>
+
+        <!-- Tastevin : les bouchons qui restent, ce que coûte une demande, les actions sur toute la cave -->
+        <h2 class="rg-h" id="tastevin-h" hidden>Tastevin</h2>
+        <section class="rg-card" id="tastevin-set" aria-labelledby="tastevin-h" hidden>
+          <div id="credits-set" hidden><div id="credits-box"></div></div>
+          <div id="taste-box"></div>
+        </section>
+
+        <!-- Ce qui ne vaut que pour cet appareil -->
+        <h2 class="rg-h" id="device-h">Sur cet appareil</h2>
+        <section class="rg-card rg-pad" aria-labelledby="device-h">
+          <div class="rg-field">
+            <p class="rg-label">Thème</p>
+            <div class="seg" role="group" aria-label="Thème">
+              <button type="button" data-theme-set="dark">Sombre</button>
+              <button type="button" data-theme-set="light">Clair</button>
+              <button type="button" data-theme-set="auto">Automatique</button>
+            </div>
+          </div>
+          <div class="rg-field" id="scanner-set" hidden>
+            <p class="rg-label">Photos d'étiquettes</p>
+            <div class="seg" role="group" aria-label="Photos d'étiquettes">
+              <button type="button" data-scanner-set="on">Scanner</button>
+              <button type="button" data-scanner-set="off">Appareil photo</button>
+            </div>
+            <p class="hint">Le scanner repère l'étiquette pendant que tu vises, la recadre et la redresse : Tastevin la lit mieux.</p>
+          </div>
+        </section>
+
+        <!-- Sauvegarde et effacement, repliés -->
+        <h2 class="rg-h" id="data-h">Données</h2>
+        <details class="rg-card rg-fold" id="data-set">
+          <summary class="rg-row"><span class="rg-txt"><b>Sauvegarde et effacement</b><small>Exporter, importer, effacer cet appareil</small></span></summary>
+          <div class="rg-fold-body">
+            <p id="local-info"></p>
+            <div class="rg-2">
+              <button class="btn" id="export">Exporter</button>
+              <label class="btn"><input type="file" accept="application/json,.json" id="import" hidden>Importer</label>
+            </div>
+            <p class="hint">L'export contient toutes tes données, sans les photos. L'import complète la cave sans rien effacer.</p>
+            <button class="btn btn-danger" id="reset">Effacer les données de cet appareil</button>
+            <p class="hint" id="reset-hint"></p>
+          </div>
         </details>
-        </div>
-      </div>
-
-      <div class="set" id="credits-set" hidden>
-        <h2 class="tv-h"><svg class="ico-tv" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="10" cy="13" rx="7.5" ry="2.2"/><path d="M2.5 13c0 4.1 3.4 7 7.5 7s7.5-2.9 7.5-7"/><path d="M8.3 13.5c.5-1 2.9-1 3.4 0"/><path d="M17.4 13.8h1.2"/><circle cx="20.4" cy="13.8" r="1.8"/><path class="ico-fill" d="M6.6 3c.3 1.6 1 2.3 2.6 2.6-1.6.3-2.3 1-2.6 2.6-.3-1.6-1-2.3-2.6-2.6 1.6-.3 2.3-1 2.6-2.6z"/></svg>Tastevin et bouchons</h2>
-        <div id="credits-box"></div>
-      </div>
-
-      <div class="set">
-        <h2>Personnes</h2>
-        <p>Chaque bouteille est au nom de quelqu'un, qui n'est pas forcément la personne qui l'a ajoutée. Cette liste est commune à tous les appareils de la cave. Pour ne voir que les bouteilles d'une personne, utilise « Bouteilles de » dans l'onglet Cave.</p>
-        <div id="people-box"></div>
-      </div>
-
-      <div class="set">
-        <h2>Sauvegarde</h2>
-        <p>Exporte toutes tes données (sans les photos) dans un fichier, ou importe un fichier exporté depuis un autre appareil. L'import complète ta cave sans rien effacer.</p>
-        <div class="btn-row">
-          <button class="btn" id="export">Exporter les données</button>
-          <label class="btn"><input type="file" accept="application/json,.json" id="import" hidden>Importer un fichier</label>
-        </div>
-      </div>
-
-      <div class="set">
-        <h2>Affichage</h2>
-        <p>« Automatique » suit le réglage clair ou sombre du téléphone. Ce choix ne vaut que pour cet appareil.</p>
-        <div class="seg" role="group" aria-label="Thème">
-          <button type="button" data-theme-set="auto">Automatique</button>
-          <button type="button" data-theme-set="light">Clair</button>
-          <button type="button" data-theme-set="dark">Sombre</button>
-        </div>
-      </div>
-
-      <div class="set" id="scanner-set" hidden>
-        <h2>Photos d'étiquettes</h2>
-        <p>Le scanner de Google repère l'étiquette pendant que tu vises, la recadre et la redresse : Tastevin la lit mieux. Ce choix ne vaut que pour cet appareil.</p>
-        <div class="seg" role="group" aria-label="Photos d'étiquettes">
-          <button type="button" data-scanner-set="on">Scanner</button>
-          <button type="button" data-scanner-set="off">Appareil photo</button>
-        </div>
-      </div>
-
-      <div class="set">
-        <h2>Cet appareil</h2>
-        <p id="local-info"></p>
-        <button class="btn btn-danger" id="reset">Effacer les données de cet appareil</button>
-        <p class="hint">Le Google Sheet n'est pas touché : tu retrouveras tout à la prochaine synchronisation.</p>
       </div>
     </section>
   </main>
@@ -1325,6 +1433,22 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
       <button type="submit" class="btn btn-primary">C'est moi</button>
     </div>
   </form>
+</dialog>
+
+<!-- Réglages : une personne de la cave (renommer, retirer, c'est moi) -->
+<dialog class="sheet" id="dlg-person" aria-labelledby="person-title">
+  <div class="sheet-wrap">
+    <div class="sheet-head"><h2 id="person-title">Personne<span class="sub" id="person-sub"></span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body add-opts" id="person-acts"></div>
+  </div>
+</dialog>
+
+<!-- Réglages des bouchons, pour le propriétaire de la cave -->
+<dialog class="sheet" id="dlg-bouchons" aria-labelledby="bo-title">
+  <div class="sheet-wrap">
+    <div class="sheet-head"><h2 id="bo-title">Bouchons<span class="sub">Réglages de la cave</span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body" id="bouchons-body"></div>
+  </div>
 </dialog>
 
 <div id="toast" popover="manual" role="status" aria-live="polite"></div>
@@ -2611,20 +2735,39 @@ function renderPeriod() {
 function renderReglages() {
   const fill = (sel, v) => { const el = $(sel); if (document.activeElement !== el) el.value = v || ''; };
   fill('#api-url', S.apiUrl); fill('#api-secret', S.secret);
-  if (!API.ready()) $('#howto').open = true;
+  const drive = isDrive(), ready = API.ready();
   // Cave Google Drive : ni adresse de script ni code, la cave est un fichier du Drive de la personne qui l'a créée.
-  $('#script-set').hidden = isDrive();
-  $('#drive-set').hidden = !isDrive();
+  // Cave à script : l'adresse et le code restent repliés une fois l'appareil relié, sauf si le code est refusé.
+  $('#script-set').hidden = drive;
+  if (!ready || syncState.k === 'auth') $('#script-set').open = true;
+  if (!ready) $('#howto').open = true;
+  $('#drive-set').hidden = !drive;
   $('#drive-photos').checked = !!S.photoShare;
-  $('#sync-intro').textContent = isDrive()
-    ? `La cave est un fichier de ${S.role === 'proprio' ? 'ton Google Drive' : S.driveOwner ? `du Google Drive de ${S.driveOwner}` : 'Google Drive'}. L'appli s'y connecte avec ton compte Google, et n'a accès qu'aux fichiers de la cave.`
-    : "La cave est enregistrée dans un Google Sheet, à travers un petit script Google installé une seule fois par la personne qui l'héberge. Chaque appareil n'a besoin que de l'adresse du script et du code secret : aucun compte Google à connecter.";
+  const n = db.wines.filter(w => (STOCK.get(w.id) || 0) > 0).length, vins = `${fmtNum(n)} ${plural(n, 'vin', 'vins')}`;
+  $('#rg-cave-name').textContent = S.nom || (ready ? 'Ma cave' : 'Aucune cave reliée');
+  $('#sync-intro').textContent = drive
+    ? `${S.role === 'proprio' ? 'Dans ton Google Drive' : S.driveOwner ? `Dans le Google Drive de ${S.driveOwner}` : 'Dans un Google Drive partagé'} · ${vins}`
+    : ready ? `Dans un Google Sheet, par un script · ${vins}` : 'Tes vins restent sur cet appareil';
+  // Inviter : une cave Drive est partagée avec un compte Google ; une cave à script, par un lien (pas depuis un fichier ouvert en local).
+  const canInvite = drive || (ready && /^https?:$/.test(location.protocol));
+  const inv = $('#invite-btn');
+  inv.hidden = !canInvite;
+  inv.dataset.act = drive ? 'invite-open' : 'invite';
+  if (!drive) { $('#drive-invite-box').hidden = true; inv.setAttribute('aria-expanded', 'false'); }
+  $('#people-hint').textContent = drive ? "Inviter : la personne ouvre la cave sur son appareil, avec son compte Google. Un prénom seul sert à mettre des bouteilles à son nom."
+    : canInvite ? "Inviter : tu lui envoies un lien, la cave s'ouvre sur son appareil. Un prénom seul sert à mettre des bouteilles à son nom."
+    : "Chaque bouteille est au nom de quelqu'un, qui n'est pas forcément la personne qui l'a ajoutée.";
   $('#local-info').textContent = `${db.wines.length} ${plural(db.wines.length, 'vin', 'vins')}, ${db.moves.length} ${plural(db.moves.length, 'mouvement', 'mouvements')} et ${photoIds.size} ${plural(photoIds.size, 'photo', 'photos')} enregistrés sur cet appareil.`;
+  $('#reset-hint').textContent = drive ? "La cave dans Google Drive n'est pas touchée : « Retrouver mes caves Google Drive », dans « Mes caves », la ramène sur l'appareil."
+    : ready ? "Le Google Sheet n'est pas touché : tu retrouveras tout à la prochaine synchronisation." : "Ce qui n'est enregistré que sur cet appareil sera perdu.";
   // Scanner d'étiquette : seulement dans l'appli Android qui l'embarque.
   $('#scanner-set').hidden = !Scanner.available;
   $$('[data-scanner-set]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.scannerSet === 'on') === (lsGet('macave:scanner', true) !== false))));
   renderSyncBox();
   renderCredits();
+  renderTasteBox();
+  // La carte Tastevin n'apparaît que si elle a quelque chose à dire : des bouchons, ou une action sur la cave.
+  $('#tastevin-set').hidden = $('#tastevin-h').hidden = $('#credits-set').hidden && !$('#taste-box').innerHTML;
   renderPeopleBox();
 }
 
@@ -2639,6 +2782,18 @@ const gaugeHTML = (left, max, label) => {
   const pct = max ? Math.max(0, Math.min(100, (left / max) * 100)) : 0;
   return `<div class="cr-gauge"><div class="cr-row"><span>${label}</span><b class="num">${fmtCr(left)}${ICO_BOUCHON} <small>sur ${fmtCr(max)}</small></b></div><span class="cr-bar"><i style="width:${pct}%"></i></span></div>`;
 };
+const COTE_COURT = { 3: '3 mois', 6: '6 mois', 12: '1 an', 24: '2 ans' };
+/** Ce que coûte chaque demande à Tastevin : une liste, dans un pli qui reste ouvert d'une synchro à l'autre. */
+function tarifsHTML() {
+  const l = isDrive()
+    ? [['Lire une étiquette', cout('label')], ['Compléter ou revoir une fiche', cout('revoir')], ['Conseil en magasin, par bouteille', cout('conseil')], ['Vins similaires', cout('suggest')], ['Valeur du jour', cout('cote')]]
+    : [['Lire une étiquette', cout('label')], ['Conseil en magasin, par bouteille', cout('conseil')], ['Vins similaires', cout('suggest')]];
+  const lead = isDrive() ? "Tastevin passe par le relais de l'appli, en bouchons de la cave."
+    : 'Chaque appel immédiat à Tastevin se paie avec la clé API de la cave, en bouchons. La lecture de nuit, par la routine, ne coûte rien.';
+  return `<details class="rg-fold cr-tarifs"${UI.tarifsOpen ? ' open' : ''}><summary class="rg-row"><span class="rg-txt"><b>Ce que coûte une demande</b></span></summary>
+    <div class="rg-fold-body"><p class="hint cr-lead">${lead}</p><ul class="cr-tarifs-l">${l.map(([t, n]) => `<li><span>${t}</span><b>${bouchons(n)}</b></li>`).join('')}</ul>
+    <p class="hint">Une demande qui échoue ne coûte rien. Ce que Tastevin trouve pour un vin sert à toute la cave.</p></div></details>`;
+}
 function renderCredits() {
   const set = $('#credits-set');
   if (!set) return;
@@ -2646,43 +2801,59 @@ function renderCredits() {
   set.hidden = !(API.ready() && (S.serverVersion || 0) >= 16 && c);
   if (set.hidden) return;
   const owner = S.role === 'proprio';
-  let h = '';
-  if (!S.labelOn) h += '<p>Pas de clé API sur cette cave : Tastevin passe par la routine de nuit, qui ne coûte aucun bouchon.</p>';
+  let h = `<p class="tv-head">${ICO_TV}<b>${S.labelOn ? 'Bouchons restants' : 'Tastevin'}</b></p>`;
+  if (!S.labelOn) h += '<p class="rg-note">Pas de clé API sur cette cave : Tastevin passe par la routine de nuit, qui ne coûte aucun bouchon.</p>';
   else {
-    h += isDrive()
-      ? `<p>Tastevin passe par le relais de l'appli, en bouchons de la cave : une lecture d'étiquette, ${bouchons(cout('label'))} ; une fiche revue ou complétée, ${bouchons(cout('revoir'))} ; un conseil en magasin, ${bouchons(cout('conseil'))} par bouteille ; des vins similaires, ${bouchons(cout('suggest'))} ; une valeur du jour, ${bouchons(cout('cote'))}. Ce que Tastevin trouve pour un vin sert à toute la cave. Une demande qui échoue ne coûte rien.</p>`
-      : `<p>Chaque appel immédiat à Tastevin se paie avec la clé API de la cave, en bouchons : une lecture d'étiquette, ${bouchons(cout('label'))} ; un conseil en magasin, ${bouchons(cout('conseil'))} par bouteille ; des vins similaires, ${bouchons(cout('suggest'))}. Ce que Tastevin trouve pour un vin sert à toute la cave. La lecture de nuit, par la routine, ne coûte rien.</p>`;
     h += '<div class="cr-gauges">' + gaugeHTML(c.mois, c.max.mois, 'La cave, ce mois-ci') + gaugeHTML(c.jour, c.max.jour, "Aujourd'hui");
     if (!owner && c.part) h += gaugeHTML(c.partReste, c.part, 'Ta part du mois');
     h += '</div>';
-    if (!owner && !c.part) h += `<p class="hint">Tu as utilisé ${bouchons(c.moi)} ce mois-ci.</p>`;
+    if (!owner && !c.part) h += `<p class="rg-note">Tu as utilisé ${bouchons(c.moi)} ce mois-ci.</p>`;
+    h += tarifsHTML();
   }
   if (owner) {
-    const who = (c.parPersonne || []).filter(x => x.credits > 0);
-    if (S.labelOn) h += who.length ? `<p class="cr-who-h">Dépense du mois</p><ul class="cr-who">${who.map(x => `<li><span>${esc(x.qui)}</span><b class="num">${fmtCr(x.credits)}</b></li>`).join('')}</ul>` : '<p class="hint">Personne n\'a encore utilisé de bouchon ce mois-ci.</p>';
-    h += `<form class="cr-form" id="credits-form">
-      <div class="row2">
-        <label class="f">Bouchons par mois, pour la cave<input name="mois" type="number" min="0" max="10000" inputmode="numeric" value="${c.max.mois}"></label>
-        <label class="f">Par jour, au plus<input name="jour" type="number" min="0" max="1000" inputmode="numeric" value="${c.max.jour}"></label>
-      </div>
-      <label class="f">Part de chaque membre, par mois<input name="part" type="number" min="0" max="10000" inputmode="numeric" value="${c.max.part}"><span class="hint">0 : pas de part, seule la limite de la cave compte. Toi, tu n'as que celle-ci.</span></label>
-      <label class="f">Valeur du jour : chaque vin est revu<select name="coteMois">${COTE_RYTHMES.map(([v, l]) => `<option value="${v}"${v === (S.coteMois || 12) ? ' selected' : ''}>${l}</option>`).join('')}</select><span class="hint">${isDrive() ? "Par l'appareil du propriétaire, avec au plus la moitié des bouchons du mois." : 'Par la routine de nuit, sans bouchon.'}</span></label>
-      ${isDrive() && c.plafond ? `<p class="hint">Au plus ${c.plafond.mois} bouchons par mois et ${c.plafond.jour} par jour : c'est le plafond de l'appli pour cette cave.</p>` : ''}
-      <button class="btn btn-primary" type="submit">Enregistrer</button>
-    </form>
-    ${isDrive() ? '' : '<p class="hint">Cet appareil a le code du propriétaire. <button type="button" class="link" data-act="owner-forget">Repasser en membre</button></p>'}`;
+    // Les réglages du propriétaire sont dans leur propre fenêtre (« Réglages des bouchons »), tenue à jour tant qu'elle est fermée.
+    if (!$('#dlg-bouchons').open) renderBouchons();
   } else if (isDrive()) {
-    h += `<p class="hint">${S.driveOwner ? `${esc(S.driveOwner)}, propriétaire de la cave,` : 'Le propriétaire de la cave'} règle ces bouchons et la part de chacun.</p>`;
+    h += `<p class="rg-note">${S.driveOwner ? `${esc(S.driveOwner)}, propriétaire de la cave,` : 'Le propriétaire de la cave'} règle les bouchons et la part de chacun.</p>`;
   } else {
-    if (!S.proprioActif) h += '<p class="hint">Personne ne s\'est encore déclaré propriétaire : chacun utilise les bouchons de la cave, sans part fixe.</p>';
-    h += `<details class="howto cr-owner"><summary>Tu héberges cette cave ?</summary>
-      <p>Entre ici le code du propriétaire pour régler les bouchons et la part de chacun. Il est dans ton Google Sheet, onglet « Propriétaire ». Il ne part jamais dans une invitation.${/^https:\/\/docs\.google\.com\//.test(S.sheetUrl) ? ` <a href="${esc(S.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a>` : ''}</p>`;
-    h += `
+    if (!S.proprioActif) h += '<p class="rg-note">Personne ne s\'est encore déclaré propriétaire : chacun utilise les bouchons de la cave, sans part fixe.</p>';
+    h += `<details class="cr-owner"><summary>Tu héberges cette cave ?</summary>
+      <p class="hint">Entre ici le code du propriétaire pour régler les bouchons et la part de chacun. Il est dans ton Google Sheet, onglet « Propriétaire ». Il ne part jamais dans une invitation.${/^https:\/\/docs\.google\.com\//.test(S.sheetUrl) ? ` <a href="${esc(S.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a>` : ''}</p>
       <label class="f">Code du propriétaire<input id="owner-code" placeholder="ex. 1a2b-3c4d-5e6f-7a8b" autocomplete="off" spellcheck="false" autocapitalize="off"></label>
       <button type="button" class="btn" data-act="owner-save">Enregistrer</button></details>`;
   }
-  h += '<p class="hint">Tastevin est propulsé par Claude, l\'IA d\'Anthropic.</p>';
   $('#credits-box').innerHTML = h;
+}
+/** « Réglages des bouchons » : limites de la cave, part de chaque membre, rythme de la valeur du jour, dépense du mois. */
+function renderBouchons() {
+  const c = S.credits, body = $('#bouchons-body');
+  if (!c || S.role !== 'proprio') { body.innerHTML = ''; return; }
+  const who = (c.parPersonne || []).filter(x => x.credits > 0), cote = S.coteMois || 12;
+  const step = (name, label, sub, v, max, pas) => `<div class="bo-step"><span class="rg-txt"><b>${label}</b><small>${sub}</small></span>
+      <button type="button" class="bo-btn" data-bo="${name}" data-pas="-${pas}" aria-label="${label} : moins">−</button>
+      <input name="${name}" type="number" min="0" max="${max}" inputmode="numeric" value="${v}" aria-label="${label}">
+      <button type="button" class="bo-btn" data-bo="${name}" data-pas="${pas}" aria-label="${label} : plus">+</button></div>`;
+  body.innerHTML = `<p class="bo-lead">Tastevin se paie en bouchons, pris sur ceux de la cave. Tu fixes les limites pour tout le monde ; une demande qui échoue ne coûte rien.</p>
+    <form class="cr-form" id="credits-form">
+      <h3 class="rg-h">Limites de la cave</h3>
+      <div class="rg-card">${step('mois', 'Par mois', 'Pour toute la cave', c.max.mois, 10000, 10)}${step('jour', 'Par jour, au plus', 'Pour toute la cave', c.max.jour, 1000, 5)}
+        ${isDrive() && c.plafond ? `<p class="hint">Au plus ${c.plafond.mois} bouchons par mois et ${c.plafond.jour} par jour : c'est le plafond de l'appli pour cette cave.</p>` : ''}</div>
+      <h3 class="rg-h">Part de chaque membre</h3>
+      <div class="rg-card">${step('part', 'Par membre', 'Chaque mois, prise sur la limite de la cave', c.max.part, 10000, 5)}
+        <p class="hint">0 : pas de part, seule la limite de la cave compte. Toi, tu n'as que celle-ci.</p></div>
+      <h3 class="rg-h">Valeur du jour</h3>
+      <div class="rg-card rg-pad"><div class="rg-field"><p class="rg-label">Chaque vin est revu</p>
+        <input type="hidden" name="coteMois" value="${cote}">
+        <div class="seg" role="group" aria-label="Rythme de la valeur du jour">${COTE_RYTHMES.map(([v, l]) => `<button type="button" data-cote="${v}" aria-pressed="${v === cote}" title="${l}">${COTE_COURT[v]}</button>`).join('')}</div>
+        <p class="hint">${isDrive() ? "Par l'appareil du propriétaire, avec au plus la moitié des bouchons du mois." : 'Par la routine de nuit, sans bouchon.'}</p></div></div>
+      ${S.labelOn ? `<h3 class="rg-h">Dépense du mois</h3>${who.length ? `<ul class="rg-card cr-who">${who.map(x => `<li><span>${esc(x.qui)}</span><b class="num">${fmtCr(x.credits)}</b></li>`).join('')}</ul>` : '<p class="hint">Personne n\'a encore utilisé de bouchon ce mois-ci.</p>'}` : ''}
+      ${isDrive() ? '' : '<p class="hint">Cet appareil a le code du propriétaire. <button type="button" class="link" data-act="owner-forget">Repasser en membre</button></p>'}
+      <button class="btn btn-primary bo-save" type="submit">Enregistrer</button>
+    </form>`;
+}
+function openBouchons() {
+  renderBouchons();
+  if ($('#bouchons-body').innerHTML) $('#dlg-bouchons').showModal();
 }
 async function saveOwnerCode() {
   const code = $('#owner-code').value.trim().toLowerCase();
@@ -2697,6 +2868,7 @@ async function saveOwnerCode() {
   renderReglages();
 }
 async function forgetOwnerCode() {
+  $('#dlg-bouchons').close();
   S.proprio = ''; S.role = 'app'; saveSettings();
   try { serverInfo(await API.call('ping', pageInfo())); } catch {}
   toast('Cet appareil est de nouveau un membre de la cave.');
@@ -2707,26 +2879,44 @@ async function saveCredits(form) {
   try {
     serverInfo(await API.call('setCredits', { mois: v('mois'), jour: v('jour'), part: v('part'), coteMois: v('coteMois') }));
     toast('Bouchons enregistrés pour toute la cave.');
+    $('#dlg-bouchons').close();
   } catch (e) { toast(e.message); }
   renderReglages();
 }
 
 /* ---------- Personnes ---------- */
-function renderPeopleBox() {
+/** Bouteilles en cave au nom de chacun. */
+function bottlesByPerson() {
   const tot = new Map();
   for (const bo of BY_OWNER.values()) for (const [o, n] of bo) if (n > 0) tot.set(o, (tot.get(o) || 0) + n);
-  const used = new Set(db.moves.flatMap(m => [m.proprio, m.par]));
+  return tot;
+}
+const bottlesTxt = n => n ? `${n} ${plural(n, 'bouteille', 'bouteilles')} en cave` : 'aucune bouteille en cave';
+/** Une personne ne peut être retirée que si elle n'a ni bouteille ni historique (une faute de frappe, par exemple). */
+const removable = (p, used) => !used.has(p) && p !== S.device;
+function renderPeopleBox() {
+  const tot = bottlesByPerson(), used = new Set(db.moves.flatMap(m => [m.proprio, m.par]));
   const ps = people();
-  $('#people-box').innerHTML = `
-    <p>${S.device ? `Sur cet appareil, tu es <strong>${esc(S.device)}</strong>.` : "Tu n'as pas encore indiqué qui tu es sur cet appareil."} <button class="link" data-act="who">${S.device ? 'Changer' : 'Le dire'}</button></p>
+  // Une ligne par personne : la toucher ouvre ce qu'on peut faire (c'est moi, renommer, retirer).
+  $('#people-box').innerHTML = `<button type="button" class="rg-row rg-go" data-act="who"><span class="rg-txt"><span>${S.device ? 'Sur cet appareil, tu es' : "Sur cet appareil, tu n'as pas encore dit qui tu es"}</span></span>${S.device ? ` <b class="rg-val">${esc(S.device)}</b>` : ''}</button>
     ${ps.length ? `<ul class="people">${ps.map(p => {
-      const n = tot.get(p) || 0;
-      return `<li><div class="pp-id"><span class="pp-name">${esc(p)}${p === S.device ? ' <small>(toi)</small>' : ''}</span>
-          <span class="pp-n">${n ? `${n} ${plural(n, 'bouteille', 'bouteilles')} en cave` : 'aucune bouteille en cave'}</span></div>
-        <div class="pp-act"><button class="link" data-act="rename-person" data-name="${esc(p)}">Renommer</button>
-        ${used.has(p) || p === S.device ? '' : `<button class="link" data-act="remove-person" data-name="${esc(p)}">Retirer</button>`}</div></li>`;
-    }).join('')}</ul>` : ''}
-    <button class="btn" data-act="add-person">Ajouter une personne</button>`;
+      const me = p === S.device;
+      return `<li><button type="button" class="rg-row rg-go pp-row" data-act="person" data-name="${esc(p)}"${removable(p, used) ? ' data-removable' : ''}>
+        <span class="pp-av" aria-hidden="true">${esc([...p][0].toUpperCase())}</span>
+        <span class="rg-txt"><span class="pp-name">${esc(p)}${me ? ' <small>(toi)</small>' : ''}</span><span class="pp-n">${bottlesTxt(tot.get(p) || 0)}${me && S.role === 'proprio' ? ' · propriétaire de la cave' : ''}</span></span></button></li>`;
+    }).join('')}</ul>` : ''}`;
+}
+function openPerson(name) {
+  if (!people().includes(name)) return;
+  const used = new Set(db.moves.flatMap(m => [m.proprio, m.par])), me = name === S.device;
+  $('#person-title').innerHTML = `${esc(name)}<span class="sub">${bottlesTxt(bottlesByPerson().get(name) || 0)}${me ? ' · toi, sur cet appareil' : ''}</span>`;
+  $('#person-acts').innerHTML = [
+    me ? '' : `<button type="button" class="add-opt" data-act="person-me" data-name="${esc(name)}"><b>C'est moi</b><span>Sur cet appareil, tu es ${esc(name)}</span></button>`,
+    `<button type="button" class="add-opt" data-act="rename-person" data-name="${esc(name)}"><b>Renommer</b><span>Partout, bouteilles et historique, sur tous les appareils</span></button>`,
+    removable(name, used) ? `<button type="button" class="add-opt" data-act="remove-person" data-name="${esc(name)}"><b>Retirer de la liste</b><span>Ce prénom n'a ni bouteille ni historique</span></button>` : '',
+    '<button type="button" class="btn add-cancel" data-close>Annuler</button>',
+  ].join('');
+  $('#dlg-person').showModal();
 }
 
 /* « Qui es-tu ? » : demandé après la première synchro, puis si son prénom a été renommé ou retiré depuis un autre appareil. */
@@ -2814,28 +3004,29 @@ function removePerson(name) {
   toast(`${name} ne fait plus partie de la liste.`);
 }
 
+const ICO_SYNC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+const ICO_EXT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+/** Carte de la cave, sous son nom : l'état de la synchro (et le bouton pour la relancer), puis les liens utiles. */
 function renderSyncBox() {
   const box = $('#sync-box');
   if (!box) return;
+  const { k, msg } = syncState;
+  const row = (line, kk) => `<div class="rg-row rg-sync"><p class="status" data-k="${kk}"><span class="sync-dot"></span><span>${line}</span></p>${API.ready()
+    ? `<button type="button" class="rg-round" data-act="sync-now" aria-label="Synchroniser maintenant"${k === 'busy' ? ' disabled' : ''}>${ICO_SYNC}</button>` : ''}</div>`;
+  const done = when => `<b>Synchronisée</b> <small>${rel(when)}</small>`;
   if (!API.ready()) {
-    box.innerHTML = `<p class="status"><span class="sync-dot"></span>Pas encore relié. Colle l'adresse du script et le code secret, ou ouvre un lien d'invitation.</p>`;
+    box.innerHTML = row(Drive.available() ? 'Pas encore relié. Crée une cave ou rejoins-en une dans « Mes caves ».'
+      : "Pas encore relié. Colle l'adresse du script et le code secret, ou ouvre un lien d'invitation.", 'off');
     return;
   }
-  const { k, msg } = syncState;
   if (isDrive()) {
-    const st = k === 'auth' ? 'Connexion à Google nécessaire : touche « Synchroniser maintenant ».'
+    const st = k === 'auth' ? 'Connexion à Google à refaire : touche le bouton de synchro.'
       : k === 'error' ? `Échec de la dernière synchro : ${esc(msg)}`
       : k === 'busy' ? 'Synchronisation en cours…'
       : k === 'offline' ? 'Hors ligne : tes modifications sont gardées sur cet appareil.'
-      : S.lastSync ? `Reliée à Google Drive. Dernière synchro ${rel(S.lastSync)}.` : 'Reliée à Google Drive, pas encore synchronisée.';
-    let d = `<p class="status" data-k="${k}"><span class="sync-dot"></span>${st}</p>`;
-    d += `<p class="hint">Lecture des étiquettes : ${relaisOn() ? 'immédiate, par Tastevin (relais de l\'appli).' : 'à la main pour l\'instant, Tastevin arrivera dans les caves Google Drive avec le relais.'} ${S.photoShare ? 'Tes photos sont partagées avec la cave.' : 'Tes photos restent sur cet appareil (voir plus bas).'}</p>`;
-    d += '<div class="btn-row"><button class="btn btn-primary" data-act="sync-now">Synchroniser maintenant</button>';
-    if (/^https:\/\/drive\.google\.com\//.test(S.driveUrl)) d += `<a class="btn" href="${esc(S.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Google Drive</a>`;
-    d += '</div>';
-    // Style et accords des vins déjà en cave : Claude les ajoute aussitôt ; une action sur toute la cave, pour le propriétaire.
-    const manque = tasteMissing().length;
-    if (manque && relaisOn()) d += `<p class="hint">${tasteTxt(manque)}${S.role === 'proprio' ? '' : ' Le propriétaire de la cave peut les faire compléter par Tastevin.'}</p>${S.role === 'proprio' ? `<div class="btn-row"><button class="btn" data-act="fill-taste">${tasteBtn()}</button></div>` : ''}`;
+      : S.lastSync ? done(S.lastSync) : 'Pas encore synchronisée.';
+    let d = row(st, k);
+    if (/^https:\/\/drive\.google\.com\//.test(S.driveUrl)) d += `<a class="rg-row rg-link" href="${esc(S.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Google Drive${ICO_EXT}</a>`;
     box.innerHTML = d;
     return;
   }
@@ -2843,30 +3034,39 @@ function renderSyncBox() {
     : k === 'error' ? `Échec de la dernière synchro : ${esc(msg)}`
     : k === 'busy' ? 'Synchronisation en cours…'
     : k === 'offline' ? 'Hors ligne : tes modifications sont gardées sur cet appareil.'
-    : S.lastSync ? `Relié. Dernière synchro ${rel(S.lastSync)}.` : 'Relié, pas encore synchronisé.';
-  let h = `<p class="status" data-k="${k}"><span class="sync-dot"></span>${line}</p>`;
-  h += `<p class="hint">Lecture des étiquettes : ${S.labelOn ? 'immédiate, par Tastevin (clé API Claude)' : claudeOn() ? `chaque nuit, par Tastevin (routine Claude)${S.routineOn ? ', ou à la demande' : ''}` : 'à la main (Tastevin n\'est pas branché sur cette cave)'}.</p>`;
+    : S.lastSync ? done(S.lastSync) : 'Relié, pas encore synchronisé.';
+  let h = row(line, k);
+  h += `<p class="hint rg-hint">Lecture des étiquettes : ${S.labelOn ? 'immédiate, par Tastevin (clé API Claude)' : claudeOn() ? `chaque nuit, par Tastevin (routine Claude)${S.routineOn ? ', ou à la demande' : ''}` : 'à la main (Tastevin n\'est pas branché sur cette cave)'}.</p>`;
   // Script de la cave plus ancien que cette page : la marche à suivre pour le mettre à jour.
   if (S.serverVersion && S.serverVersion < SCRIPT_VERSION) h = `<div class="note"><p>Une nouvelle version du script de la cave est disponible (v${SCRIPT_VERSION}, celle-ci est en v${S.serverVersion}). La personne qui héberge la cave peut la mettre à jour en quelques minutes : <a href="${REPO_URL}/blob/main/INSTALLATION.md#mettre-à-jour-le-script" target="_blank" rel="noopener">comment faire</a>.</p></div>` + h;
-  h += `<div class="btn-row"><button class="btn btn-primary" data-act="sync-now">Synchroniser maintenant</button>`;
-  if (S.routineOn) h += `<button class="btn" data-act="read-now">Lire les étiquettes maintenant</button>`;
-  if (/^https:\/\/docs\.google\.com\//.test(S.sheetUrl)) h += `<a class="btn" href="${esc(S.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet</a>`;
-  if (/^https?:$/.test(location.protocol)) h += `<button class="btn" data-act="invite">Inviter quelqu'un</button>`;
-  h += `</div>`;
-  // Style et accords des vins déjà en cave : Claude les ajoute à la routine suivante (script v12 ou plus).
-  const missing = tasteMissing().length;
-  // Une action sur toute la cave : réservée au propriétaire à partir du script v16.
-  // Tant que le propriétaire ne s'est déclaré sur aucun appareil, chacun a tous les droits (script v17).
-  const bulkOk = (S.serverVersion || 0) < 16 || S.role === 'proprio' || !S.proprioActif;
-  if (missing && (S.serverVersion || 0) >= 12 && claudeOn()) h += `<p class="hint">${tasteTxt(missing)}${bulkOk ? '' : ' Le propriétaire de la cave peut les faire compléter par Tastevin.'}</p>${bulkOk ? `<div class="btn-row"><button class="btn" data-act="fill-taste">${tasteBtn()}</button></div>` : ''}`;
+  if (/^https:\/\/docs\.google\.com\//.test(S.sheetUrl)) h += `<a class="rg-row rg-link" href="${esc(S.sheetUrl)}" target="_blank" rel="noopener">Ouvrir le Google Sheet${ICO_EXT}</a>`;
   // Passer sur Google Drive, sans script : une copie, la cave actuelle ne change pas.
-  if (basculeOk()) h += `<p class="hint">Cette cave peut passer sur Google Drive, sans script : l'appli la recopie, et la cave actuelle ne change pas.</p><div class="btn-row"><button class="btn" data-act="bascule-open">Passer cette cave sur Google Drive</button></div>`;
+  if (basculeOk()) h += `<button type="button" class="rg-row rg-go" data-act="bascule-open"><span class="rg-txt"><b>Passer cette cave sur Google Drive</b><small>L'appli la recopie, sans script ; la cave actuelle ne change pas</small></span></button>`;
   box.innerHTML = h;
+}
+/** Carte Tastevin, sous les bouchons : les actions sur toute la cave et le lien vers les réglages du propriétaire. */
+function renderTasteBox() {
+  const drive = isDrive(), owner = S.role === 'proprio';
+  let h = '';
+  // Style et accords des vins déjà en cave. Cave Drive : Tastevin les ajoute aussitôt, à la demande du propriétaire.
+  // Cave à script (v12 ou plus) : à la routine suivante ; réservé au propriétaire à partir du script v16, sauf tant
+  // que le propriétaire ne s'est déclaré sur aucun appareil (script v17).
+  const missing = tasteMissing().length;
+  const can = drive ? relaisOn() : (S.serverVersion || 0) >= 12 && claudeOn();
+  const bulkOk = drive ? owner : (S.serverVersion || 0) < 16 || owner || !S.proprioActif;
+  if (missing && can) {
+    const txt = tasteTxt(missing);
+    h += bulkOk ? `<div class="rg-row"><span class="rg-txt"><b>${tasteBtn()}</b><small>${txt}</small></span><button type="button" class="btn btn-primary btn-sm" data-act="fill-taste">Compléter</button></div>`
+      : `<p class="rg-note">${txt} Le propriétaire de la cave peut les faire compléter par Tastevin.</p>`;
+  }
+  if (!drive && S.routineOn) h += `<div class="rg-row"><span class="rg-txt"><b>Lecture des étiquettes</b><small>Chaque nuit, par la routine, ou tout de suite</small></span><button type="button" class="btn btn-sm" data-act="read-now">Lire maintenant</button></div>`;
+  if (owner && !$('#credits-set').hidden) h += `<button type="button" class="rg-row rg-go" data-act="bouchons"><span class="rg-txt"><b>Réglages des bouchons</b><small>Limites, part de chacun, valeur du jour</small></span></button>`;
+  $('#taste-box').innerHTML = h;
 }
 /** Vins en cave sans style ni accords, ou sans profil (script v19, cave Google Drive), que Claude peut compléter (pas déjà en attente de lecture). */
 const tasteMissing = () => db.wines.filter(w => ((!w.style && !w.accords) || (profilOn() && PROFIL[w.couleur] && !w.profil)) && (w.domaine || w.appellation) && !['attente', 'revoir'].includes(w.lecture));
 const tasteTxt = n => (profilOn() ? `${n} ${plural(n, 'vin attend encore son style, ses accords ou son profil.', 'vins attendent encore leur style, leurs accords ou leur profil.')}` : `${n} ${plural(n, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.`);
-const tasteBtn = () => (profilOn() ? 'Faire compléter style, accords et profil par Tastevin' : 'Faire compléter style et accords par Tastevin');
+const tasteBtn = () => (profilOn() ? 'Compléter style, accords et profil' : 'Compléter style et accords');
 function fillTaste() {
   if ((S.serverVersion || 0) >= 16 && S.role !== 'proprio') return;
   const ws = tasteMissing();
@@ -6069,6 +6269,9 @@ function wire() {
         case 'bascule-go': basculer(); break;
         case 'bascule-ouvrir': { const k = lsGet(basculeCle(), {}).key; $('#dlg-bascule').close(); if (k) openCave(k); break; }
         case 'drive-invite': inviteDrive(); break;
+        // Cave Google Drive : « Inviter quelqu'un » déplie l'adresse à saisir.
+        case 'invite-open': { const box = $('#drive-invite-box'), open = box.hidden; box.hidden = !open; act.setAttribute('aria-expanded', String(open)); if (open) $('#drive-invite').focus(); break; }
+        case 'bouchons': openBouchons(); break;
         case 'edit': openWineForm(id); break;
         case 'in': openMove(id, 'entree'); break;
         case 'out': openMove(id, 'sortie'); break;
@@ -6104,8 +6307,10 @@ function wire() {
         case 'review-off': UI.review = false; renderCave(); break;
         case 'who': openWho(); break;
         case 'add-person': promptAddPerson(); break;
-        case 'rename-person': renamePerson(act.dataset.name); break;
-        case 'remove-person': removePerson(act.dataset.name); break;
+        case 'person': openPerson(act.dataset.name); break;
+        case 'person-me': $('#dlg-person').close(); setMe(act.dataset.name); break;
+        case 'rename-person': $('#dlg-person').close(); renamePerson(act.dataset.name); break;
+        case 'remove-person': $('#dlg-person').close(); removePerson(act.dataset.name); break;
         case 'similar': openSimilar(id); break;
         case 'sim-tab': SIM.tab = act.dataset.tab; SIM.more = 8; renderSimilar(); break;
         case 'sim-more': SIM.more += 8; renderSimilar(); break;
@@ -6154,12 +6359,19 @@ function wire() {
     if (sc) { lsSet('macave:scanner', sc.dataset.scannerSet === 'on'); Scanner.broken = false; renderReglages(); return; }
     const tq = e.target.closest('[data-tq]');
     if (tq) { const inp = $('#twin-n'); inp.value = Math.max(0, (int(inp.value) || 0) + +tq.dataset.tq); return; }
+    // Réglages des bouchons : − et + autour d'un nombre, segments de la valeur du jour.
+    const bo = e.target.closest('[data-bo]');
+    if (bo) { const inp = bo.form.elements[bo.dataset.bo]; inp.value = Math.max(0, Math.min(+inp.max, (int(inp.value) || 0) + +bo.dataset.pas)); return; }
+    const co = e.target.closest('[data-cote]');
+    if (co) { co.form.elements.coteMois.value = co.dataset.cote; co.form.querySelectorAll('[data-cote]').forEach(b => b.setAttribute('aria-pressed', String(b === co))); return; }
     const q = e.target.closest('[data-q]');
     if (q) { const inp = $('#move-form').elements.qte; inp.value = Math.max(1, (int(inp.value) || 0) + +q.dataset.q); return; }
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.matches('article[data-open]')) openDetail(e.target.dataset.open);
   });
+  // « Ce que coûte une demande » reste ouvert d'une synchro à l'autre (la carte est redessinée à chaque fois).
+  document.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('cr-tarifs')) UI.tarifsOpen = e.target.open; }, true);
 
   // Fiche du vin et détail d'une période des stats : toucher en dehors de la fenêtre la ferme.
   ['#dlg-wine', '#dlg-period'].forEach(s => $(s).addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.close(); }));
