@@ -17,7 +17,7 @@ function page() {
   const sandbox = { window: {} };
   if (fs.existsSync(CFG)) vm.runInNewContext(fs.readFileSync(CFG, 'utf8'), sandbox);
   const g = sandbox.window.PROTO_CONFIG || {};
-  const tag = `<script>window.MACAVE_GOOGLE = ${JSON.stringify({ clientId: g.clientId || '', apiKey: g.apiKey || '', appId: g.appId || '' })};</script>\n`;
+  const tag = `<script>window.MACAVE_GOOGLE = ${JSON.stringify({ clientId: g.clientId || '', apiKey: g.apiKey || '', appId: g.appId || '', relais: g.relais || '' })};</script>\n`;
   // Relu à chaque requête : un simple rechargement de la page prend la dernière version de index.html.
   return fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').replace('</head>', tag + '</head>');
 }

@@ -2146,8 +2146,8 @@ function readNote(w) {
   const out = [], g = guessList(w), twin = twinOf(w);
   if (w.alerte === 'passe') out.push(`<div class="d-note is-fail"><p><strong>Ce vin a peut-être déjà dépassé son apogée : à boire sans tarder.</strong> Avant de l'ouvrir, regarde le niveau du vin dans la bouteille (dans le col ou en haut de l'épaule, c'est bon signe), sa couleur à travers le verre (brune, c'est mauvais signe) et le bouchon (sec, poussé ou qui a coulé, c'est mauvais signe).</p>
     <div class="btn-row"><button class="btn" data-act="clear-alert" data-id="${w.id}">Il va bien, retirer l'alerte</button></div></div>`);
-  if (w.lecture === 'attente') out.push(`<div class="d-note is-wait"><p>L'étiquette sera lue cette nuit : la fiche sera complétée automatiquement.</p></div>`);
-  if (w.lecture === 'revoir') out.push(`<div class="d-note is-wait"><p>Claude repassera sur cette fiche cette nuit : il remplira les champs vides et mettra à jour ses propres estimations, sans toucher à ce qui a été saisi à la main.</p>
+  if (w.lecture === 'attente') out.push(`<div class="d-note is-wait"><p>L'étiquette sera lue ${plusTard()} : la fiche sera complétée automatiquement.</p></div>`);
+  if (w.lecture === 'revoir') out.push(`<div class="d-note is-wait"><p>Claude repassera sur cette fiche ${plusTard()} : il remplira les champs vides et mettra à jour ses propres estimations, sans toucher à ce qui a été saisi à la main.</p>
     <div class="btn-row">${S.routineOn ? `<button class="btn" data-act="read-now">Maintenant</button>` : ''}<button class="btn" data-act="cancel-review" data-id="${w.id}">Annuler</button></div></div>`);
   if (w.lecture === 'echec') out.push(`<div class="d-note is-fail"><p>La lecture de l'étiquette a échoué${w.lectureNote ? ` : ${esc(w.lectureNote)}` : '.'}</p>
     <div class="btn-row"><button class="btn" data-act="reread" data-id="${w.id}">Relancer la lecture cette nuit</button></div></div>`);
@@ -2503,7 +2503,9 @@ function renderCredits() {
   let h = '';
   if (!S.labelOn) h += '<p>Pas de clé API sur cette cave : Claude passe par la routine de nuit, qui ne coûte aucun crédit.</p>';
   else {
-    h += `<p>Chaque appel immédiat à Claude se paie avec la clé API de la cave, en crédits : une lecture d'étiquette, 1 crédit ; un conseil en magasin, 1 par bouteille ; des vins similaires, ${fmtCr(c.couts && c.couts.suggest)}. Ce que Claude trouve pour un vin sert à toute la cave. La lecture de nuit, par la routine, ne coûte rien.</p>`;
+    h += isDrive()
+      ? `<p>Claude passe par le relais de l'appli, en crédits de la cave : une lecture d'étiquette, 1 crédit ; une fiche revue ou complétée, ${fmtCr(c.couts && c.couts.revoir)} ; un conseil en magasin, 1 par bouteille ; des vins similaires, ${fmtCr(c.couts && c.couts.suggest)} ; une valeur du jour, ${fmtCr(c.couts && c.couts.cote)}. Ce que Claude trouve pour un vin sert à toute la cave. Une demande qui échoue ne coûte rien.</p>`
+      : `<p>Chaque appel immédiat à Claude se paie avec la clé API de la cave, en crédits : une lecture d'étiquette, 1 crédit ; un conseil en magasin, 1 par bouteille ; des vins similaires, ${fmtCr(c.couts && c.couts.suggest)}. Ce que Claude trouve pour un vin sert à toute la cave. La lecture de nuit, par la routine, ne coûte rien.</p>`;
     h += '<div class="cr-gauges">' + gaugeHTML(c.mois, c.max.mois, 'La cave, ce mois-ci') + gaugeHTML(c.jour, c.max.jour, "Aujourd'hui");
     if (!owner && c.part) h += gaugeHTML(c.partReste, c.part, 'Ta part du mois');
     h += '</div>';
@@ -2518,10 +2520,13 @@ function renderCredits() {
         <label class="f">Par jour, au plus<input name="jour" type="number" min="0" max="1000" inputmode="numeric" value="${c.max.jour}"></label>
       </div>
       <label class="f">Part de chaque membre, par mois<input name="part" type="number" min="0" max="10000" inputmode="numeric" value="${c.max.part}"><span class="hint">0 : pas de part, seule la limite de la cave compte. Toi, tu n'as que celle-ci.</span></label>
-      <label class="f">Valeur du jour : chaque vin est revu<select name="coteMois">${COTE_RYTHMES.map(([v, l]) => `<option value="${v}"${v === (S.coteMois || 12) ? ' selected' : ''}>${l}</option>`).join('')}</select><span class="hint">Par la routine de nuit, sans crédit.</span></label>
+      <label class="f">Valeur du jour : chaque vin est revu<select name="coteMois">${COTE_RYTHMES.map(([v, l]) => `<option value="${v}"${v === (S.coteMois || 12) ? ' selected' : ''}>${l}</option>`).join('')}</select><span class="hint">${isDrive() ? "Par l'appareil du propriétaire, avec au plus la moitié des crédits du mois." : 'Par la routine de nuit, sans crédit.'}</span></label>
+      ${isDrive() && c.plafond ? `<p class="hint">Au plus ${c.plafond.mois} crédits par mois et ${c.plafond.jour} par jour : c'est le plafond de l'appli pour cette cave.</p>` : ''}
       <button class="btn btn-primary" type="submit">Enregistrer</button>
     </form>
-    <p class="hint">Cet appareil a le code du propriétaire. <button type="button" class="link" data-act="owner-forget">Repasser en membre</button></p>`;
+    ${isDrive() ? '' : '<p class="hint">Cet appareil a le code du propriétaire. <button type="button" class="link" data-act="owner-forget">Repasser en membre</button></p>'}`;
+  } else if (isDrive()) {
+    h += `<p class="hint">${S.driveOwner ? `${esc(S.driveOwner)}, propriétaire de la cave,` : 'Le propriétaire de la cave'} règle ces crédits et la part de chacun.</p>`;
   } else {
     if (!S.proprioActif) h += '<p class="hint">Personne ne s\'est encore déclaré propriétaire : chacun utilise les crédits de la cave, sans part fixe.</p>';
     h += `<details class="howto cr-owner"><summary>Tu héberges cette cave ?</summary>
@@ -2677,10 +2682,14 @@ function renderSyncBox() {
       : k === 'offline' ? 'Hors ligne : tes modifications sont gardées sur cet appareil.'
       : S.lastSync ? `Reliée à Google Drive. Dernière synchro ${rel(S.lastSync)}.` : 'Reliée à Google Drive, pas encore synchronisée.';
     let d = `<p class="status" data-k="${k}"><span class="sync-dot"></span>${st}</p>`;
-    d += `<p class="hint">Lecture des étiquettes : à la main pour l'instant, Claude arrivera dans les caves Google Drive avec le relais. ${S.photoShare ? 'Tes photos sont partagées avec la cave.' : 'Tes photos restent sur cet appareil (voir plus bas).'}</p>`;
+    d += `<p class="hint">Lecture des étiquettes : ${relaisOn() ? 'immédiate, par Claude (relais de l\'appli).' : 'à la main pour l\'instant, Claude arrivera dans les caves Google Drive avec le relais.'} ${S.photoShare ? 'Tes photos sont partagées avec la cave.' : 'Tes photos restent sur cet appareil (voir plus bas).'}</p>`;
     d += '<div class="btn-row"><button class="btn btn-primary" data-act="sync-now">Synchroniser maintenant</button>';
     if (/^https:\/\/drive\.google\.com\//.test(S.driveUrl)) d += `<a class="btn" href="${esc(S.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Google Drive</a>`;
-    box.innerHTML = d + '</div>';
+    d += '</div>';
+    // Style et accords des vins déjà en cave : Claude les ajoute aussitôt ; une action sur toute la cave, pour le propriétaire.
+    const manque = tasteMissing().length;
+    if (manque && relaisOn()) d += `<p class="hint">${manque} ${plural(manque, 'vin n\'a', 'vins n\'ont')} encore ni style ni accords.${S.role === 'proprio' ? '' : ' Le propriétaire de la cave peut les faire compléter par Claude.'}</p>${S.role === 'proprio' ? '<div class="btn-row"><button class="btn" data-act="fill-taste">Faire compléter style et accords par Claude</button></div>' : ''}`;
+    box.innerHTML = d;
     return;
   }
   const line = k === 'auth' ? `${esc(msg || 'Code secret refusé.')} Vérifie-le ci-dessous.`
@@ -2713,8 +2722,9 @@ function fillTaste() {
   if (!ws.length) return;
   const now = nowISO();
   ws.forEach(w => Object.assign(w, { lecture: 'revoir', updatedAt: now }));
+  queueClaude(ws.map(w => w.id));
   commit();
-  toast(`${ws.length} ${plural(ws.length, 'fiche sera complétée', 'fiches seront complétées')} par Claude${S.routineOn ? ' : touche « Lire maintenant » dans la Cave pour ne pas attendre la nuit.' : ' cette nuit.'}`);
+  toast(`${ws.length} ${plural(ws.length, 'fiche sera complétée', 'fiches seront complétées')} par Claude${relaisOn() ? ' dans un instant.' : S.routineOn ? ' : touche « Lire maintenant » dans la Cave pour ne pas attendre la nuit.' : ' cette nuit.'}`);
 }
 
 /* ---------- Fiche d'un vin ---------- */
@@ -2845,6 +2855,7 @@ function priceTile(w, stock) {
   if (now != null && mine) src = ['Estimation de Claude', w.coteBas != null && w.coteHaut != null && w.coteBas !== w.coteHaut ? `${fmtEuro(w.coteBas)} à ${fmtEuro(w.coteHaut)}` : '', fmtMonth(w.coteDate), w.coteNote].filter(Boolean).join(' · ');
   else if (now != null) src = ['Saisie à la main', fmtMonth(w.coteDate)].filter(Boolean).join(' · ');
   else if (w.coteDate) src = `Valeur du jour : ${w.coteNote || 'aucun prix trouvé en ligne'} (${fmtMonth(w.coteDate)})`;
+  else if (stock > 0 && w.domaine && relaisOn()) src = "Valeur du jour : Claude la cherchera en ligne, depuis l'appareil du propriétaire.";
   else if (stock > 0 && w.domaine && API.ready() && (S.serverVersion || 0) >= 13 && routineAlive()) src = 'Valeur du jour : Claude la cherchera en ligne cette nuit.';
   if (!lines.length && !src) return '';
   return `<div class="wide d-price"><dt>Prix</dt><dd>${lines.join('')}${src ? `<span class="pr-src">${esc(src)}</span>` : ''}</dd></div>`;
@@ -3565,7 +3576,7 @@ async function readLabel() {
     FORM.readDone = true;
     applyLabel(res.result || {});
   } catch (e) {
-    if (FORM.token === token) setAiStatus(`${e.message} L'étiquette sera lue cette nuit à la place.`, 'error');
+    if (FORM.token === token) setAiStatus(`${e.message} L'étiquette sera lue ${plusTard()} à la place.`, 'error');
   } finally {
     if (FORM.token === token) { FORM.reading = false; updateFormPreview(); }
   }
@@ -3573,7 +3584,7 @@ async function readLabel() {
 
 function requestNightRead() {
   FORM.requestRead = true;
-  setAiStatus("L'étiquette sera lue cette nuit, une fois la fiche enregistrée.");
+  setAiStatus(`L'étiquette sera lue ${plusTard()}, une fois la fiche enregistrée.`);
   updateFormPreview();
 }
 
@@ -3582,7 +3593,7 @@ function photoStatus() {
   else if (S.labelOn && navigator.onLine) readLabel();
   else if (!claudeOn()) setAiStatus("Photo enregistrée. Aucun Claude n'est branché sur cette cave : remplis la fiche à la main.");
   else {
-    setAiStatus("L'étiquette sera lue cette nuit : tu peux enregistrer sans remplir le reste.");
+    setAiStatus(`L'étiquette sera lue ${plusTard()} : tu peux enregistrer sans remplir le reste.`);
     if (!FORM.id && !FORM.colorTouched) { $$('#wf-colors input').forEach(r => (r.checked = false)); renderGrapes(); updateFormPreview(); }
   }
 }
@@ -3755,12 +3766,13 @@ async function submitWineForm(e) {
   if (pending && hasPhoto) Object.assign(w, { lecture: 'attente', lectureNote: '', doublonDe: '', doublonType: '' });
   else if (FORM.removed && w.lecture === 'attente') w.lecture = '';
   else if (review) w.lecture = 'revoir';
+  if ((pending && hasPhoto) || review) queueClaude([w.id]);
 
   const isNew = !FORM.id;
   $('#dlg-form').close();
   commit();
   toast((isNew ? `Vin ajouté à la cave${forTxt(owner)}` : split ? 'Modifications et répartition enregistrées' : 'Modifications enregistrées')
-    + (review ? `. Claude ${isNew ? 'complétera la fiche' : 'mettra à jour ses estimations'} cette nuit.` : ''));
+    + (review ? `. Claude ${isNew ? 'complétera la fiche' : 'mettra à jour ses estimations'} ${plusTard()}.` : ''));
 }
 
 function deleteWine(id) {
@@ -3783,6 +3795,7 @@ function setReading(id, changes, msg) {
   const w = db.wines.find(x => x.id === id);
   if (!w) return;
   Object.assign(w, typeof changes === 'function' ? changes(w) : changes, { updatedAt: nowISO() });
+  if (['attente', 'revoir'].includes(w.lecture)) queueClaude([w.id]);
   commit();
   toast(msg);
 }
@@ -3958,6 +3971,7 @@ async function submitBulk(e) {
     saved++;
   }
   if (!saved) return err("Les photos n'ont pas pu être enregistrées sur cet appareil.");
+  queueClaude(db.wines.filter(w => w.lecture === 'attente' && w.updatedAt === now).map(w => w.id));
   if (owner) { addPerson(owner); UI.lastOwner = { name: owner, at: Date.now() }; }
   const now2 = f.elements.lireMaintenant.checked && !$('#bulk-now').hidden;
   items.forEach(it => URL.revokeObjectURL(it.url));
@@ -4078,7 +4092,8 @@ async function processConseils() {
       const step = txt => { UI.csProgress = { id: c.id, txt }; if (UI.openConseil === c.id && $('#dlg-conseil').open) renderConseilDetail(); };
       const n = c.bouteilles.length;
       for (const [i, b] of c.bouteilles.entries()) {
-        if (b.photoId) continue;
+        // Cave Google Drive : les photos d'un conseil restent sur l'appareil, le relais les transmet à Claude.
+        if (b.photoId || isDrive()) continue;
         const rec = await Photos.get(scanKey(c.id, i)).catch(() => null);
         if (!rec || !rec.blob) throw new Error("une photo n'est plus sur cet appareil");
         step(n > 1 ? `Envoi de la photo ${i + 1} sur ${n}…` : 'Envoi de la photo…');
@@ -4543,7 +4558,8 @@ function deleteMove() {
    (plugin GoogleDrive) ; sur le web, par la bibliothèque de connexion de Google. Les photos restent sur l'appareil
    pour l'instant.
    ========================================================= */
-const GOOGLE = Object.assign({ clientId: '', apiKey: '', appId: '' }, window.MACAVE_GOOGLE || {});
+// relais : l'adresse du relais Claude des caves Drive (vide tant qu'il n'est pas en ligne : Claude n'y est pas branché).
+const GOOGLE = Object.assign({ clientId: '', apiKey: '', appId: '', relais: '' }, window.MACAVE_GOOGLE || {});
 const DRIVE_API = 'https://www.googleapis.com/drive/v3', DRIVE_UP = 'https://www.googleapis.com/upload/drive/v3';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file', DRIVE_FOLDER = 'application/vnd.google-apps.folder';
 const CAVE_FORMAT = 1;
@@ -4716,17 +4732,27 @@ const Drive = {
     const r = await Drive.req('GET', `${DRIVE_API}/files?q=${encodeURIComponent("name = 'cave.json' and trashed = false")}&fields=files(id,ownedByMe,owners(displayName,emailAddress))&pageSize=100`);
     return r.files || [];
   },
-  /** Ce que l'appli demandait au script, pour une cave Drive : la synchro et l'état de la cave. Claude viendra avec le relais. */
+  /** Ce que l'appli demandait au script, pour une cave Drive : la synchro et l'état de la cave dans Drive ; Claude et
+      ses crédits par le relais. */
   async call(action, payload = {}) {
+    if (action === 'label') return relais('etiquette', { data: payload.data, mime: payload.mime }, 120e3);
+    if (action === 'setCredits') { const r = await relais('reglages', payload); return { credits: creditsRelais(r.credits), coteMois: r.credits.coteMois }; }
+    if (action === 'conseil') return driveConseil(payload.conseil);
+    if (action === 'suggest') return driveSuggest(payload);
     if (action !== 'sync' && action !== 'ping') throw Object.assign(new Error("Claude n'est pas encore disponible dans une cave Google Drive."), { code: 'drive' });
     const { meta, cave, merged } = action === 'sync' ? await Drive.sync(payload.db || {}) : await Drive.read();
     const r = {
       ok: true, version: SCRIPT_VERSION, nom: cave.nom || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true,
-      label: false, routineOn: false, routineVu: '', credits: null, webUrl: '',
+      label: !!GOOGLE.relais, routineOn: false, routineVu: '', credits: null, webUrl: '',
       driveUrl: cave.dossier ? `https://drive.google.com/drive/folders/${cave.dossier}` : '', folderId: cave.dossier || '', photosId: cave.dossierPhotos || '',
       driveOwner: (meta.owners && meta.owners[0] && (meta.owners[0].displayName || meta.owners[0].emailAddress)) || '',
     };
     if (merged) r.db = merged;
+    // Ce qui reste des crédits Claude de la cave (sans le relais, ou s'il ne répond pas, la carte reste masquée).
+    if (GOOGLE.relais) {
+      try { const e = await relais('etat', {}, 30e3); r.credits = creditsRelais(e.credits); r.coteMois = e.credits.coteMois; }
+      catch { /* sans crédits affichés */ }
+    }
     return r;
   },
 };
@@ -4848,6 +4874,205 @@ async function pullPhotosDrive() {
     } catch (e) { if (e.status === 404 || e.status === 403) photoMissing.add(fid); }
   }
   return changed || todo.length > batch.length;
+}
+
+/* ---------- Claude dans une cave Drive : par le relais de l'appli ----------
+   Le relais garde la clé Claude et compte les crédits de la cave ; l'appli lui envoie le jeton Google de la personne,
+   qui prouve qu'elle fait partie de la cave. Ce que la routine de nuit fait pour une cave à script, l'appareil le fait
+   ici lui-même, aussitôt : il lit les étiquettes et revoit les fiches qu'il a lui-même demandées (jamais deux appareils
+   pour la même fiche, donc jamais deux paiements), et l'appareil du propriétaire cherche la valeur du jour, en gardant
+   au moins la moitié des crédits du mois pour le reste. */
+const relaisOn = () => isDrive() && !!GOOGLE.relais;
+const plusTard = () => (relaisOn() ? 'dans un instant' : 'cette nuit');
+async function relais(action, p = {}, timeout = 150e3, again = true) {
+  if (!GOOGLE.relais) throw Object.assign(new Error("Claude n'est pas encore branché sur les caves Google Drive."), { code: 'drive' });
+  if (!Drive.token || Date.now() > Drive.until) await Drive.signIn();
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), timeout);
+  let r, j = {};
+  try {
+    r = await fetch(`${GOOGLE.relais.replace(/\/+$/, '')}/v1/${action}`, {
+      method: 'POST', headers: { Authorization: 'Bearer ' + Drive.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cave: S.fileId, ...p }), signal: ctrl.signal,
+    });
+    j = await r.json().catch(() => ({}));
+  } catch (e) {
+    throw new Error(e.name === 'AbortError' ? 'Claude met trop de temps à répondre.' : navigator.onLine ? 'Le relais de Claude ne répond pas.' : 'Pas de connexion internet.');
+  } finally { clearTimeout(timer); }
+  // Jeton expiré : on se reconnecte une fois, sans rien demander si c'est possible.
+  if (r.status === 401 && again) { Drive.token = ''; return relais(action, p, timeout, false); }
+  if (!r.ok || !j.ok) throw Object.assign(new Error(j.error || `Le relais de Claude a répondu une erreur (${r.status}).`), { code: j.code || '', status: r.status, auth: r.status === 401 });
+  if (j.credits) { S.credits = creditsRelais(j.credits); S.coteMois = j.credits.coteMois || S.coteMois; saveSettings(); }
+  return j;
+}
+/** Les crédits du relais, sous la forme qu'affiche la carte « Claude et crédits ». */
+const creditsRelais = c => ({ ...c, couts: { ...(c.couts || {}), label: (c.couts || {}).etiquette, suggest: (c.couts || {}).similaires } });
+
+/** Ce que la personne a indiqué pour une bouteille vue en magasin (comme le script). */
+function conseilConnu(b) {
+  const o = {};
+  ['domaine', 'cuvee', 'appellation'].forEach(k => { if (b[k]) o[k] = b[k]; });
+  if (b.couleur) o.couleur = b.couleur;
+  if (b.millesime) o.millesime = b.millesime;
+  if (b.prix != null) o.prixAffiche = b.prix + ' €';
+  return o;
+}
+/** Conseil : les photos restent sur l'appareil, le relais les transmet à Claude le temps de l'analyse. */
+async function driveConseil(c) {
+  const bouteilles = [];
+  for (const [i, b] of c.bouteilles.entries()) {
+    const rec = await Photos.get(scanKey(c.id, i)).catch(() => null);
+    if (!rec || !rec.blob) throw new Error("une photo n'est plus sur cet appareil");
+    bouteilles.push({ data: await blobToB64(rec.blob), mime: rec.blob.type || 'image/jpeg', connu: conseilConnu(b) });
+  }
+  try {
+    const r = await relais('conseil', { bouteilles, question: c.question || '' }, 180e3);
+    return { conseil: { ...c, statut: 'fait', mode: 'api', note: '', resultat: r.result, updatedAt: nowISO() } };
+  } catch (e) {
+    // Une panne ou une connexion coupée : nouvel essai à la prochaine synchro. Le reste est une réponse définitive.
+    if (!['quota', 'refus', 'incomplet', 'illisible', 'drive'].includes(e.code)) throw e;
+    return { conseil: { ...c, statut: 'echec', mode: 'api', note: e.message, updatedAt: nowISO() } };
+  }
+}
+
+/** Vins similaires : le vin, ses avis et les vins déjà en cave (pour ne pas les proposer), comme le script. */
+function suggestContexte(w) {
+  const st = stockMap(), vin = {};
+  ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'millesime', 'cepages', 'style'].forEach(k => { if (w[k] != null && w[k] !== '') vin[k] = w[k]; });
+  if (w.couleur) vin.couleur = colorOf(w.couleur).label;
+  const avis = db.avis.filter(a => a.vinId === w.id && (a.note || a.commentaire)).map(a => ({ qui: a.qui, note: a.note ? a.note + '/5' : null, commentaire: str(a.commentaire).slice(0, 300) }));
+  db.moves.filter(m => m.vinId === w.id && m.type === 'sortie' && (m.note || m.commentaire) && !db.avis.some(a => a.mvId === m.id))
+    .forEach(m => avis.push({ qui: m.par || '?', note: m.note ? m.note + '/5' : null, commentaire: str(m.commentaire).slice(0, 300) }));
+  const dejaEnCave = db.wines.filter(x => x.id !== w.id && st.get(x.id) > 0 && (x.domaine || x.appellation)).slice(0, 80)
+    .map(x => [x.appellation, x.domaine, x.cuvee, x.couleur ? colorOf(x.couleur).label : ''].filter(Boolean).join(' · '));
+  return { vin, avis, dejaEnCave };
+}
+async function driveSuggest({ vinId, force }) {
+  const w = db.wines.find(x => x.id === vinId);
+  if (!w) throw new Error('Ce vin est introuvable.');
+  if (!w.domaine && !w.appellation) throw new Error("Indique d'abord le domaine ou l'appellation de ce vin.");
+  const old = db.suggestions.find(x => x.vinId === vinId);
+  const next = old && old.statut === 'fait' && old.resultat ? suggestNextDate(w, old) : 0;
+  if (next && !(force && S.role === 'proprio')) {
+    throw Object.assign(new Error(`Claude a déjà proposé des vins pour celui-ci le ${fmtDate(old.date)}. Tu pourras redemander à partir du ${fmtDate(new Date(next).toISOString())}, ou dès que sa fiche ou ses avis changent.`), { code: 'recent' });
+  }
+  const r = await relais('similaires', { contexte: suggestContexte(w) }, 150e3);
+  if (!r.result || !(r.result.vins || []).length) throw new Error('Claude n\'a proposé aucun vin. Réessaie plus tard.');
+  const now = nowISO();
+  return { suggestion: { id: 'sg-' + vinId, vinId, date: now, par: S.device, statut: 'fait', mode: 'api', note: '', resultat: r.result, updatedAt: now } };
+}
+
+/* ---------- Lectures et fiches à revoir, valeur du jour : faites par l'appareil ---------- */
+// Les champs que Claude remplit sur une fiche (comme FILL_FIELDS dans le script) ; style et accords ne sont jamais « à vérifier ».
+const CLAUDE_FILL = ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'couleur', 'millesime', 'cepages', 'format', 'gardeDe', 'gardeA', 'style', 'accords'];
+function queueClaude(ids) {
+  if (!relaisOn() || !ids.length) return;
+  S.aLire = [...new Set([...(S.aLire || []), ...ids])];
+  saveSettings();
+}
+function unqueueClaude(id) { S.aLire = (S.aLire || []).filter(x => x !== id); saveSettings(); }
+/** Pour une fiche à revoir : ce que la personne a saisi (connu, elle a le dernier mot) et ce que Claude avait estimé. */
+function ficheConnue(w) {
+  const mine = claudeKeys(w), connu = {}, precedent = {};
+  CLAUDE_FILL.forEach(k => { if (w[k] != null && w[k] !== '') (mine.includes(k) ? precedent : connu)[k] = w[k]; });
+  if (w.alerte === 'passe') (mine.includes('alerte') ? precedent : connu).peutEtrePasse = true;
+  return { connu, precedent };
+}
+/** Applique une lecture de Claude à une fiche, avec les règles du script : la personne a toujours le dernier mot. */
+function applyClaudeResult(w, r, review) {
+  w.updatedAt = nowISO();
+  if (!r.estEtiquette && !review) { Object.assign(w, { doublonType: '', lecture: 'echec', lectureNote: r.remarque || "L'étiquette n'a pas pu être lue." }); return; }
+  const mine = claudeKeys(w), guessed = [], lus = r.champsLus || [];
+  const take = k => { if (!mine.includes(k)) mine.push(k); };
+  for (const k of CLAUDE_FILL) {
+    const v = r[k], empty = w[k] == null || w[k] === '';
+    if (v == null || v === '') continue;
+    if (!empty && !mine.includes(k)) continue;  // saisi à la main
+    take(k);
+    if (!empty && String(w[k]) === String(v)) continue;
+    w[k] = v;
+    if (!lus.includes(k) && k !== 'style' && k !== 'accords') guessed.push(k);
+  }
+  if (!w.alerte || mine.includes('alerte')) {
+    w.alerte = r.peutEtrePasse ? 'passe' : '';
+    if (w.alerte) take('alerte'); else if (mine.includes('alerte')) mine.splice(mine.indexOf('alerte'), 1);
+  }
+  w.lecture = 'faite';
+  w.aVerifier = [...new Set([...guessList(w).filter(k => mine.includes(k)), ...guessed])].join(',');
+  w.claude = mine.join(',');
+  w.lectureNote = r.remarque || '';
+  if (!review) w.doublonType = '';
+}
+const moisDepuis = ym => { const m = /^(\d{4})-(\d{2})$/.exec(str(ym)); if (!m) return Infinity; const n = new Date(); return (n.getFullYear() - +m[1]) * 12 + (n.getMonth() + 1 - +m[2]); };
+/** Valeur à chercher : bouteilles en cave, vin identifié, valeur absente ou ancienne, jamais une valeur saisie à la main. */
+function coteDue(w, st) {
+  if (!(st.get(w.id) > 0) || !w.domaine || w.lecture === 'attente') return false;
+  const mine = claudeKeys(w).includes('cote'), has = w.cote != null && w.cote !== '';
+  if (has && !mine) return false;
+  if (!w.coteDate) return true;
+  const m = [3, 6, 12, 24].includes(S.coteMois) ? S.coteMois : 12;
+  return moisDepuis(w.coteDate) >= (has ? m : Math.min(m, 6));
+}
+function applyCote(w, r) {
+  const mine = claudeKeys(w);
+  if (w.cote != null && w.cote !== '' && !mine.includes('cote')) return;
+  let cote = r.trouve ? r.cote : null, bas = cote == null ? null : r.bas, haut = cote == null ? null : r.haut;
+  if (bas != null && haut != null && bas > haut) [bas, haut] = [haut, bas];
+  if (cote != null && bas != null && cote < bas) bas = cote;
+  if (cote != null && haut != null && cote > haut) haut = cote;
+  Object.assign(w, { cote, coteBas: bas, coteHaut: haut, coteDate: r.mois, coteNote: r.note || (cote == null ? 'Aucun prix trouvé en ligne.' : ''), updatedAt: nowISO() });
+  if (!mine.includes('cote')) mine.push('cote');
+  w.claude = mine.join(',');
+}
+let driveClaudeBusy = false, driveClaudeDit = '';
+async function driveClaude() {
+  if (!relaisOn() || driveClaudeBusy || syncing || !navigator.onLine) return;
+  driveClaudeBusy = true;
+  let changed = false, stop = '';
+  try {
+    for (const id of (S.aLire || []).slice(0, 8)) {
+      const w = db.wines.find(x => x.id === id);
+      if (!w || !['attente', 'revoir'].includes(w.lecture)) { unqueueClaude(id); continue; }
+      const review = w.lecture === 'revoir';
+      const rec = await Photos.get(w.id).catch(() => null);
+      const photo = rec && rec.blob ? { data: await blobToB64(rec.blob), mime: rec.blob.type || 'image/jpeg' } : null;
+      if (!review && !photo) { unqueueClaude(id); continue; }  // la photo n'est pas sur cet appareil
+      let r;
+      try { r = review ? await relais('revoir', { ...ficheConnue(w), ...(photo || {}) }) : await relais('etiquette', photo); }
+      catch (e) {
+        if (['refus', 'incomplet', 'illisible'].includes(e.code)) {
+          // Réponse définitive pour cette fiche : on la laisse à la personne.
+          Object.assign(w, { lecture: review ? (claudeKeys(w).length ? 'faite' : '') : 'echec', lectureNote: e.message, updatedAt: nowISO() });
+          unqueueClaude(id); changed = true; continue;
+        }
+        stop = e.message; break;  // crédits épuisés, panne, connexion : la fiche attend la prochaine synchro
+      }
+      applyClaudeResult(w, r.result, review);
+      unqueueClaude(id); changed = true;
+    }
+    // Valeur du jour : l'appareil du propriétaire, deux vins par synchro, tant qu'il reste plus de la moitié des crédits du mois.
+    const c = S.credits;
+    if (!stop && S.role === 'proprio' && c && c.max && c.mois > c.max.mois / 2) {
+      const st = stockMap();
+      const due = db.wines.filter(w => coteDue(w, st)).sort((a, b) => (a.coteDate || '').localeCompare(b.coteDate || '')).slice(0, 2);
+      for (const w of due) {
+        const vin = {};
+        ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'millesime', 'format'].forEach(k => { if (w[k] != null && w[k] !== '') vin[k] = w[k]; });
+        if (w.couleur) vin.couleur = colorOf(w.couleur).label;
+        const p = { vin, bouteilles: st.get(w.id) };
+        if (w.prix != null) p.prixAchat = w.prix;
+        if (w.coteDate) p.precedent = { cote: w.cote, bas: w.coteBas, haut: w.coteHaut, le: w.coteDate, note: w.coteNote };
+        let r;
+        try { r = await relais('cote', p, 180e3); } catch { break; }
+        applyCote(w, r.result); changed = true;
+        if (!(S.credits && S.credits.mois > S.credits.max.mois / 2)) break;
+      }
+    }
+  } finally {
+    driveClaudeBusy = false;
+    if (changed) { persist(); render(); scheduleSync(800); }
+    // Une seule fois par raison : pas de message à chaque synchro.
+    if (stop && driveClaudeDit !== stop) { driveClaudeDit = stop; toast(`Claude n'a pas encore pu lire toutes les fiches : ${stop}`); }
+  }
 }
 
 /** Rejoindre une cave Drive (lien d'invitation) : connexion, puis le sélecteur de Google limité au fichier de la cave,
@@ -5246,7 +5471,7 @@ async function sync({ interactive = false } = {}) {
     migrateNotes();
     // Un conseil pas encore envoyé (photos en route) n'existe que sur cet appareil.
     const conseils = db.conseils.filter(c => c.statut !== 'envoi');
-    const r = await API.call('sync', { db: { wines: db.wines, moves: db.moves, trash: db.trash, people: db.people, avis: db.avis, conseils, ...(isDrive() ? { photos: db.photos || [] } : {}) }, ...pageInfo() });
+    const r = await API.call('sync', { db: { wines: db.wines, moves: db.moves, trash: db.trash, people: db.people, avis: db.avis, conseils, ...(isDrive() ? { photos: db.photos || [], suggestions: db.suggestions || [] } : {}) }, ...pageInfo() });
     // Garde-fou : on a changé de cave pendant l'envoi ; la réponse appartient à l'autre cave.
     if (caveRef() !== forCave) return;
     mergeInto(r.db || {});
@@ -5267,7 +5492,7 @@ async function sync({ interactive = false } = {}) {
     syncing = false; Drive.gesture = false;
     render();
     if (syncAgain || more) { syncAgain = false; scheduleSync(more ? 1500 : 600); }
-    if (syncState.k === 'ok') { maybeAskWho(); processConseils(); watchSuggestions(); }
+    if (syncState.k === 'ok') { maybeAskWho(); processConseils(); watchSuggestions(); driveClaude(); }
   }
 }
 
@@ -5341,7 +5566,7 @@ async function acceptInvite() {
    identifiants sont propres à chaque vin et à chaque conseil.
    ========================================================= */
 const LS_CAVES = 'macave:caves';
-const CAVE_FIELDS = ['kind', 'apiUrl', 'secret', 'fileId', 'folderId', 'photosId', 'driveUrl', 'driveOwner', 'photoShare', 'proprio', 'role', 'proprioActif', 'credits', 'coteMois', 'device', 'lastSync', 'sheetUrl', 'webUrl', 'labelOn', 'routineOn', 'routineVu', 'serverVersion', 'photoDeletes', 'nom'];
+const CAVE_FIELDS = ['kind', 'apiUrl', 'secret', 'fileId', 'folderId', 'photosId', 'driveUrl', 'driveOwner', 'photoShare', 'aLire', 'proprio', 'role', 'proprioActif', 'credits', 'coteMois', 'device', 'lastSync', 'sheetUrl', 'webUrl', 'labelOn', 'routineOn', 'routineVu', 'serverVersion', 'photoDeletes', 'nom'];
 const caveKey = u => 'c' + [...String(u)].reduce((h, c) => (Math.imul(h, 33) + c.charCodeAt(0)) >>> 0, 5381).toString(36);
 let CAVES = lsGet(LS_CAVES, []);
 const saveCaves = () => lsSet(LS_CAVES, CAVES);
@@ -5557,11 +5782,11 @@ function wire() {
         case 'read-now': readNow(); break;
         case 'dup-add': addToDuplicate(); break;
         case 'verify': openWineForm(id); break;
-        case 'reread': setReading(id, { lecture: 'attente', lectureNote: '' }, "L'étiquette sera relue cette nuit."); break;
+        case 'reread': setReading(id, { lecture: 'attente', lectureNote: '' }, `L'étiquette sera relue ${plusTard()}.`); break;
         case 'not-dup': setReading(id, { doublonDe: '', doublonType: '' }, 'Noté : ce sont deux vins différents.'); break;
         // Alerte retirée par la personne : « non », que Claude ne remettra pas.
         case 'clear-alert': setReading(id, w => ({ alerte: 'non', claude: claudeKeys(w).filter(k => k !== 'alerte').join(',') }), 'Alerte retirée'); break;
-        case 'ask-claude': setReading(id, { lecture: 'revoir' }, 'Claude repassera sur cette fiche cette nuit.'); break;
+        case 'ask-claude': setReading(id, { lecture: 'revoir' }, `Claude repassera sur cette fiche ${plusTard()}.`); break;
         case 'cancel-review': setReading(id, w => ({ lecture: claudeKeys(w).length ? 'faite' : '' }), 'Demande annulée'); break;
         case 'merge': mergeTwin(id); break;
         case 'same-bottle': mergeTwin(id, true); break;

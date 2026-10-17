@@ -44,7 +44,7 @@ if (process.argv.includes('--essai')) {
   const sandbox = { window: {} };
   if (fs.existsSync(cfg)) require('vm').runInNewContext(fs.readFileSync(cfg, 'utf8'), sandbox);
   const g = sandbox.window.PROTO_CONFIG || {};
-  html = html.replace('</head>', `<script>window.MACAVE_GOOGLE = ${JSON.stringify({ clientId: g.clientId || '', apiKey: g.apiKey || '', appId: g.appId || '' })};</script>\n</head>`);
+  html = html.replace('</head>', `<script>window.MACAVE_GOOGLE = ${JSON.stringify({ clientId: g.clientId || '', apiKey: g.apiKey || '', appId: g.appId || '', relais: g.relais || '' })};</script>\n</head>`);
   console.log('caves Google Drive activées dans cet APK');
 }
 fs.writeFileSync(path.join(dir, 'index.html'), html);
