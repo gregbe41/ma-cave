@@ -27,6 +27,13 @@ Ce qu'il fait :
 | `cote` | 2 | valeur du jour, cherchée en ligne (trois recherches au plus) |
 | `portrait` | 2 | portrait de dégustateur d'une personne, d'après ses notes (« Mes stats ») |
 | `etat`, `reglages` | 0 | ce qui reste ; réglages du propriétaire |
+| `depense` | 0 | ce que Tastevin coûte vraiment chez Anthropic, en dollars, ce mois-ci et le mois d'avant : réservé à l'éditeur (`ADMINS`) |
+
+**Coût réel** : après chaque réponse de Claude, le relais calcule son prix d'après l'usage renvoyé (jetons envoyés, reçus,
+mis en cache, recherches web) et les prix d'Anthropic, et l'ajoute au total du mois (`depense:<mois>`), demande par
+demande. Une réponse inutilisable (illisible, incomplète) est comptée aussi : elle coûte chez Anthropic, sans bouchon.
+L'éditeur voit le total, le prix moyen d'un bouchon et combien de bouchons tiennent dans sa limite de dépense, dans
+l'appli : Réglages › Tastevin › Coût réel de Tastevin.
 
 Chaque demande est un `POST /v1/<demande>` avec l'en-tête `Authorization: Bearer <jeton Google>` et un corps JSON
 `{ "cave": "<id de cave.json>", … }`.
@@ -42,6 +49,8 @@ Chaque demande est un `POST /v1/<demande>` avec l'en-tête `Authorization: Beare
 | `ADMINS` | les adresses Google de l'éditeur : ses caves ont le plafond `ADMIN_JOUR` / `ADMIN_MOIS` (100 / 800 bouchons par défaut) |
 | `PLAFOND_JOUR`, `PLAFOND_MOIS` | le plafond des autres caves (20 / 80 bouchons par défaut) |
 | `PART_MEMBRE` | la part de chaque membre par mois, au départ (20 bouchons par défaut) |
+| `LIMITE_USD` | la limite de dépense mensuelle de la clé, réglée dans la console Anthropic (100 $ par défaut) : pour dire combien de bouchons elle permet |
+| `PRIX_ENTREE`, `PRIX_SORTIE`, `PRIX_CACHEECRIT5M`, `PRIX_CACHEECRIT1H`, `PRIX_CACHELU`, `PRIX_RECHERCHES` | les prix d'Anthropic, en dollars par million de jetons (pour 1 000 recherches web) ; par défaut ceux de Claude Opus 5.5 relus le 18 octobre 2026 : 4, 20, 5, 8, 0,2 et 10 |
 
 ## L'essayer sur un ordinateur
 
@@ -57,7 +66,7 @@ puis `npm install` dans `relais/` et `node relais/serveur.js` : le relais répon
 ## Le mettre en ligne : Cloudflare Workers (choisi)
 
 L'offre gratuite ne demande pas de carte bancaire. Au-delà de ses quotas (100 000 demandes par jour, 1 000 écritures
-KV par jour, soit 1 000 demandes à Tastevin), Cloudflare refuse les demandes : **il ne facture jamais rien**, même si le
+KV par jour, soit environ 500 demandes à Tastevin : chacune écrit les bouchons de la cave et le coût du mois), Cloudflare refuse les demandes : **il ne facture jamais rien**, même si le
 relais est inondé de fausses demandes. Prends un compte Cloudflare réservé au relais : ses quotas ne sont pas partagés
 avec un autre service.
 

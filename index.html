@@ -664,6 +664,20 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .cr-who li:first-child{border-top:0}
 .cr-form .bo-save{margin-top:20px;width:100%}
 .cr-form > .hint{margin:12px 2px 0}
+/* Coût réel de Tastevin (éditeur) */
+#depense-body .rg-h{margin-left:2px}
+#depense-body > .hint{margin:12px 2px 0}
+.dp-mois{background:var(--bg);box-shadow:inset 0 0 0 1px var(--line2);gap:8px}
+.dp-big{margin:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.dp-big b{font:800 2rem/1 var(--display)}
+.dp-big span{color:var(--muted);font-size:.9rem}
+.dp-line{margin:0;display:flex;justify-content:space-between;gap:10px;font-size:.92rem}
+.dp-line span{color:var(--muted)}
+.dp-mois .hint{margin:0}
+.dp-actions{background:var(--bg);box-shadow:inset 0 0 0 1px var(--line2)}
+.dp-actions li{min-height:56px}
+.dp-actions small{display:block;color:var(--muted);font-size:.8rem;font-weight:400}
+.dp-actions b{text-align:right;white-space:nowrap}
 /* « Ajouter des bouteilles » : le + de la barre propose le scanner, l'ajout par photos ou la saisie */
 .add-opts{display:grid;gap:10px}
 .add-opt{display:grid;gap:2px;text-align:left;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:none;color:var(--ink)}
@@ -1559,6 +1573,14 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
   <div class="sheet-wrap">
     <div class="sheet-head"><h2 id="person-title">Personne<span class="sub" id="person-sub"></span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body add-opts" id="person-acts"></div>
+  </div>
+</dialog>
+
+<!-- Coût réel de Tastevin, pour l'éditeur de l'appli -->
+<dialog class="sheet" id="dlg-depense" aria-labelledby="dp-title">
+  <div class="sheet-wrap">
+    <div class="sheet-head"><h2 id="dp-title">Coût réel de Tastevin<span class="sub">Ta clé Claude, chez Anthropic</span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body" id="depense-body"></div>
   </div>
 </dialog>
 
@@ -3398,6 +3420,39 @@ function renderBouchons() {
       <button class="btn btn-primary bo-save" type="submit">Enregistrer</button>
     </form>`;
 }
+/* ---------- Coût réel de Tastevin (éditeur) : ce que le relais a noté, en dollars, d'après les prix d'Anthropic ---------- */
+const ACTION_NOMS = { etiquette: 'Lire une étiquette', revoir: 'Revoir ou compléter une fiche', conseil: 'Conseil en magasin', similaires: 'Vins similaires', cote: 'Valeur du jour', portrait: 'Portrait « Mes stats »', lien: 'Conseil par lien', page: 'Lecture d’une page' };
+// Des montants souvent minuscules (une lecture coûte quelques millièmes de dollar) : assez de chiffres pour qu'ils se lisent.
+const dollars = x => {
+  const v = x || 0;
+  const t = v >= 1 ? v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : v >= 0.01 ? v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+    : v > 0 ? v.toLocaleString('fr-FR', { maximumSignificantDigits: 2 }) : '0';
+  return `${t} $`;
+};
+async function openDepense() {
+  const body = $('#depense-body');
+  body.innerHTML = '<p class="hint">Lecture du relais…</p>';
+  $('#dlg-depense').showModal();
+  let d;
+  try { d = (await relais('depense', {}, 30e3)).depense; }
+  catch (e) { body.innerHTML = `<p class="hint">${esc(e.message)}</p>`; return; }
+  const m = d.ceMois, avant = d.moisPrecedent, pct = d.limiteUsd ? Math.min(100, (m.usd / d.limiteUsd) * 100) : 0;
+  const mois = k => new Date(k + '-15').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  body.innerHTML = `<p class="bo-lead">Ce que Tastevin a vraiment coûté à ta clé Claude chez Anthropic, toutes caves confondues, calculé avec les prix d'Anthropic : ${d.prix.entree} $ par million de jetons envoyés, ${d.prix.sortie} $ par million reçus, ${d.prix.recherches} $ pour 1 000 recherches web.</p>
+    <h3 class="rg-h">${esc(mois(m.mois))}</h3>
+    <div class="rg-card rg-pad dp-mois">
+      <p class="dp-big"><b>${dollars(m.usd)}</b><span>sur ta limite de ${dollars(d.limiteUsd)}</span></p>
+      <span class="cr-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>
+      <p class="hint">${fmtNum(m.demandes)} ${plural(m.demandes, 'demande', 'demandes')} · ${fmtNum(m.bouchons)} ${plural(m.bouchons, 'bouchon', 'bouchons')}</p>
+      ${m.usdParBouchon != null ? `<p class="dp-line"><span>Un bouchon coûte en moyenne</span><b>${dollars(m.usdParBouchon)}</b></p>
+      <p class="dp-line"><span>Ta limite permet environ</span><b>${fmtNum(m.bouchonsPourLimite)} bouchons par mois</b></p>` : '<p class="hint">Pas encore de demande ce mois-ci.</p>'}
+    </div>
+    ${m.actions.length ? `<h3 class="rg-h">Par demande</h3><ul class="rg-card cr-who dp-actions">${m.actions.map(a => `<li><span>${esc(ACTION_NOMS[a.action] || a.action)}<small>${fmtNum(a.demandes)} ${plural(a.demandes, 'demande', 'demandes')}${a.echecs ? ` dont ${a.echecs} sans bouchon (échec)` : ''}</small></span><b>${dollars(a.usdParDemande)}<small>par demande</small></b></li>`).join('')}</ul>` : ''}
+    <h3 class="rg-h">${esc(mois(avant.mois))}</h3>
+    <p class="hint">${avant.demandes ? `${dollars(avant.usd)} pour ${fmtNum(avant.bouchons)} bouchons${avant.usdParBouchon != null ? `, soit ${dollars(avant.usdParBouchon)} par bouchon` : ''}.` : 'Rien de noté.'}</p>
+    <p class="hint">Une demande qui échoue après la réponse de Claude coûte quand même chez Anthropic, sans bouchon. Les prix et la limite se changent dans la configuration du relais (PRIX_…, LIMITE_USD), comme les plafonds de bouchons des caves.</p>`;
+}
 function openBouchons() {
   renderBouchons();
   if ($('#bouchons-body').innerHTML) $('#dlg-bouchons').showModal();
@@ -3608,6 +3663,8 @@ function renderTasteBox() {
   }
   if (!drive && S.routineOn) h += `<div class="rg-row"><span class="rg-txt"><b>Lecture des étiquettes</b><small>Chaque nuit, par la routine, ou tout de suite</small></span><button type="button" class="btn btn-sm" data-act="read-now">Lire maintenant</button></div>`;
   if (owner && !$('#credits-set').hidden) h += `<button type="button" class="rg-row rg-go" data-act="bouchons"><span class="rg-txt"><b>Réglages des bouchons</b><small>Limites, part de chacun, valeur du jour</small></span></button>`;
+  // L'éditeur de l'appli (ADMINS du relais) : ce que Tastevin coûte vraiment à sa clé Claude, toutes caves confondues.
+  if (drive && relaisOn() && S.editeur) h += `<button type="button" class="rg-row rg-go" data-act="depense"><span class="rg-txt"><b>Coût réel de Tastevin</b><small>Ce que dépense ta clé Claude chez Anthropic, toutes caves</small></span></button>`;
   $('#taste-box').innerHTML = h;
 }
 /** Vins en cave sans style ni accords, ou sans profil (script v19, cave Google Drive), que Claude peut compléter (pas déjà en attente de lecture). */
@@ -5696,7 +5753,7 @@ const Drive = {
     if (merged) r.db = merged;
     // Ce qui reste des crédits Claude de la cave (sans le relais, ou s'il ne répond pas, la carte reste masquée).
     if (GOOGLE.relais) {
-      try { const e = await relais('etat', {}, 30e3); r.credits = creditsRelais(e.credits); r.coteMois = e.credits.coteMois; }
+      try { const e = await relais('etat', {}, 30e3); r.credits = creditsRelais(e.credits); r.coteMois = e.credits.coteMois; S.editeur = !!e.editeur; }
       catch { /* sans crédits affichés */ }
     }
     return r;
@@ -6950,6 +7007,7 @@ function wire() {
         // Cave Google Drive : « Inviter quelqu'un » déplie l'adresse à saisir.
         case 'invite-open': { const box = $('#drive-invite-box'), open = box.hidden; box.hidden = !open; act.setAttribute('aria-expanded', String(open)); if (open) $('#drive-invite').focus(); break; }
         case 'bouchons': openBouchons(); break;
+        case 'depense': openDepense(); break;
         case 'google-in': connectGoogle(); break;
         case 'google-switch': connectGoogle(true); break;
         case 'google-out': disconnectGoogle(); break;

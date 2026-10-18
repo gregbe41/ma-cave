@@ -19,6 +19,9 @@ const DRIVE_FILE = 'https://www.googleapis.com/auth/drive.file';
 // Le portrait est une demande « pour moi » (comme Conseil), et non pour la cave : sa clé à part permettra de le faire payer
 // un jour par la personne plutôt que par la cave.
 export const COUTS = { etiquette: 2, conseil: 2, similaires: 1, revoir: 1, cote: 2, portrait: 2 };
+// Prix de Claude Opus 5.5 chez Anthropic, en dollars (page « Pricing » relue le 18 octobre 2026) : par million de jetons,
+// et pour 1 000 recherches web. Réglables par la configuration (PRIX_ENTREE, PRIX_SORTIE…) s'ils changent.
+export const PRIX = { entree: 4, cacheEcrit5m: 5, cacheEcrit1h: 8, cacheLu: 0.2, sortie: 20, recherches: 10 };
 const MAX_IMAGE = 7e6;       // caractères base64 par photo (comme le script)
 const MAX_CORPS = 40e6;      // une demande Conseil peut porter plusieurs photos
 const MAX_BOUTEILLES = 10;
@@ -47,6 +50,10 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
     ? { jour: entier(env.ADMIN_JOUR, 100), mois: entier(env.ADMIN_MOIS, 800) }
     : { jour: entier(env.PLAFOND_JOUR, 20), mois: entier(env.PLAFOND_MOIS, 80) });
   const partDefaut = entier(env.PART_MEMBRE, 20);
+  const nombre = (v, d) => { const n = parseFloat(v); return Number.isFinite(n) && n >= 0 ? n : d; };
+  const prix = Object.fromEntries(Object.entries(PRIX).map(([k, v]) => [k, nombre(env['PRIX_' + k.toUpperCase()], v)]));
+  // La limite de dépense de la clé chez Anthropic (réglée dans sa console) : pour dire combien de bouchons elle permet.
+  const limiteUsd = nombre(env.LIMITE_USD, 100);
   const claude = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY || 'absente', baseURL: env.ANTHROPIC_BASE_URL || undefined, fetch: f, maxRetries: 1 });
   const verifies = new Map();  // jeton + cave → qui, pour quelques minutes
 
@@ -116,12 +123,37 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
     if (!qui.proprio && L.part && (e.qui[qui.email] || 0) + cout > L.part) throw erreur(429, `Tu as utilisé ta part de bouchons pour ce mois (${L.part}). Le propriétaire de la cave peut l'augmenter.`, 'quota');
   }
   /** Décompte une demande réussie (une demande qui échoue ne coûte rien) ; relit l'état juste avant d'écrire. */
-  async function debiter(cave, qui, cout) {
+  async function debiter(cave, qui, cout, suivi) {
+    if (suivi) suivi.bouchons = cout;
     const e = await etatCave(cave);
     e.nJour = round1((e.nJour || 0) + cout); e.nMois = round1((e.nMois || 0) + cout);
     e.qui[qui.email] = round1((e.qui[qui.email] || 0) + cout);
     await store.put('cave:' + cave, e);
     return statut(e, qui);
+  }
+
+  /* ---------- Coût réel chez Anthropic, par mois, toutes caves confondues ---------- */
+  // Une demande à Claude qui échoue après sa réponse (illisible, incomplète) coûte quand même : elle est notée, sans bouchon.
+  async function noterDepense(action, suivi) {
+    const mois = aujourdhui(maintenant()).mois, cle = 'depense:' + mois;
+    const d = (await store.get(cle)) || { mois, usd: 0, bouchons: 0, demandes: 0, actions: {} };
+    const a = d.actions[action] || (d.actions[action] = { demandes: 0, echecs: 0, usd: 0, bouchons: 0 });
+    a.demandes++; a.usd += suivi.usd; a.bouchons += suivi.bouchons || 0; if (!suivi.bouchons) a.echecs++;
+    d.demandes++; d.usd += suivi.usd; d.bouchons += suivi.bouchons || 0;
+    await store.put(cle, d);
+  }
+  const moisAvant = mois => { const [y, m] = mois.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; };
+  // Au millionième de dollar : une demande coûte souvent moins d'un centime.
+  const arrondi = x => Math.round(x * 1e6) / 1e6;
+  function resume(d) {
+    const parBouchon = d.bouchons ? d.usd / d.bouchons : null;
+    return {
+      mois: d.mois, usd: arrondi(d.usd), bouchons: d.bouchons, demandes: d.demandes,
+      usdParBouchon: parBouchon != null ? arrondi(parBouchon) : null,
+      bouchonsPourLimite: parBouchon ? Math.floor(limiteUsd / parBouchon) : null,
+      actions: Object.entries(d.actions).map(([k, a]) => ({ action: k, demandes: a.demandes, echecs: a.echecs, usd: arrondi(a.usd), bouchons: a.bouchons, usdParDemande: arrondi(a.usd / a.demandes) }))
+        .sort((x, y) => y.usd - x.usd),
+    };
   }
 
   /* ---------- Claude ---------- */
@@ -132,7 +164,15 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
     if (d.length > MAX_IMAGE) throw erreur(413, 'Photo trop lourde pour être lue.');
     return { type: 'image', source: { type: 'base64', media_type: R.IMAGE_TYPES.includes(mime) ? mime : 'image/jpeg', data: d } };
   };
-  async function demander({ system, schema, content, maxTokens, outils = null, effort = 'low' }) {
+  /** Ce qu'une réponse de Claude coûte chez Anthropic, en dollars, d'après son usage (champs absents : zéro). */
+  function prixReponse(u = {}) {
+    const c = u.cache_creation || {}, ecrit1h = c.ephemeral_1h_input_tokens || 0;
+    const ecrit5m = c.ephemeral_5m_input_tokens != null ? c.ephemeral_5m_input_tokens : Math.max(0, (u.cache_creation_input_tokens || 0) - ecrit1h);
+    const jetons = (u.input_tokens || 0) * prix.entree + ecrit5m * prix.cacheEcrit5m + ecrit1h * prix.cacheEcrit1h
+      + (u.cache_read_input_tokens || 0) * prix.cacheLu + (u.output_tokens || 0) * prix.sortie;
+    return jetons / 1e6 + ((u.server_tool_use && u.server_tool_use.web_search_requests) || 0) * prix.recherches / 1000;
+  }
+  async function demander({ system, schema, content, maxTokens, outils = null, effort = 'low', suivi = null }) {
     const corps = {
       model: R.MODEL, max_tokens: maxTokens, system,
       betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
@@ -143,10 +183,12 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
     let r;
     try {
       r = await claude.beta.messages.create(corps);
+      if (suivi) { suivi.usd += prixReponse(r.usage); suivi.appels++; }
       // Recherche web longue : Claude rend la main en cours de route, on le relance (trois fois au plus).
       for (let i = 0; i < 3 && r.stop_reason === 'pause_turn'; i++) {
         corps.messages = [...corps.messages, { role: 'assistant', content: r.content }];
         r = await claude.beta.messages.create(corps);
+        if (suivi) { suivi.usd += prixReponse(r.usage); suivi.appels++; }
       }
     } catch (e) {
       if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) throw erreur(502, 'La clé Claude du relais est refusée.', 'cle');
@@ -168,7 +210,15 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
 
   /* ---------- Actions ---------- */
   const ACTIONS = {
-    async etat({ cave, qui }) { return { credits: statut(await etatCave(cave), qui), role: qui.proprio ? 'proprio' : 'membre' }; },
+    async etat({ cave, qui }) { return { credits: statut(await etatCave(cave), qui), role: qui.proprio ? 'proprio' : 'membre', editeur: admins.includes(qui.email) }; },
+
+    /** Ce que Tastevin coûte vraiment chez Anthropic, ce mois-ci et le mois d'avant : réservé à l'éditeur (ADMINS). */
+    async depense({ qui }) {
+      if (!admins.includes(qui.email)) throw erreur(403, "Réservé à l'éditeur de l'appli.", 'editeur');
+      const mois = aujourdhui(maintenant()).mois, avant = moisAvant(mois), vide = m => ({ mois: m, usd: 0, bouchons: 0, demandes: 0, actions: {} });
+      const ce = (await store.get('depense:' + mois)) || vide(mois), prec = (await store.get('depense:' + avant)) || vide(avant);
+      return { depense: { limiteUsd, prix, ceMois: resume(ce), moisPrecedent: resume(prec) } };
+    },
 
     async reglages({ cave, qui, p }) {
       if (!qui.proprio) throw erreur(403, 'Seul le propriétaire de la cave règle ses bouchons.', 'proprio');
@@ -182,26 +232,26 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       return { credits: statut(e, qui) };
     },
 
-    async etiquette({ cave, qui, p }) {
+    async etiquette({ cave, qui, p, suivi }) {
       const img = image(p.data, p.mime);
       verifierCredits(await etatCave(cave), qui, COUTS.etiquette);
-      const { json } = await demander({ system: R.LABEL_PROMPT, schema: R.LABEL_SCHEMA, maxTokens: R.MAX_TOKENS,
+      const { json } = await demander({ suivi, system: R.LABEL_PROMPT, schema: R.LABEL_SCHEMA, maxTokens: R.MAX_TOKENS,
         content: [img, { type: 'text', text: `Année en cours : ${annee()}. Lis cette étiquette.` }] });
-      return { result: R.tidyLabel(json), credits: await debiter(cave, qui, COUTS.etiquette) };
+      return { result: R.tidyLabel(json), credits: await debiter(cave, qui, COUTS.etiquette, suivi) };
     },
 
     /** Fiche à revoir ou à compléter (style, accords, fenêtre de garde), avec ou sans photo. */
-    async revoir({ cave, qui, p }) {
+    async revoir({ cave, qui, p, suivi }) {
       const content = [];
       if (p.data) content.push(image(p.data, p.mime));
       const fiche = { connu: p.connu && typeof p.connu === 'object' ? p.connu : {}, precedent: p.precedent && typeof p.precedent === 'object' ? p.precedent : {} };
       content.push({ type: 'text', text: `Année en cours : ${annee()}. Fiche à revoir : ${JSON.stringify(fiche).slice(0, 4000)}` });
       verifierCredits(await etatCave(cave), qui, COUTS.revoir);
-      const { json } = await demander({ system: `${R.LABEL_PROMPT}\n\n${R.REVOIR_PROMPT}`, schema: R.LABEL_SCHEMA, maxTokens: R.MAX_TOKENS, content });
-      return { result: R.tidyLabel(json), credits: await debiter(cave, qui, COUTS.revoir) };
+      const { json } = await demander({ suivi, system: `${R.LABEL_PROMPT}\n\n${R.REVOIR_PROMPT}`, schema: R.LABEL_SCHEMA, maxTokens: R.MAX_TOKENS, content });
+      return { result: R.tidyLabel(json), credits: await debiter(cave, qui, COUTS.revoir, suivi) };
     },
 
-    async conseil({ cave, qui, p }) {
+    async conseil({ cave, qui, p, suivi }) {
       const b = Array.isArray(p.bouteilles) ? p.bouteilles.slice(0, MAX_BOUTEILLES) : [];
       if (!b.length) throw erreur(400, 'Aucune photo à analyser.');
       const content = [];
@@ -214,35 +264,35 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       content.push({ type: 'text', text: `Année en cours : ${annee()}.${question ? ' Question de la personne : ' + question : ''}` });
       const cout = b.length * COUTS.conseil;
       verifierCredits(await etatCave(cave), qui, cout);
-      const { json } = await demander({ system: R.CONSEIL_PROMPT, schema: R.CONSEIL_SCHEMA, maxTokens: 2000 + 1500 * b.length, content });
-      return { result: R.tidyConseil(json, b.length), credits: await debiter(cave, qui, cout) };
+      const { json } = await demander({ suivi, system: R.CONSEIL_PROMPT, schema: R.CONSEIL_SCHEMA, maxTokens: 2000 + 1500 * b.length, content });
+      return { result: R.tidyConseil(json, b.length), credits: await debiter(cave, qui, cout, suivi) };
     },
 
     /** Vins similaires : le vin, ses avis et les vins déjà en cave, préparés par l'appli. */
-    async similaires({ cave, qui, p }) {
+    async similaires({ cave, qui, p, suivi }) {
       const c = p.contexte && typeof p.contexte === 'object' ? p.contexte : {};
       const ctx = { vin: c.vin && typeof c.vin === 'object' ? c.vin : {}, avis: Array.isArray(c.avis) ? c.avis.slice(0, 40) : [], dejaEnCave: Array.isArray(c.dejaEnCave) ? c.dejaEnCave.slice(0, 80).map(x => texte(x, 200)) : [] };
       verifierCredits(await etatCave(cave), qui, COUTS.similaires);
-      const { json } = await demander({ system: R.SUGG_PROMPT, schema: R.SUGG_SCHEMA, maxTokens: 2500,
+      const { json } = await demander({ suivi, system: R.SUGG_PROMPT, schema: R.SUGG_SCHEMA, maxTokens: 2500,
         content: `Année en cours : ${annee()}.\n${JSON.stringify(ctx).slice(0, 20000)}` });
-      return { result: R.tidySuggest(json), credits: await debiter(cave, qui, COUTS.similaires) };
+      return { result: R.tidySuggest(json), credits: await debiter(cave, qui, COUTS.similaires, suivi) };
     },
 
     /** Portrait de dégustateur (« Mes stats ») : les vins notés par la personne et ce que l'appli a calculé de ses goûts. */
-    async portrait({ cave, qui, p }) {
+    async portrait({ cave, qui, p, suivi }) {
       const c = p.contexte && typeof p.contexte === 'object' ? p.contexte : {};
       const vins = Array.isArray(c.vins) ? c.vins.slice(0, 60).filter(v => v && typeof v === 'object') : [];
       if (!vins.length) throw erreur(400, 'Aucun vin noté.');
       const ctx = { notes: entier(c.notes, vins.length), bouteilles: entier(c.bouteilles, 0), vins, palais: Array.isArray(c.palais) ? c.palais.slice(0, 5) : [],
         dejaEnCave: Array.isArray(c.dejaEnCave) ? c.dejaEnCave.slice(0, 60).map(x => texte(x, 200)) : [] };
       verifierCredits(await etatCave(cave), qui, COUTS.portrait);
-      const { json } = await demander({ system: R.PORTRAIT_PROMPT, schema: R.PORTRAIT_SCHEMA, maxTokens: 2500,
+      const { json } = await demander({ suivi, system: R.PORTRAIT_PROMPT, schema: R.PORTRAIT_SCHEMA, maxTokens: 2500,
         content: `Année en cours : ${annee()}.\n${JSON.stringify(ctx).slice(0, 24000)}` });
-      return { result: R.tidyPortrait(json), credits: await debiter(cave, qui, COUTS.portrait) };
+      return { result: R.tidyPortrait(json), credits: await debiter(cave, qui, COUTS.portrait, suivi) };
     },
 
     /** Valeur du jour : Claude cherche en ligne le prix actuel d'une bouteille. */
-    async cote({ cave, qui, p }) {
+    async cote({ cave, qui, p, suivi }) {
       const vin = p.vin && typeof p.vin === 'object' ? p.vin : {};
       if (!vin.domaine) throw erreur(400, 'Vin non identifié.');
       const demande = { vin, bouteilles: entier(p.bouteilles, 1) };
@@ -250,14 +300,14 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       if (p.precedent && typeof p.precedent === 'object') demande.precedent = p.precedent;
       verifierCredits(await etatCave(cave), qui, COUTS.cote);
       const { json } = await demander({
-        system: `${R.COTE_PROMPT}\n\nRéponds pour finir par un seul objet JSON, sans texte autour, conforme à ce schéma : ${JSON.stringify(R.COTE_SCHEMA)}`,
+        suivi, system: `${R.COTE_PROMPT}\n\nRéponds pour finir par un seul objet JSON, sans texte autour, conforme à ce schéma : ${JSON.stringify(R.COTE_SCHEMA)}`,
         maxTokens: 6000, outils: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }],
         content: `Mois en cours : ${aujourdhui(maintenant()).mois}.\n${JSON.stringify(demande).slice(0, 4000)}`,
       });
       const euro = v => (typeof v === 'number' && Number.isFinite(v) && v > 0 && v < 1e6 ? Math.round(v) : null);
       const trouve = json.trouve === true && euro(json.cote) != null;
       const result = { trouve, cote: trouve ? euro(json.cote) : null, bas: trouve ? euro(json.bas) : null, haut: trouve ? euro(json.haut) : null, note: texte(json.note, 300).trim(), mois: aujourdhui(maintenant()).mois };
-      return { result, credits: await debiter(cave, qui, COUTS.cote) };
+      return { result, credits: await debiter(cave, qui, COUTS.cote, suivi) };
     },
   };
 
@@ -276,6 +326,7 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       const action = new URL(request.url).pathname.replace(/^\/+|\/+$/g, '').replace(/^v1\//, '');
       if (request.method === 'GET' && !action) return repondre(request, 200, { ok: true, app: 'ma-cave-relais' });
       if (request.method !== 'POST' || !Object.hasOwn(ACTIONS, action)) return repondre(request, 404, { ok: false, error: 'Action inconnue.' });
+      const suivi = { usd: 0, appels: 0, bouchons: 0 };
       try {
         if (!env.ANTHROPIC_API_KEY) throw erreur(503, "Le relais n'a pas de clé Claude.", 'cle');
         const taille = +(request.headers.get('Content-Length') || 0);
@@ -286,8 +337,12 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
         try { p = JSON.parse(brut || '{}'); } catch { throw erreur(400, 'Demande illisible.'); }
         const jeton = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
         const qui = await verifier(jeton, p.cave);
-        const r = await ACTIONS[action]({ cave: p.cave, qui, p });
-        return repondre(request, 200, { ok: true, ...r });
+        try {
+          const r = await ACTIONS[action]({ cave: p.cave, qui, p, suivi });
+          return repondre(request, 200, { ok: true, ...r });
+        } finally {
+          if (suivi.appels) await noterDepense(action, suivi).catch(e => console.error(e));
+        }
       } catch (e) {
         if (!e.status) console.error(e);
         return repondre(request, e.status || 500, { ok: false, error: e.status ? e.message : 'Erreur du relais.', code: e.code || '' });
