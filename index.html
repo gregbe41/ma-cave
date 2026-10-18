@@ -446,6 +446,21 @@ legend{padding:0;margin:0 0 8px;font-size:.88rem;font-weight:500;color:var(--mut
   background:var(--off) radial-gradient(circle,#fff 0 12px,transparent 12.5px) no-repeat 3px 50%/26px 26px;transition:background-color .15s,background-position .15s}
 .sw:checked{background-color:var(--accent);background-position:calc(100% - 3px) 50%}
 .rg-switch{cursor:pointer}
+/* Compte Google : en tête des Réglages et de « Mes caves » ; le bouton suit la charte de Google (fond clair, logo G). */
+.rg-compte{margin-bottom:12px}
+.rg-compte-row{border-top:0;min-height:64px}
+.rg-out{color:var(--late-fg);font-weight:600}
+.rg-compte .rg-pad{gap:10px}
+.rg-compte .rg-label{margin:0}
+.rg-compte .hint{margin:0}
+.gbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid #747775;background:#FFFFFF;color:#1F1F1F;font:600 .95rem var(--sans);white-space:nowrap}
+.gbtn svg{width:20px;height:20px;flex:none}
+.rg-compte .gbtn{justify-self:start}
+.caves-compte{display:flex;align-items:center;gap:12px;margin:2px 0 6px;padding:12px 14px;border-radius:16px;background:var(--soft)}
+.caves-compte .rg-txt b{overflow-wrap:anywhere}
+.caves-compte .gbtn{flex:none}
+.caves-compte .pp-av{background:var(--surface)}
+@media (max-width:420px){.caves-compte:has(.gbtn){flex-wrap:wrap}}
 .status{display:flex;align-items:center;gap:10px;margin:0 0 4px;font-weight:500}
 .note{padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--warn) 13%,transparent);margin:0 0 14px;font-size:.92rem;line-height:1.5}
 .rg-cave .note{margin:0 18px 14px}
@@ -1015,6 +1030,8 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 
     <section class="view" id="v-reglages" hidden>
       <div class="rg">
+        <!-- Le compte Google de l'appareil : celui qui ouvre les caves Google Drive -->
+        <section class="rg-card rg-compte" id="compte-set" aria-label="Compte Google" hidden><div id="compte-box"></div></section>
         <!-- La cave ouverte : où elle est rangée, la synchro, mes photos -->
         <section class="rg-card rg-cave" aria-labelledby="rg-cave-name">
           <div class="rg-cave-head">
@@ -1400,6 +1417,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
   <div class="sheet-wrap">
     <div class="sheet-head"><h2 id="caves-title">Mes caves</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body">
+      <div class="caves-compte" id="caves-compte" hidden></div>
       <div class="caves-list" id="caves-list"></div>
       <p class="caves-find" id="caves-find" hidden><button type="button" class="link" data-act="caves-find">Retrouver mes caves Google Drive</button> <span class="hint">celles créées ou rejointes sur un autre appareil</span></p>
       <div class="caves-add" id="caves-new" hidden>
@@ -1678,7 +1696,7 @@ function toast(msg) {
    Données locales
    ========================================================= */
 let db = { wines: [], moves: [], trash: [], people: [], avis: [], conseils: [], suggestions: [] };
-const S_DEFAULTS = { apiUrl: '', secret: '', device: '', sheetUrl: '', webUrl: '', labelOn: false, lastSync: '', photoDeletes: [] };
+const S_DEFAULTS = { apiUrl: '', secret: '', device: '', sheetUrl: '', webUrl: '', labelOn: false, lastSync: '', photoDeletes: [], compte: '' };
 let S = { ...S_DEFAULTS, photoDeletes: [] };
 let STOCK = new Map(), BY_OWNER = new Map();
 const photoIds = new Set();
@@ -2763,6 +2781,7 @@ function renderReglages() {
   // Scanner d'étiquette : seulement dans l'appli Android qui l'embarque.
   $('#scanner-set').hidden = !Scanner.available;
   $$('[data-scanner-set]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.scannerSet === 'on') === (lsGet('macave:scanner', true) !== false))));
+  renderCompte();
   renderSyncBox();
   renderCredits();
   renderTasteBox();
@@ -3020,7 +3039,7 @@ function renderSyncBox() {
     return;
   }
   if (isDrive()) {
-    const st = k === 'auth' ? 'Connexion à Google à refaire : touche le bouton de synchro.'
+    const st = k === 'auth' ? esc(msg || 'Connexion à Google à refaire : touche le bouton de synchro.')
       : k === 'error' ? `Échec de la dernière synchro : ${esc(msg)}`
       : k === 'busy' ? 'Synchronisation en cours…'
       : k === 'offline' ? 'Hors ligne : tes modifications sont gardées sur cet appareil.'
@@ -4919,7 +4938,28 @@ const DRIVE_API = 'https://www.googleapis.com/drive/v3', DRIVE_UP = 'https://www
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file', DRIVE_FOLDER = 'application/vnd.google-apps.folder';
 const CAVE_FORMAT = 1;
 const isDrive = () => S.kind === 'drive';
-const driveAuthErr = () => Object.assign(new Error('Connexion à Google nécessaire : touche « Synchroniser maintenant ».'), { auth: true, code: 'google' });
+const driveAuthErr = () => Object.assign(new Error("Connexion à Google à refaire : touche « Se reconnecter à Google », en haut de l'écran."), { auth: true, code: 'google' });
+const outErr = () => Object.assign(new Error('Tu es déconnecté de Google : reconnecte-toi dans Réglages › Compte Google.'), { auth: true, code: 'compte' });
+/* ---------- Compte Google ----------
+   Un compte à la fois sur l'appareil : il ouvre toutes les caves Google Drive qu'il a créées ou rejointes. Chaque cave
+   retient le compte qui l'a ouverte (S.compte) : avec un autre compte, elle ne se synchronise pas, et l'appli le dit.
+   Se déconnecter ne retire rien : les caves restent sur l'appareil, liées à leur compte. Retirer une cave de « Mes caves »
+   la dissocie du compte : « Retrouver mes caves » ne la ramène plus, seul un lien d'invitation le fait. */
+const Compte = {
+  email: () => lsGet('macave:google-me', ''),
+  nom: () => lsGet('macave:google-nom', ''),
+  set(email, nom) { lsSet('macave:google-me', email || ''); lsSet('macave:google-nom', nom || ''); try { localStorage.removeItem('macave:google-out'); } catch {} },
+  /** Déconnecté par la personne : l'appli ne se reconnecte plus d'elle-même, il faut le bouton. */
+  out: () => !Compte.email() && lsGet('macave:google-out', false),
+  same: (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase(),
+  /** Caves retirées de « Mes caves » sous ce compte : « Retrouver mes caves » ne les ramène pas. */
+  dissocies: email => lsGet('macave:dissocies', {})[String(email || '').toLowerCase()] || [],
+  dissocier(email, fileId, oui = true) {
+    const all = lsGet('macave:dissocies', {}), k = String(email || '').toLowerCase(), l = new Set(all[k] || []);
+    if (oui) l.add(fileId); else l.delete(fileId);
+    all[k] = [...l]; lsSet('macave:dissocies', all);
+  },
+};
 function driveMsg(status, text) {
   if (status === 404) return 'La cave est introuvable dans Google Drive : elle a été supprimée, ou son partage retiré.';
   if (status === 403) return /storageQuota|quotaExceeded/.test(text) ? 'Ton Google Drive est plein.' : "Google Drive refuse l'accès à la cave.";
@@ -4930,29 +4970,50 @@ const Drive = {
   native: () => !!(Native.on && Native.P.GoogleDrive),
   /** Seulement dans les versions qui embarquent la configuration Google (l'APK d'essai, pour l'instant). */
   available: () => !!window.MACAVE_GOOGLE && (Drive.native() || !!GOOGLE.clientId),
-  async signIn(interactive = Drive.gesture) {
+  /** as : l'adresse du compte qu'on vient de choisir ; choose : sur le web, laisser choisir le compte dans la fenêtre. */
+  async signIn(interactive = Drive.gesture, { as = '', choose = false, explicit = false } = {}) {
+    if (!explicit && Compte.out()) throw outErr();
+    const account = as || Compte.email();
     if (Drive.native()) {
       let r;
       // Sans écran si l'accès est déjà accordé ; sinon, les écrans de Google s'ouvrent par-dessus l'appli.
-      try { r = await Native.P.GoogleDrive.connect(); }
+      try { r = await Native.P.GoogleDrive.connect(account ? { account } : {}); }
       catch { throw driveAuthErr(); }
       Drive.token = r.accessToken || ''; Drive.until = Date.now() + 50 * 60e3;
+      if (!Compte.email() && !explicit) await Drive.noteCompte(r.email);
       return Drive.token;
     }
     // Sur le web, la fenêtre de Google ne s'ouvre qu'après un geste : sinon, on attend que la personne touche la pastille.
     if (!interactive) throw driveAuthErr();
     await Drive.loadGis();
-    return new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE.clientId, scope: DRIVE_SCOPE, login_hint: S.driveMe || undefined,
+        client_id: GOOGLE.clientId, scope: DRIVE_SCOPE, login_hint: account || undefined,
         callback: r => {
           if (r.error) { reject(driveAuthErr()); return; }
           Drive.token = r.access_token; Drive.until = Date.now() + ((+r.expires_in || 3600) - 120) * 1e3;
           resolve(Drive.token);
         },
         error_callback: () => reject(driveAuthErr()),
-      }).requestAccessToken({ prompt: '' });
+      }).requestAccessToken({ prompt: choose ? 'select_account' : '' });
     });
+    if (!Compte.email() && !explicit) await Drive.noteCompte();
+    return Drive.token;
+  },
+  /** Retient le compte qui vient de se connecter sans choix explicite (première connexion d'un appareil). */
+  async noteCompte(email = '') {
+    try {
+      const res = await fetch(`${DRIVE_API}/about?fields=user(emailAddress,displayName)`, { headers: { Authorization: 'Bearer ' + Drive.token } });
+      const a = res.ok ? await res.json() : {};
+      const me = (a.user && a.user.emailAddress) || email;
+      if (me) Compte.set(me, (a.user && a.user.displayName) || '');
+    } catch { if (email) Compte.set(email, ''); }
+  },
+  /** La cave ouverte est-elle sur le compte connecté ? Sinon, ni synchro ni Tastevin, et on le dit clairement. */
+  checkCompte() {
+    if (Compte.out()) throw outErr();
+    const me = Compte.email();
+    if (me && S.compte && !Compte.same(S.compte, me)) throw Object.assign(new Error(`Cette cave est sur le compte ${S.compte} : connecte-toi avec ce compte, dans Réglages › Compte Google.`), { auth: true, code: 'compte' });
   },
   /** Connecté, après un geste de la personne : la fenêtre de Google ne s'ouvre que si la connexion manque ou a expiré. */
   connected() {
@@ -5031,11 +5092,11 @@ const Drive = {
   },
   /** L'adresse du compte Google connecté (gardée sur l'appareil : elle sert à toutes ses caves Drive). */
   async whoami() {
-    let me = lsGet('macave:google-me', '');
+    let me = Compte.email();
     if (!me) {
       const a = await Drive.req('GET', `${DRIVE_API}/about?fields=user(emailAddress,displayName)`);
       me = (a.user && a.user.emailAddress) || '';
-      lsSet('macave:google-me', me);
+      if (me) Compte.set(me, (a.user && a.user.displayName) || '');
     }
     return me;
   },
@@ -5044,7 +5105,7 @@ const Drive = {
   async pick(fileId) {
     if (Drive.native()) {
       let r;
-      try { r = await Native.P.GoogleDrive.pick({ fileIds: fileId, mimeTypes: 'application/json' }); }
+      try { r = await Native.P.GoogleDrive.pick({ fileIds: fileId, mimeTypes: 'application/json', ...(Compte.email() ? { account: Compte.email() } : {}) }); }
       catch (e) { throw new Error(e && e.code === 'cancelled' ? 'Rejoindre annulé.' : 'Le sélecteur de Google ne répond pas.'); }
       if (r.accessToken) { Drive.token = r.accessToken; Drive.until = Date.now() + 50 * 60e3; }
       return r.pickedIds || [];
@@ -5095,6 +5156,8 @@ const Drive = {
     if (action === 'conseil') return driveConseil(payload.conseil);
     if (action === 'suggest') return driveSuggest(payload);
     if (action !== 'sync' && action !== 'ping') throw Object.assign(new Error("Tastevin n'est pas encore disponible dans une cave Google Drive."), { code: 'drive' });
+    // Une cave ouverte avant que l'appli retienne les comptes : elle est au compte qui la synchronise.
+    if (!S.compte) { S.compte = await Drive.whoami(); saveSettings(); }
     const { meta, cave, merged } = action === 'sync' ? await Drive.sync(payload.db || {}) : await Drive.read();
     const r = {
       ok: true, version: SCRIPT_VERSION, nom: cave.nom || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true,
@@ -5552,7 +5615,7 @@ async function basculer() {
     // La nouvelle cave entre dans « Mes caves », prête à ouvrir : même personne, photos déjà sur l'appareil.
     const key = caveKey('drive:' + prog.fileId);
     const entree = {
-      key, kind: 'drive', fileId: prog.fileId, folderId: prog.folderId, photosId: prog.photosId, nom: S.nom || 'Ma cave', role: 'proprio', proprioActif: true,
+      key, kind: 'drive', fileId: prog.fileId, folderId: prog.folderId, photosId: prog.photosId, nom: S.nom || 'Ma cave', role: 'proprio', proprioActif: true, compte: me,
       device: S.device, photoShare: avecPhotos, aLire: copie.wines.filter(w => ['attente', 'revoir'].includes(w.lecture)).map(w => w.id), ...caveCounts(copie), vu: '',
     };
     if (key !== curKey()) {
@@ -5579,6 +5642,7 @@ async function joinDriveCave(d) {
   if (key === curKey()) return 'same';
   if (CAVES.some(c => c.key === key)) return (await openCave(key)) ? 'known' : 'no';
   try {
+    if (!(await ensureCompte())) return 'no';
     await Drive.connected();
     let got;
     try { got = await Drive.read(d.d); }
@@ -5594,7 +5658,10 @@ async function joinDriveCave(d) {
       got = await Drive.read(d.d);
     }
     const { meta, cave } = got;
-    return addCave({ kind: 'drive', fileId: d.d, folderId: cave.dossier || '', photosId: cave.dossierPhotos || '', nom: cave.nom || d.n || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true });
+    // Rejoindre par un lien la réassocie au compte, même si on l'avait retirée.
+    const me = await Drive.whoami();
+    Compte.dissocier(me, d.d, false);
+    return addCave({ kind: 'drive', fileId: d.d, folderId: cave.dossier || '', photosId: cave.dossierPhotos || '', nom: cave.nom || d.n || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true, compte: me });
   } catch (e) {
     toast(e.auth ? 'Connexion à Google annulée : la cave n\'a pas été rejointe.' : e.message);
     return 'no';
@@ -5619,31 +5686,85 @@ async function inviteDrive() {
     btn.disabled = false; btn.textContent = 'Partager la cave';
   }
 }
-/** « Mes caves » › Retrouver : les caves Drive de ce compte Google, créées ou rejointes sur un autre appareil. */
-async function findDriveCaves() {
+/** « Mes caves » › Retrouver : les caves Drive de ce compte Google, créées ou rejointes sur un autre appareil, sauf celles
+    qu'il a retirées. quiet : après une connexion, sans message s'il n'y a rien de nouveau. */
+async function findDriveCaves({ quiet = false } = {}) {
   const btn = $('[data-act="caves-find"]');
   btn.disabled = true;
   try {
+    if (!(await ensureCompte())) return 0;
     await Drive.connected();
+    const me = await Drive.whoami(), skip = new Set(Compte.dissocies(me));
     let added = 0;
     for (const f of await Drive.list()) {
       const key = caveKey('drive:' + f.id);
-      if (key === curKey() || CAVES.some(c => c.key === key)) continue;
+      if (key === curKey() || CAVES.some(c => c.key === key) || skip.has(f.id)) continue;
       let got;
       try { got = await Drive.read(f.id); } catch { continue; }  // pas une cave de l'appli (un prototype, par exemple)
       const o = f.owners && f.owners[0];
       CAVES.push({ key, kind: 'drive', fileId: f.id, folderId: got.cave.dossier || '', photosId: got.cave.dossierPhotos || '', nom: got.cave.nom || 'Ma cave',
-        role: f.ownedByMe ? 'proprio' : 'app', proprioActif: true, driveOwner: (o && (o.displayName || o.emailAddress)) || '', ...caveCounts(got.cave.db || {}), vu: '' });
+        role: f.ownedByMe ? 'proprio' : 'app', proprioActif: true, driveOwner: (o && (o.displayName || o.emailAddress)) || '', compte: me, ...caveCounts(got.cave.db || {}), vu: '' });
       added++;
     }
     saveCaves();
     renderCaves();
-    toast(added ? `${added} ${plural(added, 'cave retrouvée', 'caves retrouvées')} dans ton Google Drive.` : 'Aucune autre cave dans ton Google Drive.');
+    if (added || !quiet) toast(added ? `${added} ${plural(added, 'cave retrouvée', 'caves retrouvées')} dans ton Google Drive.` : 'Aucune autre cave dans ton Google Drive.');
+    return added;
   } catch (e) {
-    toast(e.auth ? 'Connexion à Google annulée.' : e.message);
+    if (!quiet) toast(e.auth ? 'Connexion à Google annulée.' : e.message);
+    return 0;
   } finally {
     btn.disabled = false;
   }
+}
+/** Se connecter avec Google, ou changer de compte : dans l'appli Android, le sélecteur de comptes du téléphone, puis
+    l'accès au Drive pour ce compte ; sur le web, la fenêtre de Google. Ensuite, les caves du compte reviennent dans
+    « Mes caves ». */
+async function connectGoogle(change = false) {
+  if (!Drive.available()) return false;
+  const avant = Compte.email();
+  let as = '';
+  try {
+    if (Drive.native() && Native.P.GoogleDrive.chooseAccount) {
+      try { as = (await Native.P.GoogleDrive.chooseAccount(avant ? { account: avant } : {})).account || ''; }
+      catch (e) { if (e && e.code === 'cancelled') return false; throw e; }
+    }
+    Drive.token = ''; Drive.until = 0;
+    await Drive.signIn(true, { as, choose: change || !avant, explicit: true });
+    // Le compte vraiment connecté : sur le web, celui choisi dans la fenêtre de Google.
+    const res = await fetch(`${DRIVE_API}/about?fields=user(emailAddress,displayName)`, { headers: { Authorization: 'Bearer ' + Drive.token } });
+    const a = res.ok ? await res.json() : {};
+    const me = (a.user && a.user.emailAddress) || as;
+    if (!me) throw new Error('Google n\'a pas donné le compte connecté : réessaie.');
+    Compte.set(me, (a.user && a.user.displayName) || (Compte.same(me, avant) ? Compte.nom() : ''));
+  } catch (e) {
+    toast(e.auth ? 'Connexion à Google annulée.' : e.message || 'Connexion à Google impossible.');
+    render();
+    return false;
+  }
+  toast(Compte.same(Compte.email(), avant) ? `Connecté à Google : ${Compte.email()}.` : `Tu es maintenant connecté avec ${Compte.email()}.`);
+  render();
+  await findDriveCaves({ quiet: true });
+  if (isDrive()) sync({ interactive: true });
+  return true;
+}
+/** Se déconnecter : l'appli oublie le compte sur cet appareil et ne se reconnecte plus d'elle-même. Les caves restent,
+    avec leurs vins, et l'accès donné à l'appli dans le compte Google n'est pas retiré. */
+function disconnectGoogle() {
+  const me = Compte.email();
+  if (!me || !confirm(`Te déconnecter de ${me} ? Ses caves Google Drive restent sur cet appareil, mais ne se synchronisent plus jusqu'à ta prochaine connexion.`)) return;
+  Drive.token = ''; Drive.until = 0;
+  lsSet('macave:google-me', ''); lsSet('macave:google-nom', ''); lsSet('macave:google-out', true);
+  if (isDrive()) setSync('auth', outErr().message);
+  render();
+  toast('Tu es déconnecté de Google.');
+}
+/** Avant de créer, rejoindre ou retrouver une cave : un compte choisi. Dans l'appli Android, le sélecteur s'ouvre la
+    première fois ; sur le web, la fenêtre de Google s'en charge à la connexion. */
+async function ensureCompte() {
+  if (Compte.email()) return true;
+  if (Compte.out() || (Drive.native() && Native.P.GoogleDrive.chooseAccount)) return connectGoogle();
+  return true;
 }
 /** « Mes caves » › Créer une cave : dans le Google Drive de la personne, en un geste, sans rien installer. */
 async function createDriveCave() {
@@ -5652,9 +5773,10 @@ async function createDriveCave() {
   const btn = $('[data-act="caves-create"]');
   btn.disabled = true; btn.textContent = 'Création…';
   try {
+    if (!(await ensureCompte())) return;
     await Drive.connected();
     const ids = await Drive.createCave(nom);
-    const r = await addCave({ kind: 'drive', ...ids, nom, role: 'proprio', proprioActif: true });
+    const r = await addCave({ kind: 'drive', ...ids, nom, role: 'proprio', proprioActif: true, compte: await Drive.whoami() });
     if (r !== 'no') toast(`« ${nom} » est créée dans ton Google Drive. Synchronisation…`);
   } catch (e) {
     toast(e.auth ? 'Connexion à Google annulée : la cave n\'a pas été créée.' : `Création impossible : ${e.message}`);
@@ -5962,6 +6084,7 @@ async function sync({ interactive = false } = {}) {
   // Cave Google Drive sur le web : la fenêtre de connexion de Google ne s'ouvre qu'après un geste de la personne.
   Drive.gesture = interactive;
   try {
+    if (isDrive()) Drive.checkCompte();
     const sent = await pushPhotos() || [];
     registerPeople();
     migrateNotes();
@@ -6062,7 +6185,7 @@ async function acceptInvite() {
    identifiants sont propres à chaque vin et à chaque conseil.
    ========================================================= */
 const LS_CAVES = 'macave:caves';
-const CAVE_FIELDS = ['kind', 'apiUrl', 'secret', 'fileId', 'folderId', 'photosId', 'driveUrl', 'driveOwner', 'photoShare', 'aLire', 'proprio', 'role', 'proprioActif', 'credits', 'coteMois', 'device', 'lastSync', 'sheetUrl', 'webUrl', 'labelOn', 'routineOn', 'routineVu', 'serverVersion', 'photoDeletes', 'nom'];
+const CAVE_FIELDS = ['kind', 'apiUrl', 'secret', 'fileId', 'folderId', 'photosId', 'driveUrl', 'driveOwner', 'photoShare', 'aLire', 'proprio', 'role', 'proprioActif', 'credits', 'coteMois', 'device', 'lastSync', 'sheetUrl', 'webUrl', 'labelOn', 'routineOn', 'routineVu', 'serverVersion', 'photoDeletes', 'nom', 'compte'];
 const caveKey = u => 'c' + [...String(u)].reduce((h, c) => (Math.imul(h, 33) + c.charCodeAt(0)) >>> 0, 5381).toString(36);
 let CAVES = lsGet(LS_CAVES, []);
 const saveCaves = () => lsSet(LS_CAVES, CAVES);
@@ -6161,7 +6284,11 @@ async function removeCave(key) {
   const st = lsGet('macave:cave:' + key, {}), d = st.db || {};
   const since = e.lastSync || '';
   const unsent = [...(d.wines || []), ...(d.moves || []), ...(d.avis || [])].some(x => (x.updatedAt || '') > since);
-  if (!confirm(`Retirer « ${caveName(e)} » de cet appareil ?${unsent ? ' Des modifications faites ici ne sont pas encore parties : elles seront perdues.' : ''} Ses vins restent ${e.kind === 'drive' ? 'dans Google Drive' : 'dans son Google Sheet'} : tu pourras la rejoindre de nouveau avec un lien d'invitation.`)) return;
+  const lost = unsent ? ' Des modifications faites ici ne sont pas encore parties : elles seront perdues.' : '';
+  if (!confirm(e.kind === 'drive'
+    ? `Retirer « ${caveName(e)} » de ${e.compte ? `ton compte ${e.compte}` : 'tes caves'} ?${lost} Elle quitte « Mes caves », et « Retrouver mes caves » ne la ramènera plus. Ses vins restent dans Google Drive : un lien d'invitation permet de la rejoindre de nouveau.`
+    : `Retirer « ${caveName(e)} » de cet appareil ?${lost} Ses vins restent dans son Google Sheet : tu pourras la rejoindre de nouveau avec un lien d'invitation.`)) return;
+  if (e.kind === 'drive' && e.fileId) Compte.dissocier(e.compte || Compte.email(), e.fileId);
   const ids = [...(d.wines || []).map(w => w.id), ...(d.conseils || []).flatMap(c => (c.bouteilles || []).map((_, i) => scanKey(c.id, i)))];
   for (const id of ids) { try { await Photos.del(id); photoIds.delete(id); Photos.forget(id); } catch {} }
   try { localStorage.removeItem('macave:cave:' + key); } catch {}
@@ -6184,15 +6311,38 @@ function renderCaveBtn() {
 function renderCaves() {
   rememberCave();
   const cur = curKey();
+  const me = Compte.email();
+  // Les caves Google Drive d'un autre compte que celui connecté : à part, avec leur compte.
+  const ailleurs = e => e.kind === 'drive' && me && e.compte && !Compte.same(e.compte, me);
   const row = e => {
     const role = e.role === 'proprio' ? 'propriétaire' : e.proprioActif ? 'participant' : '';
-    const sub = [`${fmtNum(e.bouteilles || 0)} ${plural(e.bouteilles || 0, 'bouteille', 'bouteilles')}`, role, e.kind === 'drive' ? 'Google Drive' : '', e.key === cur ? 'ouverte' : ''].filter(Boolean).join(' · ');
+    const sub = [`${fmtNum(e.bouteilles || 0)} ${plural(e.bouteilles || 0, 'bouteille', 'bouteilles')}`, role, ailleurs(e) ? e.compte : e.kind === 'drive' ? 'Google Drive' : '', e.key === cur ? 'ouverte' : ''].filter(Boolean).join(' · ');
     return `<div class="cave-row${e.key === cur ? ' is-cur' : ''}"><button type="button" class="cave-open" data-cave="${e.key}"><span class="cv-name">${esc(caveName(e))}</span><span class="cv-sub">${esc(sub)}</span></button>${e.key === cur ? '' : `<button type="button" class="link cave-del" data-cave-del="${e.key}">Retirer</button>`}</div>`;
   };
   const sorted = CAVES.slice().sort((a, b) => (b.key === cur) - (a.key === cur) || (b.vu || '').localeCompare(a.vu || ''));
-  const owned = sorted.filter(e => e.role === 'proprio'), joined = sorted.filter(e => e.role !== 'proprio' && e.proprioActif), other = sorted.filter(e => e.role !== 'proprio' && !e.proprioActif);
-  const groups = [['Où tu es propriétaire', owned], ['Où tu participes', joined], [owned.length || joined.length ? 'Autres caves' : '', other]].filter(([, l]) => l.length);
+  const mine = sorted.filter(e => !ailleurs(e)), others = sorted.filter(ailleurs);
+  const owned = mine.filter(e => e.role === 'proprio'), joined = mine.filter(e => e.role !== 'proprio' && e.proprioActif), other = mine.filter(e => e.role !== 'proprio' && !e.proprioActif);
+  const groups = [['Où tu es propriétaire', owned], ['Où tu participes', joined], [owned.length || joined.length ? 'Autres caves' : '', other], ['Sur un autre compte Google', others]].filter(([, l]) => l.length);
   $('#caves-list').innerHTML = groups.map(([t, l]) => `${t ? `<h3 class="cv-h">${t}</h3>` : ''}${l.map(row).join('')}`).join('') || '<p class="hint">Aucune cave sur cet appareil pour l\'instant.</p>';
+  // En tête de « Mes caves » : avec quel compte Google on crée, rejoint et retrouve ses caves.
+  const box = $('#caves-compte');
+  box.hidden = !Drive.available();
+  box.innerHTML = me ? `<span class="pp-av" aria-hidden="true">${esc(initialOf(Compte.nom() || me))}</span><span class="rg-txt"><small>Compte Google</small><b>${esc(me)}</b></span><button type="button" class="btn btn-sm" data-act="google-switch">Changer</button>`
+    : `<span class="rg-txt"><b>Pas de compte Google connecté</b><small>Il en faut un pour créer, rejoindre ou retrouver une cave partagée.</small></span>${GOOGLE_BTN}`;
+}
+const initialOf = t => ([...String(t || '?')][0] || '?').toUpperCase();
+const GOOGLE_BTN = '<button type="button" class="gbtn" data-act="google-in"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Se connecter avec Google</span></button>';
+/** Réglages › Compte Google : le compte connecté, pour changer ou se déconnecter ; sinon, le bouton pour se connecter. */
+function renderCompte() {
+  const set = $('#compte-set');
+  set.hidden = !Drive.available();
+  if (set.hidden) return;
+  const me = Compte.email(), nom = Compte.nom();
+  const n = CAVES.filter(c => c.kind === 'drive' && Compte.same(c.compte, me)).length;
+  $('#compte-box').innerHTML = me
+    ? `<div class="rg-row rg-compte-row"><span class="pp-av" aria-hidden="true">${esc(initialOf(nom || me))}</span><span class="rg-txt"><b>${esc(nom || me)}</b><small>${nom ? `${esc(me)} · ` : ''}${n} ${plural(n, 'cave Google Drive', 'caves Google Drive')}</small></span><button type="button" class="btn btn-sm" data-act="google-switch">Changer de compte</button></div>
+       <button type="button" class="rg-row rg-out" data-act="google-out">Se déconnecter de Google</button>`
+    : `<div class="rg-pad"><p class="rg-label">Compte Google</p><p class="hint">Connecte-toi pour créer une cave partagée, rejoindre celle d'un ami et retrouver tes caves sur tous tes appareils. L'appli ne voit que les fichiers de ses caves, rien d'autre de ton Google Drive.</p>${GOOGLE_BTN}</div>`;
 }
 function openCaves() {
   renderCaves();
@@ -6272,6 +6422,9 @@ function wire() {
         // Cave Google Drive : « Inviter quelqu'un » déplie l'adresse à saisir.
         case 'invite-open': { const box = $('#drive-invite-box'), open = box.hidden; box.hidden = !open; act.setAttribute('aria-expanded', String(open)); if (open) $('#drive-invite').focus(); break; }
         case 'bouchons': openBouchons(); break;
+        case 'google-in': connectGoogle(); break;
+        case 'google-switch': connectGoogle(true); break;
+        case 'google-out': disconnectGoogle(); break;
         case 'edit': openWineForm(id); break;
         case 'in': openMove(id, 'entree'); break;
         case 'out': openMove(id, 'sortie'); break;
@@ -6650,7 +6803,8 @@ function wire() {
   $('#sync-pill').addEventListener('click', () => {
     const k = syncState.k;
     // Cave Google Drive : la connexion a expiré, toucher la pastille suffit à se reconnecter.
-    if (k === 'auth' && isDrive()) sync({ interactive: true });
+    if (k === 'auth' && isDrive() && (Compte.out() || (S.compte && Compte.email() && !Compte.same(S.compte, Compte.email())))) setView('reglages');
+    else if (k === 'auth' && isDrive()) sync({ interactive: true });
     else if (k === 'off' || k === 'auth') setView('reglages');
     else if (k !== 'busy') sync({ interactive: true });
   });
