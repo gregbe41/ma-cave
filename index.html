@@ -615,6 +615,20 @@ dialog::backdrop{background:rgba(8,14,11,.52)}
 .sheet-body:last-child{padding-bottom:calc(22px + var(--sab))}
 .sheet-foot{display:flex;gap:10px;align-items:center;padding:12px 22px calc(12px + var(--sab));border-top:1px solid var(--line)}
 .sheet-foot .spacer{flex:1}
+/* Une question de l'appli (supprimer, retirer, renommer…) : une feuille aux couleurs de l'appli, au lieu des fenêtres d'Android */
+dialog.ask{max-width:480px}
+.ask-form{display:grid;gap:10px;padding:24px 22px calc(18px + var(--sab))}
+.ask-form h2{margin:0;font-size:1.3rem;line-height:1.25;overflow-wrap:anywhere}
+.ask-form p{margin:0;line-height:1.5;color:var(--muted)}
+.ask-input{width:100%;min-width:0;margin-top:4px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--field);color:var(--ink);font-size:1rem}
+.ask-input:focus{outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:0;border-color:transparent}
+.ask-act{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.ask-act.is-one{grid-template-columns:1fr}
+.ask-act .btn{min-height:50px;font-size:1rem;white-space:normal;line-height:1.2}
+/* Bouton d'une action qui efface : teinte rouge douce, lisible en clair comme en sombre */
+.btn-grave{background:var(--late-bg);border-color:var(--late-bg);color:var(--late-fg)}
+.btn-grave:hover{filter:brightness(.97)}
+@media (min-width:700px){dialog.sheet.ask{margin:auto;border-radius:22px}}
 /* Mes caves : le nom de la cave ouverte dans l'en-tête, la liste des caves de l'appareil */
 .top-sub{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;margin-top:4px}
 .cave-btn{display:inline-flex;align-items:center;gap:2px;max-width:100%;border:0;border-radius:999px;padding:3px 6px 3px 10px;background:var(--accent-tint);color:var(--accent-ink);font-weight:700;font-size:.8rem}
@@ -1726,6 +1740,19 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
   </div>
 </dialog>
 
+<!-- Une question de l'appli : confirmer une suppression, saisir un prénom… (à la place des fenêtres d'Android) -->
+<dialog class="sheet ask" id="dlg-ask" aria-labelledby="ask-title" aria-describedby="ask-text">
+  <form method="dialog" class="ask-form">
+    <h2 id="ask-title"></h2>
+    <p id="ask-text"></p>
+    <input id="ask-input" class="ask-input" autocomplete="off" spellcheck="false" aria-labelledby="ask-title" hidden>
+    <div class="ask-act" id="ask-act">
+      <button type="button" class="btn" id="ask-no">Annuler</button>
+      <button type="submit" class="btn btn-primary" id="ask-yes" value="oui">Confirmer</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toast" popover="manual" role="status" aria-live="polite"></div>
 <!-- Entre la photo validée dans l'appareil photo et son affichage dans l'appli -->
 <div id="photo-wait" popover="manual" role="status" aria-live="polite"><div class="pw-box"><span class="pw-spin" aria-hidden="true"></span><span id="pw-txt"></span></div></div>
@@ -1943,6 +1970,42 @@ function lsSet(k, v) {
 }
 
 let toastTimer;
+/* ---------- Questions de l'appli : confirmer, saisir ----------
+   À la place de confirm() et prompt(), qu'Android affiche dans ses propres fenêtres : une feuille aux couleurs de
+   l'appli, une question à la fois. Les tests automatisés (navigator.webdriver) gardent les fenêtres du navigateur,
+   qu'ils savent accepter ou refuser ; window.__dialoguesAppli les fait passer par la feuille. */
+let ASK = null;
+const askNatif = () => !!navigator.webdriver && !window.__dialoguesAppli;
+function askOpen({ titre, texte = '', ok = 'Confirmer', annuler = 'Annuler', grave = false, saisie = null, lecture = false, placeholder = '' }) {
+  return new Promise(res => {
+    if (ASK) ASK(null);   // une nouvelle question remplace celle qui attendait
+    const d = $('#dlg-ask'), inp = $('#ask-input'), yes = $('#ask-yes'), no = $('#ask-no');
+    $('#ask-title').textContent = titre;
+    $('#ask-text').textContent = texte;
+    $('#ask-text').hidden = !texte;
+    Object.assign(inp, { hidden: saisie == null, value: saisie ?? '', readOnly: lecture, placeholder });
+    yes.textContent = ok;
+    yes.className = `btn ${grave ? 'btn-grave' : 'btn-primary'}`;
+    no.textContent = annuler;
+    no.hidden = !annuler;
+    $('#ask-act').classList.toggle('is-one', !annuler);
+    ASK = v => { ASK = null; res(v); };
+    d.returnValue = '';
+    if (!d.open) d.showModal();
+    if (saisie != null) { inp.focus(); inp.select(); } else (grave && annuler ? no : yes).focus();
+  });
+}
+/** « Supprimer cette analyse de l'historique ? » : vrai si la personne confirme. */
+function confirmer(titre, texte = '', opts = {}) {
+  if (askNatif()) return Promise.resolve(confirm([titre, texte].filter(Boolean).join(' ')));
+  return askOpen({ titre, texte, ...opts }).then(v => v === true);
+}
+/** Un prénom, un lien à copier : le texte saisi, ou null si on annule. */
+function demander(titre, texte = '', opts = {}) {
+  if (askNatif()) return Promise.resolve(prompt([titre, texte].filter(Boolean).join(' '), opts.valeur || ''));
+  return askOpen({ titre, texte, ok: 'Valider', ...opts, saisie: opts.valeur || '' }).then(v => (typeof v === 'string' ? v : null));
+}
+
 function toast(msg) {
   const t = $('#toast');
   t.textContent = msg;
@@ -3727,8 +3790,8 @@ function setMe(raw) {
   toast(`C'est noté : sur cet appareil, tu es ${nom}.`);
 }
 
-function promptAddPerson() {
-  const raw = prompt('Prénom de la personne à ajouter :');
+async function promptAddPerson() {
+  const raw = await demander('Ajouter une personne', "Son prénom, tel qu'il apparaîtra sur les bouteilles et dans les avis.", { ok: 'Ajouter', placeholder: 'Prénom' });
   const nom = canonName(raw);
   if (!nom) return;
   const known = people().includes(nom);
@@ -3738,18 +3801,18 @@ function promptAddPerson() {
 }
 
 /** Renomme quelqu'un partout (bouteilles et historique), ou le réunit avec une personne déjà dans la liste. */
-function renamePerson(old) {
+async function renamePerson(old) {
   if (!old) return;
-  const raw = prompt(`Nouveau prénom pour ${old}.\nPour réunir deux personnes (par exemple « Manu » et « Emmanuel »), écris le prénom de l'autre.`, old);
+  const raw = await demander(`Nouveau prénom pour ${old}`, "Pour réunir deux personnes (par exemple « Manu » et « Emmanuel »), écris le prénom de l'autre.", { valeur: old, ok: 'Continuer' });
   const typed = str(raw).replace(/\s+/g, ' ').slice(0, 40);
   if (!typed || typed === old) return;
   // Même prénom à la casse ou aux accents près : on corrige l'écriture ; sinon on reprend celle d'une personne existante.
   const oldId = personId(old), nom = personId(typed) === oldId ? typed : canonName(typed), newId = personId(nom);
   const join = newId !== oldId && people().some(p => personId(p) === newId);
   const n = db.moves.filter(m => m.proprio === old || m.par === old).length;
-  if (!confirm(join
-    ? `Réunir ${old} et ${nom} ? Les bouteilles et l'historique de ${old} passeront au nom de ${nom}, sur tous les appareils.`
-    : `Renommer ${old} en ${nom} ?${n ? ` ${n} ${plural(n, "ligne d'historique sera mise", "lignes d'historique seront mises")} à jour sur tous les appareils.` : ''}`)) return;
+  if (!(await (join
+    ? confirmer(`Réunir ${old} et ${nom} ?`, `Les bouteilles et l'historique de ${old} passeront au nom de ${nom}, sur tous les appareils.`, { ok: 'Réunir' })
+    : confirmer(`Renommer ${old} en ${nom} ?`, n ? `${n} ${plural(n, "ligne d'historique sera mise", "lignes d'historique seront mises")} à jour sur tous les appareils.` : '', { ok: 'Renommer' })))) return;
   const now = nowISO();
   db.moves.forEach(m => {
     if (m.proprio !== old && m.par !== old) return;
@@ -3769,8 +3832,8 @@ function renamePerson(old) {
 }
 
 /** Retire quelqu'un qui n'a aucune bouteille ni aucun historique (une faute de frappe, par exemple). */
-function removePerson(name) {
-  if (!name || !confirm(`Retirer ${name} de la liste ?`)) return;
+async function removePerson(name) {
+  if (!name || !(await confirmer(`Retirer ${name} de la liste ?`, '', { ok: 'Retirer', grave: true }))) return;
   const id = personId(name);
   db.people = db.people.filter(p => p.id !== id);
   db.trash.push({ id, kind: 'personne', at: nowISO() });
@@ -4903,10 +4966,10 @@ async function submitWineForm(e) {
     + (review ? `. Tastevin ${isNew ? 'complétera la fiche' : 'mettra à jour ses estimations'} ${plusTard()}.` : ''));
 }
 
-function deleteWine(id) {
+async function deleteWine(id) {
   const w = db.wines.find(x => x.id === id);
   if (!w) return;
-  if (!confirm(`Supprimer « ${wineLabel(w)} » et tout son historique ?`)) return;
+  if (!(await confirmer(`Supprimer « ${wineLabel(w)} » et tout son historique ?`, 'La fiche disparaît sur tous les appareils.', { ok: 'Supprimer', grave: true }))) return;
   const now = nowISO();
   db.wines = db.wines.filter(x => x.id !== id);
   db.moves = db.moves.filter(m => m.vinId !== id);
@@ -4959,8 +5022,8 @@ async function mergeTwin(id, same = false) {
   const s1 = STOCK.get(keep.id) || 0, s2 = STOCK.get(w.id) || 0, typed = int(($('#twin-n') || {}).value);
   const total = same ? Math.max(s1, s2) : Math.max(s1, typed == null ? s1 + s2 : typed);
   const bt = `${total} ${plural(total, 'bouteille', 'bouteilles')}`;
-  if (!confirm(same ? `Garder une seule fiche, « ${wineLabel(keep)} », avec ${bt} ? La fiche en double sera supprimée.`
-    : `Regrouper sur « ${wineLabel(keep)} » ? La fiche aura ${bt}, avec l'historique des deux fiches.`)) return;
+  if (!(await (same ? confirmer(`Garder une seule fiche, « ${wineLabel(keep)} », avec ${bt} ?`, 'La fiche en double sera supprimée.', { ok: 'Garder une fiche' })
+    : confirmer(`Regrouper sur « ${wineLabel(keep)} » ?`, `La fiche aura ${bt}, avec l'historique des deux fiches.`, { ok: 'Regrouper' })))) return;
   const now = nowISO();
   adjustEntries(w.id, total - s1 - s2, now);
   db.moves.forEach(m => { if (m.vinId === w.id) Object.assign(m, { vinId: keep.id, updatedAt: now }); });
@@ -5034,7 +5097,8 @@ function openBulk() {
 }
 
 /** Abandonner les photos déjà prises ? */
-const leaveBulk = () => !BULK.items.length || confirm(`Abandonner ${BULK.items.length} ${plural(BULK.items.length, 'photo', 'photos')} ? Aucune fiche n'a encore été créée.`);
+const leaveBulk = () => (!BULK.items.length ? Promise.resolve(true)
+  : confirmer(`Abandonner ${BULK.items.length} ${plural(BULK.items.length, 'photo', 'photos')} ?`, "Aucune fiche n'a encore été créée.", { ok: 'Abandonner', annuler: 'Continuer', grave: true }));
 
 function renderBulk() {
   $('#bulk-grid').innerHTML = BULK.items.map((it, i) => `<div class="bulk-item" data-i="${i}">
@@ -5126,9 +5190,10 @@ function scanReset() {
   SCAN.items.forEach(it => URL.revokeObjectURL(it.url));
   SCAN = { items: [], busy: 0, token: uid() };
 }
-const leaveScan = () => !SCAN.items.length || confirm(`Abandonner ${SCAN.items.length > 1 ? `ces ${SCAN.items.length} photos` : 'cette photo'} ? Rien n'a encore été envoyé à Tastevin.`);
-/** Fermer une fenêtre où des photos attendent : on demande d'abord. */
-const mayLeave = d => (d.id === 'dlg-bulk' ? leaveBulk() : d.id === 'dlg-scan' ? leaveScan() : true);
+const leaveScan = () => (!SCAN.items.length ? Promise.resolve(true)
+  : confirmer(`Abandonner ${SCAN.items.length > 1 ? `ces ${SCAN.items.length} photos` : 'cette photo'} ?`, "Rien n'a encore été envoyé à Tastevin.", { ok: 'Abandonner', annuler: 'Continuer', grave: true }));
+/** Fermer une fenêtre où des photos attendent : on demande d'abord (une promesse : vrai pour fermer). */
+const mayLeave = d => (d.id === 'dlg-bulk' ? leaveBulk() : d.id === 'dlg-scan' ? leaveScan() : Promise.resolve(true));
 
 /** Photos prises ou choisies : ajoutées au conseil en cours (la fenêtre s'ouvre à la première). */
 async function addScanFiles(list) {
@@ -5608,9 +5673,9 @@ function linkConseil({ cid, i }, vinId) {
   c.updatedAt = nowISO();
 }
 
-function deleteConseil(id) {
+async function deleteConseil(id) {
   const c = db.conseils.find(x => x.id === id);
-  if (!c || !confirm("Supprimer cette analyse de l'historique ? Les vins déjà ajoutés à la cave restent.")) return;
+  if (!c || !(await confirmer("Supprimer cette analyse de l'historique ?", 'Les vins déjà ajoutés à la cave restent.', { ok: 'Supprimer', grave: true }))) return;
   db.conseils = db.conseils.filter(x => x.id !== id);
   if (c.statut !== 'envoi') db.trash.push({ id, kind: 'conseil', at: nowISO() });
   c.bouteilles.forEach((b, i) => {
@@ -5629,7 +5694,7 @@ async function removeConseilBottle(cid, i) {
   const c = db.conseils.find(x => x.id === cid), n = c ? c.bouteilles.length : 0;
   if (!c || csBusy(c) || !c.bouteilles[i]) return;
   if (n < 2) { deleteConseil(cid); return; }
-  if (!confirm("Retirer cette bouteille de l'analyse ? Si elle a été ajoutée à la cave, le vin y reste.")) return;
+  if (!(await confirmer("Retirer cette bouteille de l'analyse ?", 'Si elle a été ajoutée à la cave, le vin y reste.', { ok: 'Retirer', grave: true }))) return;
   const b = c.bouteilles[i];
   if (b.photoId) { S.photoDeletes.push(b.photoId); saveSettings(); }
   // Les photos gardées sur l'appareil sont rangées par rang : celles qui suivent remontent d'un cran.
@@ -6081,8 +6146,8 @@ function linkLien(id, vinId) {
   if ($('#dlg-lien').open && LIEN.id === id) renderLien();
 }
 /** Supprimer une analyse de lien : depuis sa corbeille dans « Tes analyses », ou depuis sa fenêtre. */
-function deleteLien(id) {
-  if (!mesLiens().some(x => x.id === id) || !confirm("Supprimer cette analyse de l'historique ? Les vins déjà ajoutés à la cave restent.")) return;
+async function deleteLien(id) {
+  if (!mesLiens().some(x => x.id === id) || !(await confirmer("Supprimer cette analyse de l'historique ?", 'Les vins déjà ajoutés à la cave restent.', { ok: 'Supprimer', grave: true }))) return;
   garderLiens(mesLiens().filter(x => x.id !== id));
   if (LIEN.id === id) $('#dlg-lien').close();
   renderConseil();
@@ -6232,8 +6297,8 @@ function submitMove(e) {
     : `${qte} ${plural(qte, 'bouteille ajoutée', 'bouteilles ajoutées')}${forTxt(owner)}`);
 }
 
-function deleteMove() {
-  if (!MF.moveId || !confirm('Supprimer ce mouvement ? Le stock sera recalculé.')) return;
+async function deleteMove() {
+  if (!MF.moveId || !(await confirmer('Supprimer ce mouvement ?', 'Le stock sera recalculé.', { ok: 'Supprimer', grave: true }))) return;
   const m = db.moves.find(x => x.id === MF.moveId);
   const projected = m ? ownerStock(MF.wineId, ownerOf(m)) - (m.type === 'entree' ? m.qte : -m.qte) : 0;
   if (projected < 0) { const p = $('#mf-err'); p.textContent = 'Impossible : des bouteilles de cette entrée ont déjà été débouchées.'; p.hidden = false; return; }
@@ -7086,9 +7151,9 @@ async function connectGoogle(change = false) {
 }
 /** Se déconnecter : l'appli oublie le compte sur cet appareil et ne se reconnecte plus d'elle-même. Les caves restent,
     avec leurs vins, et l'accès donné à l'appli dans le compte Google n'est pas retiré. */
-function disconnectGoogle() {
+async function disconnectGoogle() {
   const me = Compte.email();
-  if (!me || !confirm(`Te déconnecter de ${me} ? Ses caves Google Drive restent sur cet appareil, mais ne se synchronisent plus jusqu'à ta prochaine connexion.`)) return;
+  if (!me || !(await confirmer(`Te déconnecter de ${me} ?`, "Ses caves Google Drive restent sur cet appareil, mais ne se synchronisent plus jusqu'à ta prochaine connexion.", { ok: 'Se déconnecter' }))) return;
   Drive.token = ''; Drive.until = 0;
   lsSet('macave:google-me', ''); lsSet('macave:google-nom', ''); lsSet('macave:google-out', true);
   if (isDrive()) setSync('auth', outErr().message);
@@ -7476,7 +7541,7 @@ async function shareInvite(payload, intro, who = '') {
     if (navigator.share) { await navigator.share({ title: 'Ma cave', text, url: link }); return; }
   } catch (e) { if (e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(link); toast("Lien d'invitation copié. Envoie-le à la personne à inviter."); }
-  catch { prompt("Copie ce lien d'invitation :", link); }
+  catch { demander("Copie ce lien d'invitation", "Puis envoie-le à la personne à inviter.", { valeur: link, lecture: true, ok: 'Fermer', annuler: '' }); }
 }
 
 /* Lit une invitation : lien complet, ou simple « #rejoindre=… » collé dans le champ de l'adresse. */
@@ -7566,7 +7631,7 @@ const BUSY_MSG = 'La synchronisation est encore en cours : réessaie dans un ins
 async function openCave(key) {
   const e = CAVES.find(c => c.key === key);
   if (!e || key === curKey()) return false;
-  if (!caveRef() && db.wines.length && !confirm("Les vins de cet appareil ne sont reliés à aucune cave : ils seront effacés. Ouvrir quand même l'autre cave ?")) return false;
+  if (!caveRef() && db.wines.length && !(await confirmer("Ouvrir quand même l'autre cave ?", 'Les vins de cet appareil ne sont reliés à aucune cave : ils seront effacés.', { ok: 'Ouvrir quand même', grave: true }))) return false;
   if (!(await quietSync())) { toast(BUSY_MSG); return false; }
   if (!stashCave()) return false;  // stockage plein : on reste sur la cave ouverte, rien n'est perdu
   const st = lsGet('macave:cave:' + key, {});
@@ -7621,9 +7686,9 @@ async function removeCave(key) {
   const since = e.lastSync || '';
   const unsent = [...(d.wines || []), ...(d.moves || []), ...(d.avis || [])].some(x => (x.updatedAt || '') > since);
   const lost = unsent ? ' Des modifications faites ici ne sont pas encore parties : elles seront perdues.' : '';
-  if (!confirm(e.kind === 'drive'
-    ? `Retirer « ${caveName(e)} » de ${e.compte ? `ton compte ${e.compte}` : 'tes caves'} ?${lost} Elle quitte « Mes caves », et « Retrouver mes caves » ne la ramènera plus. Ses vins restent dans Google Drive : un lien d'invitation permet de la rejoindre de nouveau.`
-    : `Retirer « ${caveName(e)} » de cet appareil ?${lost} Ses vins restent dans son Google Sheet : tu pourras la rejoindre de nouveau avec un lien d'invitation.`)) return;
+  if (!(await (e.kind === 'drive'
+    ? confirmer(`Retirer « ${caveName(e)} » de ${e.compte ? `ton compte ${e.compte}` : 'tes caves'} ?`, `${lost.trim()} Elle quitte « Mes caves », et « Retrouver mes caves » ne la ramènera plus. Ses vins restent dans Google Drive : un lien d'invitation permet de la rejoindre de nouveau.`.trim(), { ok: 'Retirer', grave: true })
+    : confirmer(`Retirer « ${caveName(e)} » de cet appareil ?`, `${lost.trim()} Ses vins restent dans son Google Sheet : tu pourras la rejoindre de nouveau avec un lien d'invitation.`.trim(), { ok: 'Retirer', grave: true })))) return;
   if (e.kind === 'drive' && e.fileId) Compte.dissocier(e.compte || Compte.email(), e.fileId);
   const ids = [...(d.wines || []).map(w => w.id), ...(d.conseils || []).flatMap(c => (c.bouteilles || []).map((_, i) => scanKey(c.id, i)))];
   for (const id of ids) { try { await Photos.del(id); photoIds.delete(id); Photos.forget(id); } catch {} }
@@ -7740,9 +7805,15 @@ function wire() {
   addEventListener('resize', checkStuck);
   $('#wf-colors').innerHTML = COLORS.map(c => `<label class="cchip"><input type="radio" name="couleur" value="${c.key}"><span><span class="dot" style="--c:${c.hex}"></span>${c.label}</span></label>`).join('');
 
+  // La feuille des questions : « Annuler », toucher à côté, Échap ou le bouton retour répondent non.
+  const ask = $('#dlg-ask');
+  ask.addEventListener('close', () => { if (ASK) ASK(ask.returnValue === 'oui' ? ($('#ask-input').hidden ? true : $('#ask-input').value) : null); });
+  $('#ask-no').addEventListener('click', () => ask.close('non'));
+  ask.addEventListener('click', e => { if (e.target === e.currentTarget) ask.close('non'); });
+
   document.addEventListener('click', e => {
     const closer = e.target.closest('[data-close]');
-    if (closer) { const d = closer.closest('dialog'); if (mayLeave(d)) d.close(); return; }
+    if (closer) { const d = closer.closest('dialog'); mayLeave(d).then(ok => { if (ok) d.close(); }); return; }
     const act = e.target.closest('[data-act]');
     if (act) {
       const id = act.dataset.id || UI.openWine;
@@ -8031,7 +8102,7 @@ function wire() {
     const item = e.target.closest('.bulk-item');
     if (item && e.target.matches('.bulk-n')) { BULK.items[+item.dataset.i].qte = Math.max(1, int(e.target.value) || 1); updateBulkCount(); }
   });
-  $('#dlg-bulk').addEventListener('cancel', e => { if (!leaveBulk()) e.preventDefault(); });
+  $('#dlg-bulk').addEventListener('cancel', e => { if (!BULK.items.length) return; e.preventDefault(); leaveBulk().then(ok => { if (ok) $('#dlg-bulk').close(); }); });
   $('#dlg-add').addEventListener('click', e => {
     const b = e.target.closest('[data-add]');
     if (b) pickAdd(b.dataset.add);
@@ -8085,7 +8156,7 @@ function wire() {
     else if (e.target.type === 'radio') it.couleur = e.target.value;
   });
   $('#scan-dots').addEventListener('click', e => { const b = e.target.closest('[data-sgo]'); if (b) scrollScanTo(+b.dataset.sgo); });
-  $('#dlg-scan').addEventListener('cancel', e => { if (!leaveScan()) e.preventDefault(); });
+  $('#dlg-scan').addEventListener('cancel', e => { if (!SCAN.items.length) return; e.preventDefault(); leaveScan().then(ok => { if (ok) $('#dlg-scan').close(); }); });
   $('#dlg-scan').addEventListener('close', () => scanReset());
   $('#dlg-similar').addEventListener('close', () => { if (!$('#dlg-similar').open) UI.simWine = null; });
   $('#dlg-conseil').addEventListener('close', () => { UI.openConseil = null; UI.csOpen.clear(); if (UI.view === 'conseil') renderConseil(); });
@@ -8223,8 +8294,8 @@ function wire() {
 
   $('#export').addEventListener('click', exportJSON);
   $('#import').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importJSON(f); });
-  $('#reset').addEventListener('click', () => {
-    if (!confirm("Effacer toutes les caves de cet appareil, avec leurs vins, leur historique et leurs photos ? Ce qui n'a pas été synchronisé sera perdu.")) return;
+  $('#reset').addEventListener('click', async () => {
+    if (!(await confirmer('Effacer toutes les caves de cet appareil ?', "Avec leurs vins, leur historique et leurs photos. Ce qui n'a pas été synchronisé sera perdu.", { ok: 'Tout effacer', grave: true }))) return;
     try { [LS_DATA, LS_SET, LS_TOKEN, LS_CAVES].forEach(k => localStorage.removeItem(k)); Object.keys(localStorage).filter(k => k.startsWith('macave:cave:')).forEach(k => localStorage.removeItem(k)); } catch {}
     try { if (Photos._db) Photos._db.close(); indexedDB.deleteDatabase('macave-photos'); } catch {}
     setTimeout(() => location.reload(), 300);
@@ -8241,7 +8312,7 @@ function wire() {
     // Bouton retour d'Android : ferme la fenêtre ouverte, puis revient à la cave, puis quitte.
     Native.P.App.addListener('backButton', () => {
       const d = $$('dialog[open]').pop();
-      if (d) { if (mayLeave(d)) d.close(); }
+      if (d) mayLeave(d).then(ok => { if (ok) d.close(); });
       else if (UI.view !== 'cave') setView('cave');
       else Native.P.App.exitApp();
     });
