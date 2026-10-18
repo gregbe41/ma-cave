@@ -5795,12 +5795,13 @@ const FICHE_OK = {
   // Une seule couleur (« Vin mousseux blanc » passe, pas le menu « Rouge Blanc Rosé »).
   couleur: v => { const t = motsDe(v.replace(/blancs? de (noirs|blancs)/gi, ' ')); return !!couleurDans(v) && LIEN_COULEURS.filter(([k, re]) => ['rose', 'blanc', 'rouge'].includes(k) && re.test(t)).length <= 1; },
   // La liste des cépages d'un domaine (encart producteur) n'est pas celle du vin : plus de cinq sans pourcentage, on l'écarte.
-  cepages: v => { const n = Math.max(grapesInText(v).length, v.split(/[,;/+]| et | - /).filter(x => x.trim()).length); return grapesInText(v).length > 0 && (n <= 5 || /%/.test(v)); },
+  cepages: v => { const n = Math.max(grapesInText(v).length, v.split(/[,;/+&]| et | - /).filter(x => x.trim()).length); return grapesInText(v).length > 0 && (n <= 5 || /%/.test(v)); },
   region: v => regionConnue(v) && REGIONS.filter(r => motsDe(v).includes(motsDe(r))).filter(r => !/languedoc|roussillon/i.test(r) || !/languedoc.roussillon/i.test(norm(v))).length <= 1,
   // Un nom propre court : pas une phrase, une année, un « Oui », ni un bouton (« Voir tout »), ni « Domaine partenaire ».
   domaine: v => v.length <= 60 && v.split(' ').length <= 7 && !/[.!?|\d]/.test(v) && !/^(assortiment|coffret|lot|selection)\b/.test(norm(v)) && !/^(voir|decouvrir|en savoir|tout|tous|plus|oui|non|yes|no|nc|aucune?)\b/.test(norm(v))
-    && v.split(/[\s-]+/).some(w => /^\p{Lu}/u.test(w) && !DOM_STOP.has(norm(w))),
-  appellation: v => v.length <= 60 && v.split(/\s+/).length <= 7 && !/\b(19|20)\d\d\b|\|/.test(v),
+    && v.split(/[\s-]+/).some(w => /^\p{Lu}/u.test(w) && !DOM_STOP.has(norm(w)))
+    && !(appellationDans([v], true) && /^(rouge|blanc|rose|vin|aoc|aop|\s)*$/.test(motsDe(v).replace(` ${appKey(appellationDans([v], true))} `, ' ').trim())),
+  appellation: v => v.length <= 60 && v.split(/\s+/).length <= 7 && !/\b(19|20)\d\d\b|\||\bappellation\b/i.test(v),
   cuvee: v => v.length <= 60,
 };
 /** Un lot (« 6 x 75cl », « caisse de 6 ») : le nombre de bouteilles, 1 sinon. */
@@ -5945,8 +5946,10 @@ function cepagesPourcent(s) {
   return GRAPE_PC.map(groupe).sort((a, b) => b.length - a.length)[0];
 }
 const cepagesLus = s => {
-  const xs = str(s).replace(/\d+([.,]\d+)?\s*%/g, ' ').replace(/[()]/g, ' ').split(/[,;/+]| et | - /).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
-  return xs.length && xs.length <= 8 && xs.every(x => x.length <= 30) ? [...new Set(xs.map(canonGrape).filter(Boolean))] : grapesInText(s);
+  const xs = str(s).replace(/\d+([.,]\d+)?\s*%/g, ' ').replace(/[()]/g, ' ').split(/[,;/+&]| et | - /).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  if (!xs.length || xs.length > 8 || xs.some(x => x.length > 30) || grapesInText(s).length > xs.length) return grapesInText(s);
+  // Un nom inconnu qui contient un seul cépage connu (« Syrah noir ») prend son nom.
+  return [...new Set(xs.map(x => { const c = canonGrape(x), g = grapesInText(x); return GRAPES.some(y => y.name === c) || g.length !== 1 ? c : g[0]; }).filter(Boolean))];
 };
 
 /* Appellations courantes que le catalogue ne range pas comme telles : [nom, région, autre écriture]. */
@@ -6011,7 +6014,7 @@ function estMarchand(page, s) {
 }
 /** « Château la Truffière » dans « AOP Monbazillac Château la Truffière blanc 75cl » : le nom qui suit Château, Domaine ou Mas. */
 function chateauDuTitre(textes, appellation) {
-  const hors = new Set(['rouge', 'blanc', 'rose', 'vin', 'aoc', 'aop', 'igp', 'grand', 'cru', 'premier', 'magnum', 'bouteille', 'cuvee', 'vignobles', 'famille', 'domaines', 'maison']), ka = appKey(appellation);
+  const hors = new Set(['rouge', 'blanc', 'rose', 'vin', 'aoc', 'aop', 'igp', 'cru', 'premier', 'magnum', 'bouteille', 'cuvee', 'vignobles', 'famille', 'domaines', 'maison']), ka = appKey(appellation);
   for (const s of textes) {
     const ws = str(s).split(/[\s,|–—()]+/).filter(Boolean), i = ws.findIndex(w => /^(ch[aâ]teau|domaine|mas)$/i.test(w));
     if (i < 0) continue;
@@ -6019,7 +6022,7 @@ function chateauDuTitre(textes, appellation) {
     for (let j = i + 1; j < ws.length; j++) {
       const w = ws[j], k = norm(w).replace(/[^a-z0-9]+/g, '');
       // On s'arrête à la couleur, à l'année, au format, à l'appellation.
-      if (!k || hors.has(k) || /\d/.test(w) || w === '-' || (ka && motsDe(ws.slice(j).join(' ')).startsWith(` ${ka} `))) break;
+      if (!k || hors.has(k) || /\d/.test(w) || w === '-' || (k === 'grand' && /^(cru|vin)$/i.test(norm(ws[j + 1] || ''))) || (ka && motsDe(ws.slice(j).join(' ')).startsWith(` ${ka} `))) break;
       if (/^(de|du|des|la|le|les|d|l|et)$/.test(k) || /^(d|l)['’]/i.test(w) || /^\p{Lu}/u.test(w)) out.push(w); else break;
     }
     while (out.length > 1 && /^(de|du|des|la|le|les|et)$/i.test(out[out.length - 1])) out.pop();
@@ -6027,13 +6030,14 @@ function chateauDuTitre(textes, appellation) {
   }
   return '';
 }
+const MOTS_DU_VIN = new Set('rose rouge blanc blancs noirs brut nature reserve cuvee prestige tradition vieilles vignes magnum bouteille fruits plaisir terroir'.split(' '));
 /** Le domaine : la fiche, la marque (si ce n'est pas le marchand), un producteur du catalogue dont tous les mots sont dans le titre,
     « Château X » dans le titre ; en dernier, le propriétaire nommé par la fiche ou la marque du site s'il est connu du catalogue. */
 function domaineDans(page, appellation, region) {
   const d = Catalogue.data, f = page.fiche || {};
   // Une marque qui n'est pas le « Château X » du titre est celle du distributeur ou de la société (« Pierre Chanau », « Vignobles Dorneau »).
-  const ch = chateauDuTitre([page.titre, page.h1], appellation), memes = (a, b) => keyWords(a).every(k => keyWords(b).some(x => presque(x, k)));
-  const fd = str(f.domaine) && !estMarchand(page, f.domaine) ? str(f.domaine) : '';
+  const ch = chateauDuTitre([page.titre, page.h1, page.ogTitre], appellation), memes = (a, b) => keyWords(a).every(k => keyWords(b).some(x => presque(x, k)));
+  const fd = str(f.domaine) && !estMarchand(page, f.domaine) && (!ch || memes(ch, f.domaine) || memes(f.domaine, ch)) ? str(f.domaine) : '';
   const marque = page.marque && !estMarchand(page, page.marque) && (!ch || memes(ch, page.marque) || memes(page.marque, ch)) ? page.marque : '';
   const brut = fd || marque;
   if (!d) return { domaine: brut || chateauDuTitre([page.titre, page.h1], appellation), prods: [] };
@@ -6045,7 +6049,8 @@ function domaineDans(page, appellation, region) {
     let best = [], n = 0;
     for (const i of cands) {
       const k = d.ptok[i];
-      if (!i || !k.length || !k.some(x => x.length >= 4) || !k.every(x => t.has(x))) continue;
+      // « Clos La Rose » n'est pas reconnu dans « Rosé Frizant » : il faut un mot du nom qui ne soit pas un mot courant du vin.
+      if (!i || !k.length || !k.some(x => x.length >= 4 && !MOTS_DU_VIN.has(x)) || !k.every(x => t.has(x))) continue;
       if (k.length > n) { best = [i]; n = k.length; } else if (k.length === n) best.push(i);
     }
     return best.sort((a, b) => d.pn[b] - d.pn[a]);
@@ -6153,6 +6158,7 @@ function cuveeDansTitre(page, appellation, domaines) {
   while (mots.length && (MOTS_VIDES.has(norm(mots[mots.length - 1])) || /^[-–]$/.test(mots[mots.length - 1]))) mots.pop();
   if (mots.length > 1 && norm(mots[0]) === 'cuvee') mots.shift();
   const c = mots.join(' ');
+  if (grapesInText(c).length && !norm(c).replace(/[^a-z]+/g, ' ').split(' ').filter(m => m && !grapesInText(m).length && !['pinot', 'cabernet', 'grenache', 'noir', 'gris'].includes(m)).length) return '';
   return mots.some(m => m.length >= 4) && c.length <= 50 ? c : '';
 }
 /** La couleur de presque tous les vins d'une appellation au catalogue (9 sur 10, cinq vins au moins) : Fleurie rouge, Coteaux du Layon liquoreux. */
