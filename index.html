@@ -824,8 +824,35 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .lien-card .btn-primary{align-self:flex-start;min-height:46px;padding:0 20px}
 .lien-card .hint{margin:0}
 .ln-ico{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.ln-thumb{display:grid;place-items:center;color:var(--muted)}
-.ln-thumb .ln-ico{width:22px;height:22px}
+.ln-thumb{display:grid;place-items:center;color:var(--muted);background:var(--soft)}
+.ln-thumb .ln-bt{width:20px;height:52px}
+/* Fiche d'un vin analysé (Conseil : photo ou page web) */
+.an-top{flex:1;min-width:0;margin:0 0 0 10px;display:flex;flex-direction:column}
+.an-top b{font:700 1.05rem/1.2 var(--display)}
+.an-top .sub{font-size:.82rem;color:var(--muted)}
+dialog.fiche .d-top{min-height:52px}
+dialog.fiche .d-top .ln-site{margin-left:10px}
+.an-bottle{flex:none;width:80px;height:120px;border-radius:22px;background:var(--surface);display:grid;place-items:center;box-shadow:var(--card-shadow)}
+.an-bt{width:40px;height:104px}
+.an-tv{margin:0 0 12px;padding:14px 16px;border-radius:18px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--ring),var(--card-shadow)}
+.an-tv-h{display:flex;align-items:center;gap:8px;margin:0 0 8px;color:var(--accent-ink)}
+.an-tv-h .ico-tv{width:22px;height:22px}
+.an-tv-h b{color:var(--ink);font:700 1.05rem var(--display)}
+.an-tv .an-avis{margin:0 0 10px;line-height:1.55}
+.an-tv .an-avis:last-child{margin-bottom:0}
+.an-tv .ln-grid{margin-top:4px}
+.an-tv .ln-ask{width:100%;margin-top:4px}
+.an-reco{margin-bottom:16px}
+.an-txt{margin:0 0 4px;line-height:1.5}
+.an-cave{margin:0;padding:12px 14px;border-radius:16px;background:var(--surface);font-size:.92rem;line-height:1.5}
+.an-dl{display:grid;grid-template-columns:minmax(6.5em,auto) minmax(0,1fr);gap:9px 14px;margin:0;padding:14px;border-radius:16px;background:var(--surface);font-size:.9rem;line-height:1.45}
+.an-dl dt{color:var(--muted)}
+.an-dl dd{margin:0;overflow-wrap:anywhere}
+.an-sec{border-bottom:0;padding:0;margin:0 0 8px}
+.an-sec + .an-sec{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.an-n{margin:0 0 6px;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.an-sec .cs-edit{margin-top:16px}
+.an-add{margin:14px 0 0}
 .ln-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
 .ln-site{min-width:0;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ln-top .link{flex:none;font-size:.9rem}
@@ -915,12 +942,12 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 
 /* Détail : sur téléphone, une page entière, « Modifier » en haut. En bas, toujours sous le pouce :
    le nombre de bouteilles avec le +, puis « Retour » et « Déboucher » côte à côte. */
-#dlg-wine{background:var(--bg)}
+#dlg-wine,dialog.fiche{background:var(--bg)}
 .d-top{gap:8px;padding:10px 12px 4px 6px}
 .d-top .spacer{flex:1}
 .d-top .btn{min-height:44px;padding:0 16px;font-size:.9rem}
 .d-add svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-#dlg-wine .sheet-body{padding:6px 16px 22px}
+#dlg-wine .sheet-body,dialog.fiche .sheet-body{padding:6px 16px 22px}
 .d-actions{display:flex;flex-direction:column;gap:10px;padding:12px 16px calc(14px + var(--sab));background:var(--surface);border-radius:22px 22px 0 0;box-shadow:0 -10px 30px -18px rgba(26,36,32,.45)}
 .d-actions:empty{display:none}
 .d-row{display:flex;align-items:center;gap:10px}
@@ -932,11 +959,11 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .d-count .d-owners{margin:3px 0 0;font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .d-add{flex:none;width:48px;height:48px;padding:0;border-radius:16px}
 @media (max-width:699px){
-  #dlg-wine{max-width:none;width:100%;height:100dvh;max-height:none;margin:0;border-radius:0}
-  #dlg-wine .sheet-wrap{max-height:none;height:100%}
-  #dlg-wine[open]{animation:pageIn .22s ease-out}
-  #dlg-wine .d-top{padding-top:calc(8px + var(--sat))}
-  #dlg-wine .sheet-body,.d-actions{padding-left:calc(16px + var(--sal));padding-right:calc(16px + var(--sar))}
+  #dlg-wine,dialog.fiche{max-width:none;width:100%;height:100dvh;max-height:none;margin:0;border-radius:0}
+  #dlg-wine .sheet-wrap,dialog.fiche .sheet-wrap{max-height:none;height:100%}
+  #dlg-wine[open],dialog.fiche[open]{animation:pageIn .22s ease-out}
+  #dlg-wine .d-top,dialog.fiche .d-top{padding-top:calc(8px + var(--sat))}
+  #dlg-wine .sheet-body,dialog.fiche .sheet-body,.d-actions{padding-left:calc(16px + var(--sal));padding-right:calc(16px + var(--sar))}
 }
 @keyframes pageIn{from{transform:translateX(28px);opacity:0}}
 .d-hero{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:4px 0 16px}
@@ -1560,18 +1587,22 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 </dialog>
 
 <!-- Conseil : résultat de l'analyse -->
-<dialog class="sheet" id="dlg-conseil" aria-label="Conseil de Tastevin">
+<!-- Conseil : la fiche de chaque bouteille analysée, comme celle d'un vin de la cave ; « Retour » en bas -->
+<dialog class="sheet fiche" id="dlg-conseil" aria-label="Conseil de Tastevin">
   <div class="sheet-wrap">
-    <div class="sheet-head"><h2>Conseil de Tastevin<span class="sub" id="cs-sub"></span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-head d-top"><p class="an-top"><b>Conseil de Tastevin</b><span class="sub" id="cs-sub"></span></p></div>
     <div class="sheet-body" id="conseil-detail"></div>
+    <div class="d-actions" id="cs-actions"></div>
   </div>
 </dialog>
 
 <!-- Vu en ligne : la page d'un vin lue par l'appli, puis l'avis de Tastevin si on le demande -->
-<dialog class="sheet" id="dlg-lien" aria-labelledby="ln-title">
+<!-- Vu en ligne : la fiche du vin de la page, comme celle d'un vin de la cave ; « Retour » en bas -->
+<dialog class="sheet fiche" id="dlg-lien" aria-label="Vu en ligne">
   <div class="sheet-wrap">
-    <div class="sheet-head"><h2 id="ln-title">Vu en ligne<span class="sub" id="ln-sub"></span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-head d-top" id="ln-top"></div>
     <div class="sheet-body" id="ln-body"></div>
+    <div class="d-actions" id="ln-actions"></div>
   </div>
 </dialog>
 
@@ -2282,6 +2313,18 @@ function gardeBar(w, lo, hi, cls = '') {
   return `<div class="garde st-${st.key} ${w.gardeA ? '' : 'open-end'} ${cls}" aria-hidden="true"><span class="g-win" style="left:${L}%;width:${Math.max(R - L, 2)}%"></span>${now}</div>`;
 }
 
+/** La frise de la fiche : la fenêtre de garde datée, « Aujourd'hui » marqué (fiche d'un vin de la cave ou d'un vin analysé). */
+function friseGarde(w) {
+  const y = thisYear(), from = w.gardeDe, to = w.gardeA;
+  const lo = Math.min(from || w.millesime || y, w.millesime || y, y) - 1;
+  const hi = Math.max(to || (from || y) + 5, y) + 1, span = hi - lo + 1;
+  const p = t => ((t - lo + 0.5) / span) * 100;
+  const labels = [];
+  if (from) labels.push([from, p(from)]);
+  if (to && to !== from) labels.push([to, p(to)]);
+  return `<div class="d-frise" aria-hidden="true"><span class="d-today" style="left:${Math.min(88, Math.max(12, p(y)))}%">Aujourd'hui</span>${gardeBar(w, lo, hi)}<div class="g-labels">${labels.map(([t, x]) => `<span style="left:${x}%">${t}</span>`).join('')}</div></div>`;
+}
+
 function robe(w, extra = '') {
   const has = photoIds.has(w.id);
   return `<div class="robe ${extra}" style="--c:${colorOf(w.couleur).hex}" ${has ? `data-ph="${w.id}"` : ''} aria-hidden="true"></div>`;
@@ -2472,7 +2515,7 @@ function drinkOrder(ws) {
   return ws.filter(w => ['late', 'urgent', 'ready'].includes(gardeStatus(w).key))
     .sort((a, b) => rank(a) - rank(b) || (a.gardeA || 9999) - (b.gardeA || 9999) || wineTitle(a).localeCompare(wineTitle(b), 'fr'));
 }
-const bottleSvg = col => `<svg class="tn-bottle" viewBox="0 0 56 150" aria-hidden="true"><path d="M22 4h12v34c0 8 14 14 14 30v74a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V68c0-16 14-22 14-30z" style="fill:var(--soft);stroke:var(--line)" stroke-width="2"/><path d="M10 86h36v56a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2z" style="fill:${col.key ? col.hex : 'var(--muted)'}"/><rect x="21" y="2" width="14" height="10" rx="2" style="fill:var(--accent)"/></svg>`;
+const bottleSvg = (col, cls = 'tn-bottle') => `<svg class="${cls}" viewBox="0 0 56 150" aria-hidden="true"><path d="M22 4h12v34c0 8 14 14 14 30v74a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V68c0-16 14-22 14-30z" style="fill:var(--soft);stroke:var(--line)" stroke-width="2"/><path d="M10 86h36v56a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2z" style="fill:${col.key ? col.hex : 'var(--muted)'}"/><rect x="21" y="2" width="14" height="10" rx="2" style="fill:var(--accent)"/></svg>`;
 function renderTonight(inStock, prio) {
   const box = $('#tonight'), order = drinkOrder(inStock);
   if (!order.length || UI.review || UI.q || filterCount()) { box.innerHTML = ''; return; }
@@ -3788,16 +3831,7 @@ function renderDetail() {
     : st.key === 'urgent' ? (to === y ? 'Dernière année de sa fenêtre de garde.' : "Plus qu'un an dans sa fenêtre de garde.")
     : st.key === 'ready' ? (to ? `Encore ${to - y + 1} ans dans sa fenêtre de garde.` : 'Pas de date de fin indiquée.')
     : `Encore ${from - y} ${plural(from - y, 'an', 'ans')} à attendre.`;
-  let frise = '';
-  if (st.key !== 'none') {
-    const lo = Math.min(from || w.millesime || y, w.millesime || y, y) - 1;
-    const hi = Math.max(to || (from || y) + 5, y) + 1, span = hi - lo + 1;
-    const p = t => ((t - lo + 0.5) / span) * 100;
-    const labels = [];
-    if (from) labels.push([from, p(from)]);
-    if (to && to !== from) labels.push([to, p(to)]);
-    frise = `<div class="d-frise" aria-hidden="true"><span class="d-today" style="left:${Math.min(88, Math.max(12, p(y)))}%">Aujourd'hui</span>${gardeBar(w, lo, hi)}<div class="g-labels">${labels.map(([t, x]) => `<span style="left:${x}%">${t}</span>`).join('')}</div></div>`;
-  }
+  const frise = st.key !== 'none' ? friseGarde(w) : '';
 
   // Les infos en tuiles ; une longue valeur prend toute la largeur.
   const tiles = [
@@ -5216,6 +5250,64 @@ const conseilWaiting = () => unseenConseils().length > 0 || db.conseils.some(c =
 const myConseil = c => !c.par || c.par === S.device;
 
 const conseilTitle = r => (r && r.estEtiquette !== false ? [r.appellation || r.domaine || 'Vin non identifié', r.millesime].filter(Boolean).join(' ') : 'Étiquette illisible');
+/* ---------- Fiche d'un vin analysé (Conseil : photo d'étiquette ou page web), présentée comme celle d'un vin de la cave ----------
+   En tête : le vin (photo, sinon une bouteille à sa couleur), puis l'avis de Tastevin, quand le boire, le profil probable,
+   les infos en tuiles, les accords, ce que la cave en sait, et toute l'analyse, champ par champ. */
+/** Une phrase qui commence en minuscule (« déjà dans ta cave… »), même derrière une balise : sa première lettre en capitale. */
+const majuscule = h => String(h || '').replace(/^((?:<[^>]+>)*)(\p{Ll})/u, (m, tags, ch) => tags + ch.toUpperCase());
+/** Les accords proposés par Tastevin : en pastilles s'ils forment une liste courte, sinon en phrase. */
+function accordsListe(v) {
+  const xs = (Array.isArray(v) ? v : str(v).split(/[,;]|\s+et\s+/)).map(x => str(x).replace(/\.$/, '')).filter(Boolean);
+  return xs.length && xs.length <= 8 && xs.every(x => x.length <= 36) ? xs : [];
+}
+/** Profil probable, sans IA (moyenne des vins de la cave de même appellation ou cépage), dans sa carte. */
+function profilProbableHTML(v) {
+  const pp = profilProbable(v);
+  return pp ? `<section class="ln-card ln-prob"><div class="ln-card-h"><h3>Profil probable</h3><small>d'après ${pp.par}, sans IA</small></div>${pp.vals.map(([label, g, dr, n]) => `<div class="pf-row"><span class="pf-k">${label}</span><span class="pf-g">${g}</span><span class="pf-bar" role="img" aria-label="${n ? `${label} : environ ${n} sur 5, de ${g} à ${dr}` : `${label} : pas de repère`}">${[1, 2, 3, 4, 5].map(i => `<i${n && i <= n ? ' class="on"' : ''}></i>`).join('')}</span><span class="pf-d">${dr}</span></div>`).join('')}</section>` : '';
+}
+/** v : le vin lu (domaine, cuvee, appellation, region, pays, couleur, millesime, cepages, style, accords, aBoire, gardeDe,
+    gardeA, peutEtrePasse). o : photo (clé data-cs), titreCle (data-cs-title), chips, tastevin, tiles, cave, details, extra. */
+function ficheVinHTML(v, o = {}) {
+  const col = colorOf(v.couleur), place = [v.region, v.pays].filter(Boolean).join(' · ');
+  const titre = v.appellation || v.domaine || 'Vin à identifier';
+  const w = { id: '', couleur: v.couleur || '', millesime: v.millesime || null, gardeDe: v.gardeDe || null, gardeA: v.gardeA || null, alerte: v.peutEtrePasse ? 'passe' : '' };
+  const st = gardeStatus(w);
+  const visuel = o.photo
+    ? `<div class="robe d-photo" style="--c:${col.hex}" data-cs="${o.photo}" role="img" aria-label="Photo de l'étiquette"></div>`
+    : `<div class="an-bottle" role="img" aria-label="${esc(col.key ? `Bouteille de vin ${col.label.toLowerCase()}` : 'Bouteille')}">${bottleSvg(col, 'an-bt')}</div>`;
+  const tiles = (o.tiles || []).filter(([, x]) => x);
+  const acc = accordsListe(v.accords);
+  const det = (o.details || []).filter(Boolean);
+  return `
+    <div class="d-hero">${visuel}
+      <div class="d-id">
+        ${place ? `<p class="d-over">${esc(place)}</p>` : ''}
+        <h2 class="d-name"${o.titreCle ? ` data-cs-title="${o.titreCle}"` : ''}>${esc(titre)}</h2>
+        ${v.appellation && v.domaine ? `<p class="d-dom">${esc(v.domaine)}</p>` : ''}
+        ${v.cuvee ? `<p class="d-cuvee">${esc(v.cuvee)}</p>` : ''}
+        <div class="d-chips">
+          ${col.key ? `<span class="d-chip"><span class="dot" style="--c:${col.hex}"></span>${esc(col.label)}</span>` : ''}
+          <span class="d-chip">${v.millesime || 'Millésime inconnu'}</span>${o.chips || ''}
+        </div>
+      </div>
+    </div>
+    ${o.tastevin || ''}
+    ${st.key !== 'none' || v.aBoire ? `<section class="d-garde st-${st.key}" aria-label="Quand le boire"><p class="d-status">${esc(st.key === 'none' ? 'Quand le boire' : st.label)}</p>${v.aBoire ? `<p class="d-why">${esc(v.aBoire)}</p>` : ''}${st.key !== 'none' ? friseGarde(w) : ''}</section>` : ''}
+    ${profilProbableHTML(v)}
+    ${tiles.length ? `<dl class="d-info d-tiles">${tiles.map(([k, x]) => `<div${String(x).length > 22 ? ' class="wide"' : ''}><dt>${k}</dt><dd>${esc(x)}</dd></div>`).join('')}</dl>` : ''}
+    ${acc.length ? `<h3 class="d-h3">Avec quoi le servir</h3><ul class="acc-chips">${acc.map(x => `<li>${esc(majuscule(x))}</li>`).join('')}</ul>`
+      : v.accords ? `<h3 class="d-h3">Avec quoi le servir</h3><p class="an-txt">${esc(v.accords)}</p>` : ''}
+    ${o.cave ? `<h3 class="d-h3">Et ta cave ?</h3><p class="an-cave">${o.cave}</p>` : ''}
+    ${det.length ? `<h3 class="d-h3">L'analyse en détail</h3><dl class="an-dl">${det.map(([k, x]) => `<dt>${k}</dt><dd>${x}</dd>`).join('')}</dl>` : ''}
+    ${o.extra || ''}`;
+}
+/** L'avis de Tastevin sur une bouteille photographiée : son avis, puis le prix (affiché par la personne, jugé par Tastevin). */
+function avisPhotoHTML(r, b) {
+  const prix = [b.prix != null ? `${fmtMoney(b.prix)} affiché.` : '', r.prix].filter(Boolean).join(' ');
+  if (!r.avis && !prix) return '';
+  return `<section class="an-tv"><p class="an-tv-h">${ICO_TV}<b>L'avis de Tastevin</b></p>${r.avis ? `<p class="cs-avis an-avis">${esc(r.avis)}</p>` : ''}${prix ? `<dl class="ln-grid"><dt>Le prix</dt><dd>${esc(prix)}</dd></dl>` : ''}</section>`;
+}
+
 function renderConseil() {
   const on = claudeOn();
   $('#v-conseil .conseil-intro').hidden = !on;
@@ -5360,7 +5452,7 @@ function renderConseilDetail() {
       : c.mode === 'api' ? 'Tastevin analyse tes bouteilles…' : "Tastevin analyse tes bouteilles : le résultat arrive d'ici une à deux minutes. Tu peux fermer cette fenêtre, il t'attendra dans l'onglet Conseil."}`;
   // Une analyse de plusieurs bouteilles : on peut en retirer une (photo en double, vin sans intérêt).
   const rm = i => (n > 1 && !busy ? `<button type="button" class="link cs-rm" data-act="cs-rm" data-cid="${c.id}" data-i="${i}">Retirer cette bouteille de l'analyse</button>` : '');
-  let body;
+  let body, barre = '';
   if (busy && !c.resultat) {
     body = `<div class="d-note is-wait cs-wait">${thumbs}<p>${esc(when)}${c.note ? ` <br><small>${esc(c.note)}</small>` : ''}</p></div>${q}`;
   } else if (!c.resultat) {
@@ -5369,29 +5461,42 @@ function renderConseilDetail() {
       + c.bouteilles.map((b, i) => `<article class="cs-bottle"><div class="cs-head"><div class="cs-pic" data-cs="${c.id}:${i}" role="img" aria-label="Photo de la bouteille ${i + 1}"></div>
           <div><h3 data-cs-title="${c.id}:${i}">${esc(csFixed(b).length ? conseilTitle(csView({}, b)) : `Bouteille ${i + 1}`)}</h3></div></div>${csEditor(c, i, {})}${rm(i)}</article>`).join('');
   } else {
+    // Chaque bouteille lue a sa fiche, comme un vin de la cave ; le conseil de Tastevin entre plusieurs bouteilles vient d'abord.
+    const rs = c.resultat.bouteilles, seul = rs.length === 1;
+    const reco = c.resultat.recommandation ? `<section class="an-tv an-reco"><p class="an-tv-h">${ICO_TV}<b>${seul ? 'Le conseil de Tastevin' : 'Entre ces bouteilles'}</b></p><p class="an-avis">${esc(c.resultat.recommandation)}</p></section>` : '';
     body = (busy ? `<div class="d-note is-wait cs-wait"><p>${esc(c.statut === 'envoi' ? prog || 'Envoi de la demande…' : 'Tastevin met à jour son analyse avec tes corrections. ' + when.replace(/^Photos bien reçues\. /, ''))}</p></div>`
       : `<div class="d-note cs-relaunch" id="cs-relaunch"${c.modifie ? '' : ' hidden'}><p>Tu as complété cette analyse. Tastevin peut la refaire en tenant compte de tes corrections.</p>
           <div class="btn-row"><button class="btn btn-primary" data-act="cs-relaunch" data-cid="${c.id}">Mettre à jour l'analyse</button></div></div>`)
-      + q + c.resultat.bouteilles.map((r0, i) => {
-        const b = c.bouteilles[i] || {}, r = csView(r0, b), col = colorOf(r.couleur), ok = r0.estEtiquette !== false || csFixed(b).length > 0;
+      + (seul ? '' : reco) + rs.map((r0, i) => {
+        const b = c.bouteilles[i] || {}, r = csView(r0, b), ok = r0.estEtiquette !== false || csFixed(b).length > 0;
         const wine = b.vinId && db.wines.find(w => w.id === b.vinId);
-        const info = [['À boire', r.aBoire], ['Style', r.style], ['Accords', r.accords], ['Prix', b.prix != null ? `${fmtMoney(b.prix)} affiché.${r.prix ? ' ' + r.prix : ''}` : r.prix]].filter(([, v]) => v);
-        const mine = csFixed(b).map(k => (k === 'cuvee' ? 'cuvée' : k === 'millesime' ? 'millésime' : k)).join(', ');
-        return `<article class="cs-bottle">
-          <div class="cs-head"><div class="cs-pic" data-cs="${c.id}:${i}" role="img" aria-label="Photo de la bouteille ${i + 1}"></div>
-            <div><h3>${ok && col.key ? `<span class="dot w-dot" style="--c:${col.hex}"></span>` : ''}<span data-cs-title="${c.id}:${i}">${esc(conseilTitle({ ...r, estEtiquette: ok }))}</span></h3>
-              ${ok ? `<p>${esc([r.domaine, r.cuvee].filter(Boolean).join(', '))}</p><p>${esc([r.region, r.pays, col.key ? col.label : '', r.cepages].filter(Boolean).join(' · '))}</p>` : ''}
-              ${mine ? `<p class="hint">Indiqué par toi : ${esc(mine)}</p>` : ''}</div></div>
-          ${ok ? caveMatch(r) : ''}
-          ${info.length ? `<dl class="d-info">${info.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
-          ${r.avis ? `<p class="cs-avis">${esc(r.avis)}</p>` : ''}
-          ${busy ? '' : csEditor(c, i, r0)}
-          ${ok && !busy ? `<div class="btn-row">${wine ? `<button class="btn" data-open="${wine.id}">Dans ta cave ✓ Voir la fiche</button>` : `<button class="btn btn-primary" data-act="cs-add" data-cid="${c.id}" data-i="${i}">Ajouter à la cave</button>`}</div>` : ''}
-          ${rm(i)}
-        </article>`;
-      }).join('') + (c.resultat.recommandation ? `<div class="d-note"><p class="tv-h"><strong>${ICO_TV}L'avis de Tastevin</strong></p><p>${esc(c.resultat.recommandation)}</p></div>` : '');
+        const mine = csFixed(b).map(k => FIELD_NAMES[k] || k).join(', ');
+        const lus = (Array.isArray(r0.champsLus) ? r0.champsLus : []).map(k => FIELD_NAMES[k] || k).join(', ');
+        const add = !ok || busy ? '' : wine ? `<button class="btn" data-open="${wine.id}">Dans ta cave ✓ Voir la fiche</button>` : `<button class="btn btn-primary" data-act="cs-add" data-cid="${c.id}" data-i="${i}">Ajouter à la cave</button>`;
+        const num = n > 1 ? `<p class="an-n">Bouteille ${i + 1} sur ${n}</p>` : '';
+        if (!ok) return `<article class="cs-bottle an-sec">${num}<div class="cs-head"><div class="cs-pic" data-cs="${c.id}:${i}" role="img" aria-label="Photo de la bouteille ${i + 1}"></div>
+            <div><h3><span data-cs-title="${c.id}:${i}">${esc(conseilTitle({ ...r, estEtiquette: false }))}</span></h3><p>${esc(r0.remarque || "Tastevin n'a pas pu lire cette étiquette : complète-la, puis mets à jour l'analyse.")}</p></div></div>
+            ${busy ? '' : csEditor(c, i, r0)}${rm(i)}</article>`;
+        return `<article class="cs-bottle an-sec">${num}${ficheVinHTML(r, {
+          photo: `${c.id}:${i}`, titreCle: `${c.id}:${i}`,
+          tastevin: avisPhotoHTML(r, b) + (seul ? reco : ''),
+          tiles: [['Style', r.style], ['Cépages', r.cepages], ['Format', r.format], ['Prix affiché', b.prix != null ? fmtMoney(b.prix) : '']],
+          cave: majuscule(caveLien(r)),
+          details: [
+            lus && ["Lu sur l'étiquette", esc(lus)],
+            r0.remarque && ['Remarque', esc(r0.remarque)],
+            mine && ['Indiqué par toi', esc(mine)],
+            c.question && ['Ta question', esc(c.question)],
+          ],
+          extra: (busy ? '' : csEditor(c, i, r0)) + (n > 1 && add ? `<div class="btn-row an-add">${add}</div>` : '') + rm(i),
+        })}</article>`;
+      }).join('');
+    // Une seule bouteille : « Ajouter à la cave » dans la barre du bas, comme « Déboucher » dans la fiche d'un vin.
+    const r0 = rs[0] || {}, b0 = c.bouteilles[0] || {}, w0 = b0.vinId && db.wines.find(w => w.id === b0.vinId);
+    if (seul && !busy && (r0.estEtiquette !== false || csFixed(b0).length > 0)) barre = w0 ? `<button class="btn" data-open="${w0.id}">Dans ta cave ✓</button>` : `<button class="btn btn-primary" data-act="cs-add" data-cid="${c.id}" data-i="0">Ajouter à la cave</button>`;
   }
   det.innerHTML = body + `<div class="d-foot">${busy ? '' : `<button class="btn" data-act="cs-relaunch" data-cid="${c.id}">Relancer l'analyse</button>`}<button class="btn btn-danger" data-act="cs-del" data-cid="${c.id}">Supprimer cette analyse</button></div>`;
+  $('#cs-actions').innerHTML = `<div class="d-row d-btns"><button type="button" class="btn" data-close>Retour</button>${barre}</div>`;
   hydrateScans(det);
 }
 
@@ -5587,6 +5692,12 @@ function extrairePage(html, url) {
   $$('dt', doc).forEach(dt => { const dd = dt.nextElementSibling; if (dd && dd.tagName === 'DD') noter(dt.textContent, dd.textContent); });
   $$('tr', doc).forEach(tr => { const c = tr.children; if (c.length === 2) noter(c[0].textContent, c[1].textContent); });
   $$('li,p', doc).forEach(el => { if (el.childElementCount > 4) return; const m = str(el.textContent).replace(/\s+/g, ' ').match(/^([^:]{3,25}?)\s*:\s*(.{2,100})$/); if (m) noter(m[1], m[2]); });
+  // Libellé et valeur dans deux balises voisines, sans deux-points (« <span>Millésime</span><span>2022</span> »).
+  // Deux feuilles seulement : un menu (« Couleur » suivi de la liste des couleurs du site) ne passe pas.
+  $$('li,div', doc).forEach(el => {
+    const c = el.children;
+    if (c.length === 2 && c[0].childElementCount === 0 && c[1].childElementCount <= 1 && str(el.textContent).length < 160) noter(c[0].textContent, c[1].textContent);
+  });
   const sansBalises = t => str(t).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   const titre = sansBalises(nom(p.name) || meta('og:title', 'twitter:title') || doc.title);
   const h1 = sansBalises((doc.querySelector('h1') || {}).textContent);
@@ -5603,6 +5714,25 @@ const LIEN_COULEURS = [['effervescent', / (champagne|cremant|petillant|mousseux|
   ['rose', / roses? /], ['blanc', / blancs? /], ['rouge', / rouges? /]];
 const couleurDans = s => { const t = motsDe(s), c = LIEN_COULEURS.find(([, re]) => re.test(t)); return c ? c[0] : ''; };
 const anneeDans = s => { const y = thisYear() + 1; return [...String(s || '').matchAll(/(?:^|\D)((?:19[4-9]|20[0-4])\d)(?!\d)/g)].map(m => +m[1]).find(n => n <= y) || null; };
+const cheminDe = url => { try { return decodeURIComponent(new URL(url).pathname).replace(/[-_/.]+/g, ' '); } catch { return ''; } };
+/** « GELIN Pierre » → « Gelin Pierre » : les noms écrits en capitales, remis en minuscules. */
+const joliNom = s => str(s).replace(/\b\p{Lu}{2,}\b/gu, m => m[0] + m.slice(1).toLowerCase());
+/** La cuvée, quand la page ne la nomme pas : ce qui reste du titre sans l'appellation, le domaine, la couleur ni l'année
+    (« Gevrey Chambertin Clos de Meixvelle Gelin » → « Clos de Meixvelle »). */
+function cuveeDansTitre(titre, appellation, domaine) {
+  if (!titre || !appellation) return '';
+  const hors = new Set([...norm(appellation).split(/[^a-z0-9]+/), ...keyWords(domaine), 'vin', 'vins', 'rouge', 'blanc', 'rose', 'aoc', 'aop', 'bouteille', 'magnum'].filter(Boolean));
+  if (!norm(titre).split(/[^a-z0-9]+/).filter(Boolean).some(m => norm(appellation).split(/[^a-z0-9]+/).includes(m))) return '';
+  // « Crozes-Hermitage » : un mot composé de l'appellation est écarté s'il n'en a que des morceaux.
+  const horsDuVin = m => { const xs = norm(m).split(/[^a-z0-9]+/).filter(Boolean); return !xs.length || xs.every(x => hors.has(x)); };
+  const mots = str(titre).split(/[\s,–—|()]+/).filter(m => m && !horsDuVin(m) && !/^\d{4}$/.test(m) && !/^\d+([.,]\d+)?\s*c?l$/i.test(m));
+  while (mots.length && /^(de|du|des|la|le|les|-|et|en)$/i.test(mots[0])) mots.shift();
+  while (mots.length && /^(de|du|des|la|le|les|-|et|en)$/i.test(mots[mots.length - 1])) mots.pop();
+  const c = mots.join(' ');
+  return mots.some(m => m.length >= 4) && c.length <= 50 ? c : '';
+}
+/** L'année écrite juste après le mot « millésime » (« Millésime : 2022 », « millésime 2019 ») : dans la description ou le texte. */
+const anneeApresMillesime = s => { const m = String(s || '').match(/mill[eé]sime[^0-9]{0,15}((?:19[4-9]|20[0-4])\d)(?!\d)/i); return m && +m[1] <= thisYear() + 1 ? +m[1] : null; };
 /** La plus longue appellation du catalogue écrite dans le texte (5 lettres au moins : pas de faux amis). */
 function appellationDans(textes) {
   const d = Catalogue.data, cles = d ? d.appKeys : [...APP_GRAPE_MAP.keys()];
@@ -5658,10 +5788,12 @@ function reconnaitre(page) {
   const couleur0 = couleurDans(f.couleur) || couleurDans(haut);
   const x = ligneCatalogue(prods, appellation, couleur0, page);
   const app = (x && d.A[x.a]) || appellation, annee = int(f.millesime), lus = splitGrapes(f.cepages);
+  const dom = joliNom((x ? d.P[x.p] : domaine) || '');
   const lu = {
-    domaine: (x ? d.P[x.p] : domaine) || '', cuvee: str(f.cuvee) || (x ? catalogueWine(x).cuvee : ''), appellation: app || '',
-    couleur: couleur0 || (x && x.c) || couleurDans(page.description),
-    millesime: annee && annee >= 1800 && annee <= thisYear() + 1 ? annee : anneeDans(page.titre) || anneeDans(page.h1),
+    domaine: dom, cuvee: str(f.cuvee) || (x ? catalogueWine(x).cuvee : '') || cuveeDansTitre(page.titre || page.h1, app, dom), appellation: app || '',
+    // L'adresse de la page dit souvent la couleur (« …/vins-rouges/… ») quand la page ne la dit pas.
+    couleur: couleur0 || (x && x.c) || couleurDans(page.description) || couleurDans(cheminDe(page.url)),
+    millesime: annee && annee >= 1800 && annee <= thisYear() + 1 ? annee : anneeDans(page.titre) || anneeDans(page.h1) || anneeApresMillesime(page.description) || anneeApresMillesime(page.texte),
     region: str(f.region) || (x && d.R[x.r]) || (d && app ? d.appReg.get(Catalogue.appOf(app)) || '' : ''),
     cepages: (lus.length ? lus : grapesInText(`${haut} ${page.description}`)).join(', '),
   };
@@ -5758,52 +5890,58 @@ const resteMois = () => { const c = S.credits; return c && c.mois != null ? (c.p
 function avisLienHTML(e) {
   const a = e.avis;
   if (!a) return '';
-  const head = `<div class="ln-tv-head"><span class="ln-tv-ico">${ICO_TV}</span><h3>L'avis de Tastevin</h3></div>`;
+  const head = `<p class="an-tv-h">${ICO_TV}<b>L'avis de Tastevin</b></p>`;
   const reste = resteMois(), n = e.avisCout || cout('lien');
   const bo = `<p class="ln-bo">${ICO_BOUCHON}${bouchons(n)} ${plural(n, 'utilisé', 'utilisés')}${reste != null ? ` · il t'en reste ${fmtCr(reste)} ce mois-ci` : ''}</p>`;
-  if (a.estVin === false) return `<section class="ln-card" id="ln-tv">${head}<p>${esc(a.avis || "Tastevin n'a pas trouvé de vin précis sur cette page.")}</p></section>${bo}`;
+  if (a.estVin === false) return `<section class="an-tv" id="ln-tv">${head}<p class="an-avis">${esc(a.avis || "Tastevin n'a pas trouvé de vin précis sur cette page.")}</p></section>${bo}`;
   const g = a.genre || 0, gt = str(a.genreTexte).replace(/[.!]?$/, '.');
   const genre = g ? `<p class="ln-genre-h"><span>Ton genre ? ${esc(gt)}</span><small>${g} sur 5</small></p><div class="ln-genre" role="img" aria-label="Correspond à tes goûts : ${g} sur 5">${[1, 2, 3, 4, 5].map(i => `<i${i <= g ? ' class="on"' : ''}></i>`).join('')}</div>`
     : `<p class="ln-genre-h"><span>Ton genre ?</span></p><p class="hint">Tastevin n'a pas assez de tes notes pour le dire : note les vins que tu bois.</p>`;
   const why = (a.raisons || []).length ? `<ul class="ln-why">${a.raisons.map(r => `<li class="${r.sens === 'moins' ? 'moins' : 'plus'}">${r.sens === 'moins' ? ICO_MOINS : ICO_PLUS}<span>${esc(r.texte)}</span></li>`).join('')}</ul>` : '';
-  const grid = [['Le prix', a.prix], ['À boire', a.aBoire], ['Avec', a.accords]].filter(([, x]) => x);
-  return `<section class="ln-card" id="ln-tv">${head}${genre}${why}${grid.length ? `<dl class="ln-grid">${grid.map(([k, x]) => `<dt>${k}</dt><dd>${esc(x)}</dd>`).join('')}</dl>` : ''}${a.avis ? `<p class="ln-avis">${esc(a.avis)}</p>` : ''}</section>${bo}`;
+  // Quand le boire et les accords ont leur place dans la fiche : ici, l'avis, le goût et le prix.
+  const grid = [['Le prix', a.prix]].filter(([, x]) => x);
+  return `<section class="an-tv" id="ln-tv">${head}${a.avis ? `<p class="an-avis ln-avis">${esc(a.avis)}</p>` : ''}${genre}${why}${grid.length ? `<dl class="ln-grid">${grid.map(([k, x]) => `<dt>${k}</dt><dd>${esc(x)}</dd>`).join('')}</dl>` : ''}</section>${bo}`;
 }
 
 function renderLien() {
   const e = mesLiens().find(x => x.id === LIEN.id), dlg = $('#dlg-lien');
   if (!e) { if (dlg.open) dlg.close(); return; }
-  const v = lienVue(e), col = colorOf(v.couleur), P = e.page;
-  $('#ln-sub').textContent = fmtDate(str(e.date).slice(0, 10));
-  const prix = P.prix ? `${P.devise && P.devise !== 'EUR' ? `${fmtNum(P.prix)} ${P.devise}` : fmtMoney(P.prix)} sur la page` : '';
-  const head = `<div class="ln-top"><span class="ln-site">${esc(e.site)}</span><a class="link" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">Ouvrir la page</a></div>
-    <div class="ln-head"><div class="ln-bottle" aria-hidden="true">${ICO_BOUTEILLE}</div><div>
-      <h3>${col.key ? `<span class="dot w-dot" style="--c:${col.hex}"></span>` : ''}${esc(lienTitre(e))}</h3>
-      ${v.domaine && v.domaine !== v.appellation ? `<p class="ln-dom">${esc([v.domaine, v.cuvee].filter(Boolean).join(', '))}</p>` : ''}${prix ? `<p class="ln-prix">${esc(prix)}</p>` : ''}</div></div>`;
-  const c = e.cat, av = avisCave(v), garde = gardeLien(v);
-  const lignes = [
+  const v = lienVue(e), P = e.page, a = e.avis && e.avis.estVin !== false ? e.avis : null;
+  $('#ln-top').innerHTML = `<span class="ln-site">${esc(e.site)}</span><span class="spacer"></span><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">Ouvrir la page</a>`;
+  const prix = P.prix ? (P.devise && P.devise !== 'EUR' ? `${fmtNum(P.prix)} ${P.devise}` : fmtMoney(P.prix)) : '';
+  // L'avis de Tastevin, ou le bouton pour le demander.
+  const tv = e.avis ? avisLienHTML(e)
+    : relaisOn() ? `<section class="an-tv is-ask"><p class="an-tv-h">${ICO_TV}<b>L'avis de Tastevin</b></p><p class="an-avis">Est-il ton genre, que vaut son prix, quand le boire et avec quoi : Tastevin lit la page et te répond.</p>
+        <button type="button" class="btn btn-primary ln-ask" data-act="lien-ask"${LIEN.ask ? ' disabled' : ''}>${ICO_TV}${LIEN.ask ? 'Tastevin lit la page…' : `Demander l'avis de Tastevin · ${bouchons(cout('lien'))}`}</button></section>` : '';
+  // Toute l'analyse : ce que l'appli a lu sur la page, le catalogue, les avis de la cave, la garde habituelle, la page.
+  const lu = e.lu, c = e.cat, av = avisCave(v), garde = gardeLien(v);
+  const luTxt = [lu.domaine, lu.cuvee, lu.appellation, lu.couleur ? colorOf(lu.couleur).label.toLowerCase() : '', lu.millesime, lu.cepages].filter(Boolean).join(' · ');
+  const desc = str(P.description);
+  const details = [
+    ['Lu sur la page', esc(luTxt || "presque rien : le vin n'est pas reconnu.")],
     ['Catalogue', esc(c ? `reconnu : ${[c.domaine, c.appellation && c.appellation + (c.region ? ` (${c.region})` : ''), c.couleur ? colorOf(c.couleur).label.toLowerCase() : '', c.cepages.toLowerCase()].filter(Boolean).join(', ')}.`
       : e.catEtat !== 'ok' ? "indisponible pour l'instant (hors ligne ?)."
-      : e.lu.appellation ? `${e.lu.appellation} reconnu${e.lu.region ? ` (${e.lu.region})` : ''}, ${e.lu.domaine ? "mais pas ce domaine" : 'mais pas le domaine'}.` : 'vin non reconnu.')],
-    ['Ta cave', caveLien(v)],
+      : e.lu.appellation ? `${e.lu.appellation} reconnu${e.lu.region ? ` (${e.lu.region})` : ''}, mais pas ce domaine.` : 'vin non reconnu.')],
     ['Vos avis', esc(av.length ? `${av.join(', ')}.` : "pas encore d'avis sur cette appellation ni ce cépage.")],
-    garde && ['Garde', esc(garde)],
-  ].filter(Boolean);
-  const libre = `<section class="ln-card"><div class="ln-card-h"><h3>Ce que l'appli a trouvé</h3><span class="ln-free">Gratuit</span></div>${lignes.map(([k, x]) => `<p><b>${k}</b> · ${x}</p>`).join('')}</section>`;
-  const pp = profilProbable(v);
-  const prof = pp ? `<section class="ln-card ln-prob"><div class="ln-card-h"><h3>Profil probable</h3><small>d'après ${pp.par}, sans IA</small></div>${pp.vals.map(([label, g, dr, n]) => `<div class="pf-row"><span class="pf-k">${label}</span><span class="pf-g">${g}</span><span class="pf-bar" role="img" aria-label="${n ? `${label} : environ ${n} sur 5, de ${g} à ${dr}` : `${label} : pas de repère`}">${[1, 2, 3, 4, 5].map(i => `<i${n && i <= n ? ' class="on"' : ''}></i>`).join('')}</span><span class="pf-d">${dr}</span></div>`).join('')}</section>` : '';
-  const ask = relaisOn() && !e.avis ? `<button type="button" class="btn btn-primary ln-ask" data-act="lien-ask"${LIEN.ask ? ' disabled' : ''}>${ICO_TV}${LIEN.ask ? 'Tastevin lit la page…' : `Demander l'avis de Tastevin · ${bouchons(cout('lien'))}`}</button>` : '';
+    garde && ['Garde habituelle', esc(majuscule(garde))],
+    desc && !norm(`${P.titre} ${P.h1}`).includes(norm(desc)) && ['La page dit', esc(desc.length > 420 ? desc.slice(0, 420).replace(/\s+\S*$/, '') + '…' : desc)],
+  ];
+  $('#ln-body').innerHTML = ficheVinHTML({ ...v, aBoire: a && a.aBoire, gardeDe: a && a.gardeDe, gardeA: a && a.gardeA, accords: a && a.accords }, {
+    chips: `<span class="d-chip">Vu le ${esc(fmtDate(str(e.date).slice(0, 10)))}</span>`,
+    tastevin: tv,
+    tiles: [['Prix sur la page', prix], ['Cépages', v.cepages]],
+    cave: majuscule(caveLien(v)),
+    details,
+  }) + `<div class="d-foot"><button class="btn btn-danger" data-act="lien-del" data-lien="${e.id}">Supprimer cette analyse</button></div>`;
   const w = e.vinId && db.wines.find(x => x.id === e.vinId);
-  const add = w ? `<button type="button" class="btn" data-open="${w.id}">Dans ta cave ✓ Voir la fiche</button>` : `<button type="button" class="btn${e.avis ? ' btn-primary' : ''}" data-act="lien-add">Ajouter à la cave</button>`;
-  $('#ln-body').innerHTML = head + avisLienHTML(e) + libre + prof
-    + `<div class="ln-actions">${ask}<div class="ln-two"><button type="button" class="btn" data-close>Retour</button>${add}</div></div>`
-    + `<div class="d-foot"><button class="btn btn-danger" data-act="lien-del" data-lien="${e.id}">Supprimer cette analyse</button></div>`;
+  $('#ln-actions').innerHTML = `<div class="d-row d-btns"><button type="button" class="btn" data-close>Retour</button>${w ? `<button type="button" class="btn" data-open="${w.id}">Dans ta cave ✓</button>` : `<button type="button" class="btn${e.avis ? ' btn-primary' : ''}" data-act="lien-add">Ajouter à la cave</button>`}</div>`;
 }
 
 function lienRow(e) {
-  const w = e.vinId && db.wines.find(x => x.id === e.vinId), title = lienTitre(e);
+  const w = e.vinId && db.wines.find(x => x.id === e.vinId), title = lienTitre(e), col = colorOf(lienVue(e).couleur);
+  // En miniature, une bouteille à la couleur du vin (grise si la page ne la dit pas).
   return `<article class="cs-row" data-lien="${e.id}" tabindex="0">
-    <div class="cs-thumbs"><div class="cs-thumb ln-thumb" aria-hidden="true">${ICO_LIEN}</div></div>
+    <div class="cs-thumbs"><div class="cs-thumb ln-thumb" role="img" aria-label="${esc(col.key ? `Vin ${col.label.toLowerCase()}` : 'Vin vu en ligne')}">${bottleSvg(col, 'ln-bt')}</div></div>
     <div class="cs-body"><p class="cs-title">${esc(title)}</p><p class="cs-meta">Lien · ${esc(e.site)} · ${e.avis ? 'avis de Tastevin' : 'lu gratuitement'}</p>
       ${w ? '<div class="cs-pills"><span class="cs-pill is-ok">ajouté à la cave</span></div>' : ''}</div>
     <button type="button" class="cs-del" data-act="lien-del" data-lien="${e.id}" aria-label="${esc(`Supprimer l'analyse : ${title}`)}" title="Supprimer cette analyse">${ICO_CORBEILLE}</button>
