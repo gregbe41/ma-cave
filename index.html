@@ -1043,6 +1043,14 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
 .d-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 16px}
 .d-tiles > div{min-width:0;padding:10px 14px;border-radius:16px;background:var(--surface)}
 .d-tiles > .wide{grid-column:1 / -1}
+/* Le prix d'un vin vu en ligne : vert dans les bons prix, orange un peu cher, rouge clairement au-dessus, gris sans repère */
+.prix-pill{display:inline-block;margin-left:8px;padding:1px 9px;border-radius:999px;font-size:.75rem;font-weight:700;line-height:1.5;vertical-align:.08em;white-space:nowrap}
+.prix-pill.p-bon{background:var(--ready-bg);color:var(--ready-fg)}
+.prix-pill.p-moyen{background:var(--urgent-bg);color:var(--urgent-fg)}
+.prix-pill.p-cher{background:var(--late-bg);color:var(--late-fg)}
+.prix-pill.p-inconnu{background:var(--none-bg);color:var(--none-fg)}
+.d-tiles .prix-pill{display:table;margin:5px 0 0}
+.ln-grid .prix-pill{margin:0 6px 0 0}
 .d-tiles dt{font-size:.78rem}
 .d-tiles dd{margin:1px 0 0;font-weight:600;font-size:.95rem;line-height:1.3;overflow-wrap:anywhere}
 .d-price dd{display:flex;flex-direction:column;gap:1px}
@@ -5341,7 +5349,7 @@ function ficheVinHTML(v, o = {}) {
     ${o.tastevin || ''}
     ${st.key !== 'none' || v.aBoire ? `<section class="d-garde st-${st.key}" aria-label="Quand le boire"><p class="d-status">${esc(st.key === 'none' ? 'Quand le boire' : st.label)}</p>${v.aBoire ? `<p class="d-why">${esc(v.aBoire)}</p>` : ''}${st.key !== 'none' ? friseGarde(w) : ''}</section>` : ''}
     ${profilProbableHTML(v)}
-    ${tiles.length ? `<dl class="d-info d-tiles">${tiles.map(([k, x]) => `<div${String(x).length > 22 ? ' class="wide"' : ''}><dt>${k}</dt><dd>${esc(x)}</dd></div>`).join('')}</dl>` : ''}
+    ${tiles.length ? `<dl class="d-info d-tiles">${tiles.map(([k, x, h]) => `<div${String(x).length > 22 ? ' class="wide"' : ''}><dt>${k}</dt><dd>${esc(x)}${h || ''}</dd></div>`).join('')}</dl>` : ''}
     ${acc.length ? `<h3 class="d-h3">Avec quoi le servir</h3><ul class="acc-chips">${acc.map(x => `<li>${esc(majuscule(x))}</li>`).join('')}</ul>`
       : v.accords ? `<h3 class="d-h3">Avec quoi le servir</h3><p class="an-txt">${esc(v.accords)}</p>` : ''}
     ${o.cave ? `<h3 class="d-h3">Et ta cave ?</h3><p class="an-cave">${o.cave}</p>` : ''}
@@ -5932,6 +5940,28 @@ function profilProbable(v) {
   }
   return null;
 }
+/* Le prix d'un vin vu en ligne, en couleur. Tastevin le juge d'après les prix habituels du vin ; sans lui, l'appli le
+   compare à ce que la cave a payé pour la même appellation (deux vins au moins) : vert jusqu'au haut de ses prix
+   habituels, orange jusqu'à un peu au-dessus du plus cher, rouge au-delà, gris sans repère. */
+const PRIX_PASTILLES = { bon: ['p-bon', 'Bon prix'], un_peu_cher: ['p-moyen', 'Un peu cher'], cher: ['p-cher', 'Cher'], inconnu: ['p-inconnu', 'Pas de repère'] };
+const pastillePrix = niveau => { const [k, t] = PRIX_PASTILLES[niveau] || PRIX_PASTILLES.inconnu; return `<span class="prix-pill ${k}">${t}</span>`; };
+function prixCave(v, prix) {
+  if (!(prix > 0) || !v.appellation) return null;
+  const xs = db.wines.filter(w => w.prix > 0 && appKey(w.appellation) === appKey(v.appellation) && (!v.couleur || !w.couleur || w.couleur === v.couleur))
+    .map(w => w.prix).sort((a, b) => a - b);
+  if (xs.length < 2) return null;
+  const lo = xs[0], hi = xs[xs.length - 1], q = 0.75 * (xs.length - 1), haut = xs[Math.floor(q)] + (xs[Math.ceil(q)] - xs[Math.floor(q)]) * (q % 1);
+  const niveau = prix <= haut * 1.02 ? 'bon' : prix <= hi * 1.15 ? 'un_peu_cher' : 'cher';
+  return { niveau, lo, hi, n: xs.length };
+}
+/** Le niveau de prix à montrer : celui de Tastevin s'il a donné son avis, sinon celui de la cave, sinon « pas de repère ». */
+function prixLien(e, v) {
+  const a = e.avis && e.avis.estVin !== false ? e.avis : null, pc = prixCave(v, e.page.prix);
+  if (a && a.prixNiveau && a.prixNiveau !== 'inconnu') return { niveau: a.prixNiveau, par: 'tastevin', pc };
+  return { niveau: pc ? pc.niveau : 'inconnu', par: pc ? 'cave' : '', pc };
+}
+const euros = n => fmtMoney(n, n % 1 ? 2 : 0);
+
 /** Les bouchons qui me restent ce mois-ci : ma part si j'en ai une, dans la limite de la cave. */
 const resteMois = () => { const c = S.credits; return c && c.mois != null ? (c.partReste != null ? Math.min(c.partReste, c.mois) : c.mois) : null; };
 function avisLienHTML(e) {
@@ -5942,12 +5972,14 @@ function avisLienHTML(e) {
   const bo = `<p class="ln-bo">${ICO_BOUCHON}${bouchons(n)} ${plural(n, 'utilisé', 'utilisés')}${reste != null ? ` · il t'en reste ${fmtCr(reste)} ce mois-ci` : ''}</p>`;
   if (a.estVin === false) return `<section class="an-tv" id="ln-tv">${head}<p class="an-avis">${esc(a.avis || "Tastevin n'a pas trouvé de vin précis sur cette page.")}</p></section>${bo}`;
   const g = a.genre || 0, gt = str(a.genreTexte).replace(/[.!]?$/, '.');
+  // Sans assez de notes : une seule ligne, sans jauge ni raisons.
   const genre = g ? `<p class="ln-genre-h"><span>Ton genre ? ${esc(gt)}</span><small>${g} sur 5</small></p><div class="ln-genre" role="img" aria-label="Correspond à tes goûts : ${g} sur 5">${[1, 2, 3, 4, 5].map(i => `<i${i <= g ? ' class="on"' : ''}></i>`).join('')}</div>`
-    : `<p class="ln-genre-h"><span>Ton genre ?</span></p><p class="hint">Tastevin n'a pas assez de tes notes pour le dire : note les vins que tu bois.</p>`;
-  const why = (a.raisons || []).length ? `<ul class="ln-why">${a.raisons.map(r => `<li class="${r.sens === 'moins' ? 'moins' : 'plus'}">${r.sens === 'moins' ? ICO_MOINS : ICO_PLUS}<span>${esc(r.texte)}</span></li>`).join('')}</ul>` : '';
-  // Quand le boire et les accords ont leur place dans la fiche : ici, l'avis, le goût et le prix.
-  const grid = [['Le prix', a.prix]].filter(([, x]) => x);
-  return `<section class="an-tv" id="ln-tv">${head}${a.avis ? `<p class="an-avis ln-avis">${esc(a.avis)}</p>` : ''}${genre}${why}${grid.length ? `<dl class="ln-grid">${grid.map(([k, x]) => `<dt>${k}</dt><dd>${esc(x)}</dd>`).join('')}</dl>` : ''}</section>${bo}`;
+    : `<p class="ln-genre-h ln-genre-0"><span>Ton genre ? Pas encore assez de tes notes pour le dire.</span></p>`;
+  const why = g && (a.raisons || []).length ? `<ul class="ln-why">${a.raisons.map(r => `<li class="${r.sens === 'moins' ? 'moins' : 'plus'}">${r.sens === 'moins' ? ICO_MOINS : ICO_PLUS}<span>${esc(r.texte)}</span></li>`).join('')}</ul>` : '';
+  // Quand le boire et les accords ont leur place dans la fiche : ici, l'avis, le goût et le prix (en couleur).
+  // Un avis gardé d'avant les pastilles n'a que son texte (a.prix).
+  const prix = a.prixNiveau ? (e.page.prix || a.prixNiveau !== 'inconnu' ? `${pastillePrix(a.prixNiveau)}${a.prixHabituel ? ' ' + esc(`d'habitude ${a.prixHabituel}`) : ''}` : '') : a.prix ? esc(a.prix) : '';
+  return `<section class="an-tv" id="ln-tv">${head}${a.avis ? `<p class="an-avis ln-avis">${esc(a.avis)}</p>` : ''}${genre}${why}${prix ? `<dl class="ln-grid"><dt>Le prix</dt><dd>${prix}</dd></dl>` : ''}</section>${bo}`;
 }
 
 function renderLien() {
@@ -5956,9 +5988,11 @@ function renderLien() {
   const v = lienVue(e), P = e.page, a = e.avis && e.avis.estVin !== false ? e.avis : null;
   $('#ln-top').innerHTML = `<span class="ln-site">${esc(e.site)}</span><span class="spacer"></span><a class="btn" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">Ouvrir la page</a>`;
   const prix = P.prix ? (P.devise && P.devise !== 'EUR' ? `${fmtNum(P.prix)} ${P.devise}` : fmtMoney(P.prix)) : '';
+  const notes = e.avis ? 0 : mesDonnees('0000-00-00').notes.length, px = P.prix && (!P.devise || P.devise === 'EUR') ? prixLien(e, v) : null;
   // L'avis de Tastevin, ou le bouton pour le demander.
   const tv = e.avis ? avisLienHTML(e)
-    : relaisOn() ? `<section class="an-tv is-ask"><p class="an-tv-h">${ICO_TV}<b>L'avis de Tastevin</b></p><p class="an-avis">Est-il ton genre, que vaut son prix, quand le boire et avec quoi : Tastevin lit la page et te répond.</p>
+    : relaisOn() ? `<section class="an-tv is-ask"><p class="an-tv-h">${ICO_TV}<b>L'avis de Tastevin</b></p><p class="an-avis">${notes >= 3 ? 'Est-il ton genre, que vaut son prix, quand le boire et avec quoi : Tastevin lit la page et te répond.'
+        : `${notes ? `Tu as noté ${notes} ${plural(notes, 'vin', 'vins')}` : "Tu n'as encore noté aucun vin"} : Tastevin ne pourra pas encore dire si c'est ton genre. Il te dira ce que vaut son prix, quand le boire et avec quoi.`}</p>
         <button type="button" class="btn btn-primary ln-ask" data-act="lien-ask"${LIEN.ask ? ' disabled' : ''}>${ICO_TV}${LIEN.ask ? 'Tastevin lit la page…' : `Demander l'avis de Tastevin · ${bouchons(cout('lien'))}`}</button></section>` : '';
   // Toute l'analyse : ce que l'appli a lu sur la page, le catalogue, les avis de la cave, la garde habituelle, la page.
   const lu = e.lu, c = e.cat, av = avisCave(v), garde = gardeLien(v);
@@ -5971,12 +6005,13 @@ function renderLien() {
       : e.lu.appellation ? `${e.lu.appellation} reconnu${e.lu.region ? ` (${e.lu.region})` : ''}, mais pas ce domaine.` : 'vin non reconnu.')],
     ['Vos avis', esc(av.length ? `${av.join(', ')}.` : "pas encore d'avis sur cette appellation ni ce cépage.")],
     garde && ['Garde habituelle', esc(majuscule(garde))],
+    px && px.pc && ['Tes prix', esc(`tes achats de ${v.appellation} vont de ${euros(px.pc.lo)} à ${euros(px.pc.hi)} (${px.pc.n} vins) : ${{ bon: 'ce prix est dans tes habitudes', un_peu_cher: 'celui-ci est un peu plus cher', cher: 'celui-ci est nettement plus cher' }[px.pc.niveau]}.`)],
     desc && !norm(`${P.titre} ${P.h1}`).includes(norm(desc)) && ['La page dit', esc(desc.length > 420 ? desc.slice(0, 420).replace(/\s+\S*$/, '') + '…' : desc)],
   ];
   $('#ln-body').innerHTML = ficheVinHTML({ ...v, aBoire: a && a.aBoire, gardeDe: a && a.gardeDe, gardeA: a && a.gardeA, accords: a && a.accords }, {
     chips: `<span class="d-chip">Vu le ${esc(fmtDate(str(e.date).slice(0, 10)))}</span>`,
     tastevin: tv,
-    tiles: [['Prix sur la page', prix], ['Cépages', v.cepages]],
+    tiles: [['Prix sur la page', prix, px ? pastillePrix(px.niveau) : ''], ['Cépages', v.cepages]],
     cave: majuscule(caveLien(v)),
     details,
   }) + `<div class="d-foot"><button class="btn btn-danger" data-act="lien-del" data-lien="${e.id}">Supprimer cette analyse</button></div>`;
