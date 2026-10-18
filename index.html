@@ -210,7 +210,29 @@ legend{padding:0;margin:0 0 8px;font-size:.88rem;font-weight:500;color:var(--mut
 .tn-idea:nth-child(2) span{color:var(--young-fg)}
 .tn-idea b{font:700 1.02rem/1.2 var(--display)}
 .tn-prio{margin:2px 0 4px;font-size:.9rem}
+/* « Réduire » : l'idée du soir tient alors sur une ligne, qui la rappelle ; touchée, la carte revient. */
+.tonight{position:relative}
+.tonight .tn-bottle{margin-top:30px}
+.tn-fold{position:absolute;top:4px;right:4px;display:flex;align-items:center;gap:2px;height:44px;padding:0 8px 0 12px;border:0;border-radius:999px;background:none;color:var(--muted);font:600 .8rem var(--sans)}
+.tn-fold:hover,.tn-fold:focus-visible{color:var(--ink);background:var(--soft)}
+.tn-fold svg,.tn-mini-more svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tn-mini{display:flex;align-items:center;gap:12px;width:100%;min-height:62px;margin:8px 0 10px;padding:10px 14px 10px 16px;border:0;border-radius:18px;background:var(--surface);box-shadow:var(--card-shadow),inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent);color:var(--ink);font:inherit;text-align:left}
+.tn-mini .tn-bottle{flex:none;width:15px;height:40px}
+.tn-mini-txt{flex:1;min-width:0;display:grid;gap:1px}
+.tn-mini-txt small{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sfg)}
+.tn-mini-txt b{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:700 1.02rem/1.25 var(--display)}
+.tn-mini-more{flex:none;display:flex;align-items:center;gap:2px;font-size:.85rem;font-weight:600;color:var(--accent-ink)}
+@keyframes tn-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.tn-anim{animation:tn-in .22s ease-out}
+@media (prefers-reduced-motion:reduce){.tn-anim{animation:none}}
 .tools{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+/* Les filtres de la Cave et de « À boire » restent en haut quand on fait défiler la liste ; en remontant au-dessus,
+   ils reprennent leur place. Une fois collés (is-stuck), une bande du fond passe sous la barre d'état. */
+#v-cave > .tools,#v-boire > .tools{position:sticky;top:var(--sat);z-index:4;margin-left:calc(-16px - var(--sal));margin-right:calc(-16px - var(--sar));padding:8px calc(16px + var(--sar)) 8px calc(16px + var(--sal));background:var(--bg)}
+#v-cave > .tools{margin-bottom:4px}
+#v-boire > .tools{margin-bottom:4px}
+.tools.is-stuck{box-shadow:0 1px 0 var(--line2),0 12px 16px -16px rgba(26,31,28,.45)}
+.tools.is-stuck::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:var(--sat);background:var(--bg)}
 .search{height:48px;padding:0 16px 0 44px;border-radius:999px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2355615B' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:16px center;background-size:18px}
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 2px}
 .chips::-webkit-scrollbar{display:none}
@@ -1886,6 +1908,8 @@ const Native = (() => {
 /* Tastevin (l'IA de l'appli, propulsée par Claude) : la coupelle du sommelier et son étincelle ; le bouchon, l'unité de ses crédits. */
 const ICO_TV = '<svg class="ico-tv" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="10" cy="13" rx="7.5" ry="2.2"/><path d="M2.5 13c0 4.1 3.4 7 7.5 7s7.5-2.9 7.5-7"/><path d="M8.3 13.5c.5-1 2.9-1 3.4 0"/><path d="M17.4 13.8h1.2"/><circle cx="20.4" cy="13.8" r="1.8"/><path class="ico-fill" d="M6.6 3c.3 1.6 1 2.3 2.6 2.6-1.6.3-2.3 1-2.6 2.6-.3-1.6-1-2.3-2.6-2.6 1.6-.3 2.3-1 2.6-2.6z"/></svg>';
 const ICO_CORBEILLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15"/><path d="M9.5 7V4.8h5V7"/><path d="M6.5 7l.9 12.2a1.5 1.5 0 0 0 1.5 1.3h6.2a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/><path d="M10 11v5.5M14 11v5.5"/></svg>';
+const ICO_CHEV_HAUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
+const ICO_CHEV_BAS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 const ICO_BOUCHON = '<svg class="ico-bo" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6.4" rx="4.6" ry="1.7"/><path d="M7.4 6.4v11.2c0 .95 2.06 1.7 4.6 1.7s4.6-.75 4.6-1.7V6.4"/><circle class="ico-dot" cx="10" cy="10.4" r=".6"/><circle class="ico-dot" cx="13.7" cy="11.9" r=".6"/><circle class="ico-dot" cx="10.9" cy="14.6" r=".6"/><circle class="ico-dot" cx="13.9" cy="16.4" r=".6"/></svg>';
 const starsHTML = n => n ? `<span class="stars" aria-label="${n} sur 5">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>` : '';
 
@@ -1929,7 +1953,7 @@ let S = { ...S_DEFAULTS, photoDeletes: [] };
 let STOCK = new Map(), BY_OWNER = new Map();
 const photoIds = new Set();
 const UI = { view: 'cave', q: '', color: '', sort: 'nom', showEmpty: false, period: '12m', openWine: null, owner: lsGet('macave:owner', ''), lastOwner: null, whoAsked: '', review: false, region: '', taster: '', filtersOpen: false, openConseil: null,
-  csOpen: new Set(), csDeferred: false, csProgress: null, accord: '', boireFiltersOpen: false, compact: lsGet('macave:compact', false) === true, periodKey: '', boireTab: 'prio', idea: 0,
+  csOpen: new Set(), csDeferred: false, csProgress: null, accord: '', boireFiltersOpen: false, compact: lsGet('macave:compact', false) === true, periodKey: '', boireTab: 'prio', idea: 0, tonightClosed: lsGet('macave:tonightClosed', false) === true, tnAnim: false,
   statsQui: lsGet('macave:statsQui', ''), msCouleur: '', msPref: 'cepages', msDuo: '', msNoterTout: false, msPortrait: false };
 
 function loadAll() {
@@ -2359,6 +2383,21 @@ function render() {
   updateSyncUI();
   renderWho();
   renderCaveBtn();
+  checkStuck();
+}
+
+/* Les filtres collés en haut de la Cave et de « À boire » : une ombre et une bande sous la barre d'état, seulement une
+   fois collés (en haut de la liste, rien ne change). Vérifié au défilement, une fois par image. */
+let stuckRaf = 0;
+function checkStuck() {
+  if (stuckRaf) return;
+  stuckRaf = requestAnimationFrame(() => {
+    stuckRaf = 0;
+    $$('#v-cave > .tools, #v-boire > .tools').forEach(el => {
+      const top = parseFloat(getComputedStyle(el).top) || 0;
+      el.classList.toggle('is-stuck', !el.hidden && el.offsetParent !== null && window.scrollY > 0 && el.getBoundingClientRect().top <= top + 0.5);
+    });
+  });
 }
 
 /* La personne de cet appareil, en initiale dans l'en-tête : la toucher permet d'en changer. */
@@ -2520,6 +2559,13 @@ function renderTonight(inStock, prio) {
   const box = $('#tonight'), order = drinkOrder(inStock);
   if (!order.length || UI.review || UI.q || filterCount()) { box.innerHTML = ''; return; }
   const w = order[UI.idea % order.length], st = gardeStatus(w);
+  // Replié : une ligne qui rappelle l'idée du soir ; touchée, la carte revient.
+  if (UI.tonightClosed) {
+    box.innerHTML = `<button type="button" class="tn-mini st-${st.key}" data-act="tonight-open" aria-expanded="false" aria-label="${esc(`Afficher l'idée du soir : ${wineTitle(w)}`)}">${bottleSvg(colorOf(w.couleur))}
+      <span class="tn-mini-txt"><small>Ce soir${prio ? ` · ${prio} à boire en priorité` : ''}</small><b>${esc(wineTitle(w))}${w.millesime ? ' ' + w.millesime : ''}</b></span>
+      <span class="tn-mini-more">Afficher${ICO_CHEV_BAS}</span></button>`;
+    return;
+  }
   const style = str(w.style).split('. ')[0];
   const txt = [[w.domaine, w.cuvee].filter(Boolean).join(', '), style || st.label].filter(Boolean).map(t => t.replace(/\.?$/, '.')).join(' ');
   const used = new Set([w.id]), ideas = [];
@@ -2528,7 +2574,8 @@ function renderTonight(inStock, prio) {
     const fit = order.find(x => !used.has(x.id) && (str(x.accords) ? accordsOf(x.accords).some(a => acc.includes(a)) : colors.includes(x.couleur)));
     if (fit) { used.add(fit.id); ideas.push([label, fit]); }
   }
-  box.innerHTML = `<section class="tonight st-${st.key}" aria-label="Idée pour ce soir">
+  box.innerHTML = `<section class="tonight st-${st.key}${UI.tnAnim ? ' tn-anim' : ''}" aria-label="Idée pour ce soir">
+      <button type="button" class="tn-fold" data-act="tonight-fold" aria-expanded="true" aria-label="Réduire l'idée du soir">Réduire${ICO_CHEV_HAUT}</button>
       <div class="tn-main">
         <p class="tn-tag">${TONIGHT_TAG[st.key]}</p>
         <h2 class="tn-name"><button type="button" data-open="${w.id}">${esc(wineTitle(w))}<small>${w.millesime || 'NM'}</small></button></h2>
@@ -7654,6 +7701,8 @@ async function importJSON(file) {
    Événements
    ========================================================= */
 function wire() {
+  addEventListener('scroll', checkStuck, { passive: true });
+  addEventListener('resize', checkStuck);
   $('#wf-colors').innerHTML = COLORS.map(c => `<label class="cchip"><input type="radio" name="couleur" value="${c.key}"><span><span class="dot" style="--c:${c.hex}"></span>${c.label}</span></label>`).join('');
 
   document.addEventListener('click', e => {
@@ -7687,6 +7736,15 @@ function wire() {
         case 'edit-move': openMove(null, null, act.dataset.move); break;
         case 'goto': if (act.dataset.tab) UI.boireTab = act.dataset.tab; setView(act.dataset.view); break;
         case 'next-idea': UI.idea++; renderCave(); break;
+        // « Réduire » l'idée du soir, puis « Afficher » : le choix reste sur l'appareil.
+        case 'tonight-fold': case 'tonight-open': {
+          UI.tonightClosed = act.dataset.act === 'tonight-fold';
+          lsSet('macave:tonightClosed', UI.tonightClosed);
+          UI.tnAnim = !UI.tonightClosed; renderCave(); UI.tnAnim = false;
+          const f = $(UI.tonightClosed ? '#tonight .tn-mini' : '#tonight .tn-fold');
+          if (f) f.focus();
+          break;
+        }
         case 'sync-now': sync({ interactive: true }); break;
         case 'invite': invite(); break;
         case 'read-now': readNow(); break;
