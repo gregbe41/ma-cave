@@ -3374,7 +3374,8 @@ function renderCredits() {
 function renderBouchons() {
   const c = S.credits, body = $('#bouchons-body');
   if (!c || S.role !== 'proprio') { body.innerHTML = ''; return; }
-  const who = (c.parPersonne || []).filter(x => x.credits > 0), cote = S.coteMois || 12;
+  // Cave Drive : les limites se règlent sous le plafond du relais (plus haut pour les caves de l'éditeur).
+  const who = (c.parPersonne || []).filter(x => x.credits > 0), cote = S.coteMois || 12, p = isDrive() && c.plafond ? c.plafond : null;
   const step = (name, label, sub, v, max, pas) => `<div class="bo-step"><span class="rg-txt"><b>${label}</b><small>${sub}</small></span>
       <button type="button" class="bo-btn" data-bo="${name}" data-pas="-${pas}" aria-label="${label} : moins">−</button>
       <input name="${name}" type="number" min="0" max="${max}" inputmode="numeric" value="${v}" aria-label="${label}">
@@ -3382,8 +3383,8 @@ function renderBouchons() {
   body.innerHTML = `<p class="bo-lead">Tastevin se paie en bouchons, pris sur ceux de la cave. Tu fixes les limites pour tout le monde ; une demande qui échoue ne coûte rien.</p>
     <form class="cr-form" id="credits-form">
       <h3 class="rg-h">Limites de la cave</h3>
-      <div class="rg-card">${step('mois', 'Par mois', 'Pour toute la cave', c.max.mois, 10000, 10)}${step('jour', 'Par jour, au plus', 'Pour toute la cave', c.max.jour, 1000, 5)}
-        ${isDrive() && c.plafond ? `<p class="hint">Au plus ${c.plafond.mois} bouchons par mois et ${c.plafond.jour} par jour : c'est le plafond de l'appli pour cette cave.</p>` : ''}</div>
+      <div class="rg-card">${step('mois', 'Par mois', p ? `Pour toute la cave · jusqu'à ${p.mois}` : 'Pour toute la cave', c.max.mois, p ? p.mois : 10000, 10)}${step('jour', 'Par jour, au plus', p ? `Pour toute la cave · jusqu'à ${p.jour}` : 'Pour toute la cave', c.max.jour, p ? p.jour : 1000, 5)}
+        ${p ? `<p class="hint">Ce sont tes limites pour la cave. Tu peux monter jusqu'à ${p.mois} bouchons par mois et ${p.jour} par jour : c'est le plafond de l'appli pour cette cave.</p>` : ''}</div>
       <h3 class="rg-h">Part de chaque membre</h3>
       <div class="rg-card">${step('part', 'Par membre', 'Chaque mois, prise sur la limite de la cave', c.max.part, 10000, 5)}
         <p class="hint">0 : pas de part, seule la limite de la cave compte. Toi, tu n'as que celle-ci.</p></div>
