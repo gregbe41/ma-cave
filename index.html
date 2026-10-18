@@ -797,6 +797,9 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .scan-dot[aria-current="true"]{background:var(--accent)}
 .cs-row{display:flex;gap:12px;align-items:center;padding:12px;border-radius:18px;background:var(--surface);box-shadow:var(--card-shadow);cursor:pointer}
 .cs-row:hover{box-shadow:0 0 0 1px var(--line),var(--card-shadow)}
+.cs-del{flex:none;align-self:center;display:grid;place-items:center;width:44px;height:44px;margin:-6px -6px -6px -4px;padding:0;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer}
+.cs-del svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.cs-del:hover,.cs-del:focus-visible{color:var(--late-fg);background:var(--late-bg)}
 .cs-thumbs{display:flex}
 .cs-row .cs-thumbs{flex:none;width:74px}
 .cs-thumb,.cs-pic{flex:none;border-radius:10px;background:var(--line) center/cover no-repeat;box-shadow:0 0 0 2px var(--surface)}
@@ -821,6 +824,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .cs-cave{margin:10px 0 0;font-size:.9rem}
 .cs-avis{margin:12px 0 0;line-height:1.5}
 .cs-bottle .d-info{margin:12px 0 0}
+.cs-rm{display:block;margin:14px 0 0;color:var(--late-fg);font-size:.9rem}
 .cs-wait{display:flex;gap:12px;align-items:center}
 .cs-wait .cs-thumbs{flex:none}
 .badge{display:inline-block;margin-right:7px;padding:1px 8px;border-radius:999px;font:600 .72rem/1.5 var(--sans);vertical-align:1px;color:var(--ink);background:color-mix(in srgb,var(--warn) 20%,transparent)}
@@ -1781,6 +1785,7 @@ const Native = (() => {
 })();
 /* Tastevin (l'IA de l'appli, propulsée par Claude) : la coupelle du sommelier et son étincelle ; le bouchon, l'unité de ses crédits. */
 const ICO_TV = '<svg class="ico-tv" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="10" cy="13" rx="7.5" ry="2.2"/><path d="M2.5 13c0 4.1 3.4 7 7.5 7s7.5-2.9 7.5-7"/><path d="M8.3 13.5c.5-1 2.9-1 3.4 0"/><path d="M17.4 13.8h1.2"/><circle cx="20.4" cy="13.8" r="1.8"/><path class="ico-fill" d="M6.6 3c.3 1.6 1 2.3 2.6 2.6-1.6.3-2.3 1-2.6 2.6-.3-1.6-1-2.3-2.6-2.6 1.6-.3 2.3-1 2.6-2.6z"/></svg>';
+const ICO_CORBEILLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15"/><path d="M9.5 7V4.8h5V7"/><path d="M6.5 7l.9 12.2a1.5 1.5 0 0 0 1.5 1.3h6.2a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/><path d="M10 11v5.5M14 11v5.5"/></svg>';
 const ICO_BOUCHON = '<svg class="ico-bo" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6.4" rx="4.6" ry="1.7"/><path d="M7.4 6.4v11.2c0 .95 2.06 1.7 4.6 1.7s4.6-.75 4.6-1.7V6.4"/><circle class="ico-dot" cx="10" cy="10.4" r=".6"/><circle class="ico-dot" cx="13.7" cy="11.9" r=".6"/><circle class="ico-dot" cx="10.9" cy="14.6" r=".6"/><circle class="ico-dot" cx="13.9" cy="16.4" r=".6"/></svg>';
 const starsHTML = n => n ? `<span class="stars" aria-label="${n} sur 5">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>` : '';
 
@@ -5167,6 +5172,7 @@ function renderConseil() {
       <div class="cs-thumbs">${c.bouteilles.slice(0, 3).map((_, i) => `<div class="cs-thumb" data-cs="${c.id}:${i}"></div>`).join('')}</div>
       <div class="cs-body"><p class="cs-title">${esc(title)}</p><p class="cs-meta">${esc(fmtDate((c.date || '').slice(0, 10)))}${c.par ? ` · ${esc(c.par)}` : ''} · ${n} ${plural(n, 'bouteille', 'bouteilles')}</p>
         ${pills.length ? `<div class="cs-pills">${pills.map(([k, t]) => `<span class="cs-pill ${k}">${esc(t)}</span>`).join('')}</div>` : ''}</div>
+      <button type="button" class="cs-del" data-act="cs-del" data-cid="${c.id}" aria-label="${esc(`Supprimer l'analyse : ${title}`)}" title="Supprimer cette analyse">${ICO_CORBEILLE}</button>
     </article>`;
   }).join('') : `<div class="empty"><p>Aucun vin analysé pour l'instant.</p></div>`;
   if (others) box.insertAdjacentHTML('beforeend', `<p class="hint cs-others">${others} ${plural(others, 'analyse faite', 'analyses faites')} par d'autres personnes ${plural(others, "reste sur son profil", 'restent sur leur profil')}.</p>`);
@@ -5273,6 +5279,8 @@ function renderConseilDetail() {
   const when = c.statut === 'envoi' ? prog || 'Envoi des photos au script…'
     : `Photos bien reçues. ${c.mode === 'nuit' ? 'Tastevin analysera ces bouteilles cette nuit, lors du passage de la routine.'
       : c.mode === 'api' ? 'Tastevin analyse tes bouteilles…' : "Tastevin analyse tes bouteilles : le résultat arrive d'ici une à deux minutes. Tu peux fermer cette fenêtre, il t'attendra dans l'onglet Conseil."}`;
+  // Une analyse de plusieurs bouteilles : on peut en retirer une (photo en double, vin sans intérêt).
+  const rm = i => (n > 1 && !busy ? `<button type="button" class="link cs-rm" data-act="cs-rm" data-cid="${c.id}" data-i="${i}">Retirer cette bouteille de l'analyse</button>` : '');
   let body;
   if (busy && !c.resultat) {
     body = `<div class="d-note is-wait cs-wait">${thumbs}<p>${esc(when)}${c.note ? ` <br><small>${esc(c.note)}</small>` : ''}</p></div>${q}`;
@@ -5280,7 +5288,7 @@ function renderConseilDetail() {
     // Échec : on peut compléter chaque bouteille (domaine, millésime…) puis relancer.
     body = `<div class="d-note is-fail"><p>L'analyse n'a pas abouti${c.note ? ` : ${esc(c.note)}` : '.'}</p></div>${q}`
       + c.bouteilles.map((b, i) => `<article class="cs-bottle"><div class="cs-head"><div class="cs-pic" data-cs="${c.id}:${i}" role="img" aria-label="Photo de la bouteille ${i + 1}"></div>
-          <div><h3 data-cs-title="${c.id}:${i}">${esc(csFixed(b).length ? conseilTitle(csView({}, b)) : `Bouteille ${i + 1}`)}</h3></div></div>${csEditor(c, i, {})}</article>`).join('');
+          <div><h3 data-cs-title="${c.id}:${i}">${esc(csFixed(b).length ? conseilTitle(csView({}, b)) : `Bouteille ${i + 1}`)}</h3></div></div>${csEditor(c, i, {})}${rm(i)}</article>`).join('');
   } else {
     body = (busy ? `<div class="d-note is-wait cs-wait"><p>${esc(c.statut === 'envoi' ? prog || 'Envoi de la demande…' : 'Tastevin met à jour son analyse avec tes corrections. ' + when.replace(/^Photos bien reçues\. /, ''))}</p></div>`
       : `<div class="d-note cs-relaunch" id="cs-relaunch"${c.modifie ? '' : ' hidden'}><p>Tu as complété cette analyse. Tastevin peut la refaire en tenant compte de tes corrections.</p>
@@ -5300,6 +5308,7 @@ function renderConseilDetail() {
           ${r.avis ? `<p class="cs-avis">${esc(r.avis)}</p>` : ''}
           ${busy ? '' : csEditor(c, i, r0)}
           ${ok && !busy ? `<div class="btn-row">${wine ? `<button class="btn" data-open="${wine.id}">Dans ta cave ✓ Voir la fiche</button>` : `<button class="btn btn-primary" data-act="cs-add" data-cid="${c.id}" data-i="${i}">Ajouter à la cave</button>`}</div>` : ''}
+          ${rm(i)}
         </article>`;
       }).join('') + (c.resultat.recommandation ? `<div class="d-note"><p class="tv-h"><strong>${ICO_TV}L'avis de Tastevin</strong></p><p>${esc(c.resultat.recommandation)}</p></div>` : '');
   }
@@ -5373,6 +5382,32 @@ function deleteConseil(id) {
   $('#dlg-conseil').close();
   commit();
   toast('Analyse supprimée');
+}
+
+/** Retire une bouteille d'une analyse : son résultat et sa photo ; les bouteilles suivantes remontent d'un rang.
+    La dernière bouteille d'une analyse ne se retire pas : c'est l'analyse entière qu'on supprime. */
+async function removeConseilBottle(cid, i) {
+  const c = db.conseils.find(x => x.id === cid), n = c ? c.bouteilles.length : 0;
+  if (!c || csBusy(c) || !c.bouteilles[i]) return;
+  if (n < 2) { deleteConseil(cid); return; }
+  if (!confirm("Retirer cette bouteille de l'analyse ? Si elle a été ajoutée à la cave, le vin y reste.")) return;
+  const b = c.bouteilles[i];
+  if (b.photoId) { S.photoDeletes.push(b.photoId); saveSettings(); }
+  // Les photos gardées sur l'appareil sont rangées par rang : celles qui suivent remontent d'un cran.
+  for (let j = i; j < n; j++) {
+    const k = scanKey(cid, j), next = j + 1 < n ? await Photos.get(scanKey(cid, j + 1)).catch(() => null) : null;
+    Photos.forget(k);
+    await (next ? Photos.put({ ...next, id: k }) : Photos.del(k)).catch(() => {});
+  }
+  c.bouteilles.splice(i, 1);
+  if (c.resultat && Array.isArray(c.resultat.bouteilles)) {
+    c.resultat.bouteilles.splice(i, 1);
+    c.resultat.bouteilles.forEach((r, j) => { if (r && r.index != null) r.index = j + 1; });
+  }
+  c.updatedAt = nowISO();
+  UI.csOpen.clear();
+  commit();
+  toast("Bouteille retirée de l'analyse");
 }
 
 /* =========================================================
@@ -7042,6 +7077,7 @@ function wire() {
         case 'owner-save': saveOwnerCode(); break;
         case 'owner-forget': forgetOwnerCode(); break;
         case 'cs-del': deleteConseil(act.dataset.cid); break;
+        case 'cs-rm': removeConseilBottle(act.dataset.cid, +act.dataset.i); break;
         case 'cs-relaunch': relaunchConseil(act.dataset.cid); break;
         case 'bulk': openBulk(); break;
         case 'review': UI.review = true; renderCave(); window.scrollTo(0, 0); break;
