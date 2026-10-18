@@ -21,7 +21,7 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
 :root{
   /* Thème clair de « Nuit de cave » : fond pierre, cartes blanches, accent ambre (texte foncé dessus, 9:1). */
   --bg:#F4F2EE; --surface:#FFFFFF; --field:#FFFFFF; --soft:#ECE8E1; --seg:#E6E1D8;
-  --ink:#1A1F1C; --muted:#5D6660; --line:#DCD6CD;
+  --ink:#1A1F1C; --muted:#5D6660; --line:#DCD6CD; --probable:#B9AE9C;
   /* Séparateurs dans une carte, contour de la carte de la cave, rail d'un interrupteur éteint */
   --line2:#E7E2DA; --ring:#EED7B0; --off:#B5ADA2;
   --accent:#E8A13A; --on-accent:#1A1206; --accent-tint:color-mix(in srgb,var(--accent) 16%,var(--surface)); --accent-ink:#9A5B0C;
@@ -50,7 +50,7 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0E1311; --surface:#171E1B; --field:#0F1512; --soft:#1F2824; --seg:#1C2420;
-    --ink:#ECEFEA; --muted:#9AA59F; --line:#2C3631;
+    --ink:#ECEFEA; --muted:#9AA59F; --line:#2C3631; --probable:#857C6D;
     --line2:#222B27; --ring:#3A2E1A; --off:#3A4540;
     --accent:#E8A13A; --on-accent:#1A1206; --accent-tint:color-mix(in srgb,var(--accent) 16%,var(--surface)); --accent-ink:#E8A13A;
     --hero:#E8A13A; --on-hero:#1A1206;
@@ -68,7 +68,7 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
 }
 :root[data-theme="dark"]{
   --bg:#0E1311; --surface:#171E1B; --field:#0F1512; --soft:#1F2824; --seg:#1C2420;
-  --ink:#ECEFEA; --muted:#9AA59F; --line:#2C3631;
+  --ink:#ECEFEA; --muted:#9AA59F; --line:#2C3631; --probable:#857C6D;
   --line2:#222B27; --ring:#3A2E1A; --off:#3A4540;
   --accent:#E8A13A; --on-accent:#1A1206; --accent-tint:color-mix(in srgb,var(--accent) 16%,var(--surface)); --accent-ink:#E8A13A;
   --hero:#E8A13A; --on-hero:#1A1206;
@@ -816,6 +816,58 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .cs-pill.is-ok{background:var(--ready-bg);color:var(--ready-fg)}
 .cs-pill.is-fail{background:var(--late-bg);color:var(--late-fg)}
 .cs-pill.is-cave{background:var(--urgent-bg);color:var(--urgent-fg)}
+/* Conseil · Vu en ligne : la carte du lien, puis la fenêtre de lecture (gratuite) et l'avis de Tastevin (sur demande) */
+.lien-card{display:flex;flex-direction:column;gap:10px;margin:14px 0 0;padding:18px;border-radius:22px;background:var(--surface);box-shadow:var(--card-shadow)}
+.lien-card h2{margin:0;font-size:1.3rem;line-height:1.2}
+.lien-card .f{margin:0}
+.lien-card .form-err{margin:0}
+.lien-card .btn-primary{align-self:flex-start;min-height:46px;padding:0 20px}
+.lien-card .hint{margin:0}
+.ln-ico{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ln-thumb{display:grid;place-items:center;color:var(--muted)}
+.ln-thumb .ln-ico{width:22px;height:22px}
+.ln-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+.ln-site{min-width:0;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ln-top .link{flex:none;font-size:.9rem}
+.ln-head{display:flex;gap:14px;align-items:center;margin:0 0 14px}
+.ln-bottle{flex:none;width:64px;height:104px;border-radius:14px;background:var(--soft);color:var(--probable);display:grid;place-items:center}
+.ln-bottle .ln-ico{width:40px;height:40px;stroke-width:1.5}
+.ln-head h3{margin:0;font-size:1.4rem;line-height:1.15;overflow-wrap:anywhere}
+.ln-dom{margin:4px 0 0;font-weight:600}
+.ln-prix{margin:2px 0 0;font-size:.9rem;color:var(--muted)}
+.ln-card{margin:0 0 12px;padding:14px 16px;border-radius:20px;background:var(--surface);box-shadow:var(--card-shadow)}
+.ln-card-h{display:flex;align-items:baseline;gap:8px;margin:0 0 8px}
+.ln-card-h h3{flex:1;margin:0;font-size:1.1rem}
+.ln-card-h small{color:var(--muted);font-size:.78rem;text-align:right}
+.ln-free{padding:2px 9px;border-radius:999px;background:var(--ready-bg);color:var(--ready-fg);font-size:.75rem;font-weight:700}
+.ln-card > p{margin:0;font-size:.92rem;line-height:1.45;overflow-wrap:anywhere}
+.ln-card > p + p{margin-top:8px}
+.ln-prob .pf-bar i.on{background:var(--probable)}
+.ln-tv-head{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.ln-tv-head h3{margin:0;font-size:1.2rem}
+.ln-tv-ico{flex:none;width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center}
+.ln-tv-ico .ico-tv{width:24px;height:24px}
+.ln-genre-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0;font-weight:700}
+.ln-genre-h small{flex:none;font-weight:400;color:var(--muted);font-size:.82rem}
+.ln-genre{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:6px 0 12px}
+.ln-genre i{display:block;height:10px;border-radius:5px;background:var(--soft)}
+.ln-genre i.on{background:var(--accent)}
+.ln-why{display:grid;gap:8px;margin:0 0 12px;padding:0;list-style:none;font-size:.92rem;line-height:1.45}
+.ln-why li{display:flex;gap:8px}
+.ln-why .ln-ico{flex:none;width:18px;height:18px;margin-top:1px;stroke-width:2}
+.ln-why .plus .ln-ico{color:var(--ready-fg)}
+.ln-why .moins .ln-ico{color:var(--warn)}
+.ln-why .moins circle{fill:currentColor}
+.ln-grid{display:grid;grid-template-columns:5.2em minmax(0,1fr);gap:6px 10px;margin:0;padding-top:10px;border-top:1px solid var(--soft);font-size:.92rem;line-height:1.45}
+.ln-grid dt{color:var(--muted)}
+.ln-grid dd{margin:0}
+.ln-card > .ln-avis{margin:12px 0 0;line-height:1.5}
+.ln-bo{display:flex;align-items:center;gap:6px;margin:-4px 2px 14px;font-size:.85rem;color:var(--muted)}
+.ln-bo .ico-bo{color:var(--accent-ink)}
+.ln-actions{display:grid;gap:10px;margin:16px 0 0}
+.ln-ask{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px}
+.ln-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ln-two .btn{min-height:48px;justify-content:center}
 .cs-bottle{padding:4px 0 18px;margin:0 0 16px;border-bottom:1px solid var(--line)}
 .cs-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start}
 .cs-pic{width:76px;height:100px}
@@ -1130,7 +1182,14 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
         <label class="btn ci-files"><input type="file" accept="image/*" multiple id="scan-files" hidden>ou choisir des photos dans la galerie</label>
       </div>
       <div class="d-note conseil-off" id="conseil-off" hidden><p><strong>Conseil a besoin de Tastevin.</strong> La personne qui héberge la cave peut ajouter une clé API Claude dans le script, ou une routine Claude : le guide <a href="https://github.com/gregbe41/ma-cave/blob/main/INSTALLATION.md" target="_blank" rel="noopener">INSTALLATION.md</a> explique comment.</p></div>
-      <h2 class="d-h3">Vins analysés</h2>
+      <form class="lien-card" id="lien-card" hidden novalidate>
+        <h2>Vu en ligne ?</h2>
+        <label class="f">Lien de la page du vin<input type="url" id="lien-url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://www.caviste.fr/…"></label>
+        <p class="form-err" id="lien-err" role="alert" hidden></p>
+        <button type="submit" class="btn btn-primary" id="lien-go">Lire la page</button>
+        <p class="hint" id="lien-hint"></p>
+      </form>
+      <h2 class="d-h3">Tes analyses</h2>
       <div class="cs-list" id="conseil-list"></div>
     </section>
 
@@ -1504,6 +1563,14 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
   <div class="sheet-wrap">
     <div class="sheet-head"><h2>Conseil de Tastevin<span class="sub" id="cs-sub"></span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body" id="conseil-detail"></div>
+  </div>
+</dialog>
+
+<!-- Vu en ligne : la page d'un vin lue par l'appli, puis l'avis de Tastevin si on le demande -->
+<dialog class="sheet" id="dlg-lien" aria-labelledby="ln-title">
+  <div class="sheet-wrap">
+    <div class="sheet-head"><h2 id="ln-title">Vu en ligne<span class="sub" id="ln-sub"></span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body" id="ln-body"></div>
   </div>
 </dialog>
 
@@ -2240,6 +2307,7 @@ function render() {
   else renderReglages();
   if (UI.openWine && $('#dlg-wine').open) renderDetail();
   if (UI.openConseil && $('#dlg-conseil').open) renderConseilDetail();
+  if ($('#dlg-lien').open) renderLien();
   if (UI.simWine && $('#dlg-similar').open) renderSimilar();
   if (UI.periodKey && $('#dlg-period').open) renderPeriod();
   updateConseilBadge();
@@ -3348,7 +3416,7 @@ function renderReglages() {
 const fmtCr = n => (Math.round((n || 0) * 10) / 10).toLocaleString('fr-FR');
 /** « 2 bouchons » ; le tarif d'une demande, tel que le script ou le relais l'annonce (sinon celui d'aujourd'hui). */
 const bouchons = n => `${fmtCr(n)} ${plural(n, 'bouchon', 'bouchons')}`;
-const COUTS_DEFAUT = { label: 2, conseil: 2, suggest: 1, revoir: 1, cote: 2, portrait: 2 };
+const COUTS_DEFAUT = { label: 2, conseil: 2, suggest: 1, revoir: 1, cote: 2, portrait: 2, lien: 1 };
 const cout = k => { const c = S.credits && S.credits.couts; return c && c[k] != null ? c[k] : COUTS_DEFAUT[k]; };
 const COTE_RYTHMES = [[3, 'Tous les 3 mois'], [6, 'Tous les 6 mois'], [12, 'Une fois par an'], [24, 'Tous les 2 ans']];
 const gaugeHTML = (left, max, label) => {
@@ -3359,7 +3427,7 @@ const COTE_COURT = { 3: '3 mois', 6: '6 mois', 12: '1 an', 24: '2 ans' };
 /** Ce que coûte chaque demande à Tastevin : une liste, dans un pli qui reste ouvert d'une synchro à l'autre. */
 function tarifsHTML() {
   const l = isDrive()
-    ? [['Lire une étiquette', cout('label')], ['Compléter ou revoir une fiche', cout('revoir')], ['Conseil en magasin, par bouteille', cout('conseil')], ['Vins similaires', cout('suggest')], ['Valeur du jour', cout('cote')], ['Ton portrait de dégustateur', cout('portrait')]]
+    ? [['Lire une étiquette', cout('label')], ['Compléter ou revoir une fiche', cout('revoir')], ['Conseil en magasin, par bouteille', cout('conseil')], ['Vins similaires', cout('suggest')], ['Valeur du jour', cout('cote')], ['Ton portrait de dégustateur', cout('portrait')], ['Avis sur un vin vu en ligne', cout('lien')]]
     : [['Lire une étiquette', cout('label')], ['Conseil en magasin, par bouteille', cout('conseil')], ['Vins similaires', cout('suggest')]];
   const lead = isDrive() ? "Tastevin passe par le relais de l'appli, en bouchons de la cave."
     : 'Chaque appel immédiat à Tastevin se paie avec la clé API de la cave, en bouchons. La lecture de nuit, par la routine, ne coûte rien.';
@@ -3426,7 +3494,7 @@ function renderBouchons() {
     </form>`;
 }
 /* ---------- Coût réel de Tastevin (éditeur) : ce que le relais a noté, en dollars, d'après les prix d'Anthropic ---------- */
-const ACTION_NOMS = { etiquette: 'Lire une étiquette', revoir: 'Revoir ou compléter une fiche', conseil: 'Conseil en magasin', similaires: 'Vins similaires', cote: 'Valeur du jour', portrait: 'Portrait « Mes stats »', lien: 'Conseil par lien', page: 'Lecture d’une page' };
+const ACTION_NOMS = { etiquette: 'Lire une étiquette', revoir: 'Revoir ou compléter une fiche', conseil: 'Conseil en magasin', similaires: 'Vins similaires', cote: 'Valeur du jour', portrait: 'Portrait « Mes stats »', lien: 'Avis sur un vin vu en ligne', page: 'Lecture d’une page' };
 // Des montants souvent minuscules (une lecture coûte quelques millièmes de dollar) : assez de chiffres pour qu'ils se lisent.
 const dollars = x => {
   const v = x || 0;
@@ -4711,6 +4779,7 @@ async function submitWineForm(e) {
     w = { id: uid(), ...data, claude, photoId: '', lecture: '', aVerifier: '', doublonDe: '', lectureNote: '', createdAt: now, updatedAt: now };
     db.wines.push(w);
     if (FORM.fromConseil) linkConseil(FORM.fromConseil, w.id);
+    if (FORM.fromLien) linkLien(FORM.fromLien, w.id);
     const q = int(v('qte')) || 0;
     if (q > 0) {
       if (owner) { addPerson(owner); UI.lastOwner = { name: owner, at: Date.now() }; }
@@ -5147,8 +5216,10 @@ function renderConseil() {
   $('#conseil-off').hidden = on;
   const list = db.conseils.filter(myConseil).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const others = db.conseils.length - list.length;
-  const box = $('#conseil-list');
-  box.innerHTML = list.length ? list.map(c => {
+  const box = $('#conseil-list'), liens = mesLiens();
+  $('#lien-card').hidden = !lienOn();
+  $('#lien-hint').textContent = `Gratuit : l'appli lit la page et la compare à ta cave.${relaisOn() ? ` L'avis de Tastevin, si tu le demandes : ${bouchons(cout('lien'))}.` : ''}`;
+  const rows = list.map(c => {
     const rs = (c.resultat && c.resultat.bouteilles) || [], n = c.bouteilles.length;
     // Une analyse en cours de mise à jour garde son ancien résultat ; les corrections de la personne l'emportent.
     const title = c.resultat ? rs.map((r, i) => conseilTitle({ ...csView(r, c.bouteilles[i]), estEtiquette: r.estEtiquette !== false || csFixed(c.bouteilles[i]).length > 0 })).join(' · ')
@@ -5174,7 +5245,8 @@ function renderConseil() {
         ${pills.length ? `<div class="cs-pills">${pills.map(([k, t]) => `<span class="cs-pill ${k}">${esc(t)}</span>`).join('')}</div>` : ''}</div>
       <button type="button" class="cs-del" data-act="cs-del" data-cid="${c.id}" aria-label="${esc(`Supprimer l'analyse : ${title}`)}" title="Supprimer cette analyse">${ICO_CORBEILLE}</button>
     </article>`;
-  }).join('') : `<div class="empty"><p>Aucun vin analysé pour l'instant.</p></div>`;
+  }).map((html, i) => [list[i].date || '', html]).concat(liens.map(e => [e.date, lienRow(e)]));
+  box.innerHTML = rows.length ? rows.sort((a, b) => b[0].localeCompare(a[0])).map(r => r[1]).join('') : `<div class="empty"><p>Aucun vin analysé pour l'instant.</p></div>`;
   if (others) box.insertAdjacentHTML('beforeend', `<p class="hint cs-others">${others} ${plural(others, 'analyse faite', 'analyses faites')} par d'autres personnes ${plural(others, "reste sur son profil", 'restent sur leur profil')}.</p>`);
   hydrateScans(box);
 }
@@ -5408,6 +5480,386 @@ async function removeConseilBottle(cid, i) {
   UI.csOpen.clear();
   commit();
   toast("Bouteille retirée de l'analyse");
+}
+
+/* =========================================================
+   Conseil · Vu en ligne : la page d'un vin sur un site marchand
+   ========================================================= */
+/* L'appli lit la page elle-même, sans IA ni bouchon : données produit (JSON-LD schema.org, OpenGraph), catalogue LWIN,
+   cave et avis de la cave. Le navigateur ne peut pas télécharger la page d'un autre site (CORS) : l'appli Android la lit
+   directement, l'appli web passe par le relais (caves Google Drive). L'avis de Tastevin ne vient que si on le demande.
+   Comme le portrait, ces analyses restent sur l'appareil, pour cette cave et cette personne. Ce que dit la page est
+   toujours échappé à l'affichage, et Tastevin le reçoit comme une donnée, jamais comme une consigne. */
+const LIEN = { id: '', busy: false, ask: false };
+const ICO_BOUTEILLE = '<svg class="ln-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2.5h4v3.8l1.6 2.6V21a1 1 0 0 1-1 1H9.4a1 1 0 0 1-1-1V8.9L10 6.3z"/><path d="M8.4 13h7.2"/></svg>';
+const ICO_LIEN = '<svg class="ln-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>';
+const ICO_PLUS = '<svg class="ln-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const ICO_MOINS = '<svg class="ln-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v6"/><circle cx="12" cy="17" r=".6"/></svg>';
+const PAGE_REFUS = "Ce site refuse qu'une appli lise ses pages. Essaie la photo de l'étiquette, ou la page d'un autre site.";
+const LIEN_CHAMPS = ['domaine', 'cuvee', 'appellation', 'couleur', 'millesime', 'region', 'cepages'];
+/** L'appli Android lit la page elle-même ; ailleurs, le relais des caves Google Drive la lit pour l'appli. */
+const lienNatif = () => !!(Native.on && Native.P.CapacitorHttp);
+const lienOn = () => lienNatif() || relaisOn();
+const liensKey = () => `macave:liens:${S.fileId || S.apiUrl || 'cave'}:${personId(S.device || '')}`;
+const mesLiens = () => { const xs = lsGet(liensKey(), []); return Array.isArray(xs) ? xs.filter(e => e && e.id && e.page && e.lu) : []; };
+const garderLiens = xs => lsSet(liensKey(), xs.slice(0, 30));
+const siteDe = url => { try { return new URL(url).hostname.replace(/^www\d?\./, ''); } catch { return ''; } };
+const motsDe = s => ` ${norm(s).replace(/[^a-z0-9]+/g, ' ').trim()} `;
+/** Même domaine : les mêmes mots distinctifs (« Domaine Combier » = « Combier »). */
+const memeDomaine = (a, b) => { const x = keyWords(a), y = keyWords(b); return x.length > 0 && x.length === y.length && x.every(k => y.includes(k)); };
+/** Le vin de la page : ce que l'appli a reconnu, corrigé par la lecture de Tastevin s'il a été consulté. */
+function lienVue(e) {
+  const v = { ...e.lu }, a = e.avis;
+  if (a && a.estVin !== false) LIEN_CHAMPS.forEach(k => { if (a[k] != null && a[k] !== '') v[k] = a[k]; });
+  return v;
+}
+const lienTitre = e => { const v = lienVue(e); return [v.appellation || v.domaine || str(e.page.titre).slice(0, 80) || e.site, v.millesime].filter(Boolean).join(' '); };
+
+/** Le lien collé (ou le texte partagé qui le contient) : l'adresse d'une page web publique, sinon null (comme le relais). */
+function lienPropre(raw) {
+  let s = str(raw);
+  const m = s.match(/https?:\/\/[^\s<>"']+/i);
+  if (m) s = m[0];
+  else if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(s)) s = 'https://' + s;
+  let u;
+  try { u = new URL(s); } catch { return null; }
+  if (!/^https?:$/.test(u.protocol) || u.username || u.password || (u.port && !['80', '443'].includes(u.port))) return null;
+  const h = u.hostname.toLowerCase().replace(/\.$/, '');
+  if (!h.includes('.') || /^[\d.]+$/.test(h) || /[[\]:]/.test(h) || /(^|\.)(localhost|local|localdomain|internal|intranet|lan|home|corp|arpa)$/.test(h)) return null;
+  u.hash = '';
+  return u.href.length <= 2000 ? u.href : null;
+}
+
+/** Télécharge la page : par le téléphone dans l'appli Android, sinon par le relais. */
+async function chargerPage(url) {
+  if (!lienNatif()) return (await relais('page', { url }, 40e3)).page || {};
+  let r;
+  try {
+    r = await Native.P.CapacitorHttp.request({ url, method: 'GET', responseType: 'text', connectTimeout: 12e3, readTimeout: 15e3,
+      headers: { Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5', 'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.5' } });
+  } catch { throw new Error(navigator.onLine === false ? 'Pas de connexion internet.' : 'Site injoignable : vérifie le lien.'); }
+  const st = (r && r.status) || 0, h = (r && r.headers) || {};
+  const type = str(h[Object.keys(h).find(k => k.toLowerCase() === 'content-type')]).toLowerCase();
+  if (st === 404 || st === 410) throw new Error('Page introuvable : vérifie le lien.');
+  if ([401, 403, 429, 503].includes(st)) throw new Error(PAGE_REFUS);
+  if (!st || st >= 400) throw new Error(`Le site a répondu une erreur (${st || 'réseau'}).`);
+  if (type && !/html/.test(type)) throw new Error('Ce lien ne mène pas à une page web.');
+  return { url: r.url || url, html: typeof r.data === 'string' ? r.data.slice(0, 2e6) : '' };
+}
+
+/* La fiche technique d'une page marchande : ses libellés ramenés à quelques champs. */
+const FICHE_LIBELLES = [['appellation', /^(appellation|aoc|aop|denomination)\b/], ['millesime', /^(millesime|annee|vintage)\b/], ['couleur', /^(couleur|type de vin|type|color)$/],
+  ['cepages', /^(cepage|cepages|assemblage|encepagement)\b/], ['region', /^(region|vignoble)$/], ['domaine', /^(domaine|producteur|proprietaire|chateau|maison|vigneron|marque|brand)$/], ['cuvee', /^cuvee$/]];
+/** Ce que dit la page : données produit (JSON-LD, OpenGraph, microdonnées), fiche technique, texte visible. Rien n'y est exécuté. */
+function extrairePage(html, url) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const nom = v => (typeof v === 'string' ? str(v) : Array.isArray(v) ? nom(v[0]) : v && typeof v === 'object' ? str(v.name || v['@value'] || '') : '');
+  const produits = [];
+  const voir = o => {
+    if (!o || typeof o !== 'object' || produits.length > 5) return;
+    if (Array.isArray(o)) { o.forEach(voir); return; }
+    if ([].concat(o['@type'] || []).some(t => /^(Product|ProductGroup|IndividualProduct|ProductModel|Wine)$/i.test(String(t)))) produits.push(o);
+    ['@graph', 'mainEntity', 'itemOffered'].forEach(k => voir(o[k]));
+  };
+  $$('script[type="application/ld+json"]', doc).forEach(x => { try { voir(JSON.parse(x.textContent)); } catch { /* bloc illisible */ } });
+  const p = produits[0] || {};
+  const meta = (...ns) => { for (const n of ns) { const el = doc.querySelector(`meta[property="${n}"],meta[name="${n}"],meta[itemprop="${n}"]`); const c = el && str(el.getAttribute('content')); if (c) return c; } return ''; };
+  const offres = [].concat(p.offers || []).flatMap(o => (o && typeof o === 'object' ? [o, ...[].concat(o.offers || [])] : []));
+  const offre = offres.find(o => num(o.price) != null || num(o.lowPrice) != null) || {};
+  const ip = doc.querySelector('[itemprop="price"]');
+  let prix = num(offre.price ?? offre.lowPrice) ?? num(meta('product:price:amount', 'og:price:amount')) ?? num(ip && (ip.getAttribute('content') || ip.textContent));
+  if (!(prix > 0 && prix < 1e5)) prix = null;
+  const devise = prix ? str(offre.priceCurrency || meta('product:price:currency', 'og:price:currency', 'priceCurrency') || 'EUR').toUpperCase().slice(0, 3) : '';
+  const fiche = {};
+  const noter = (k0, v0) => {
+    const k = norm(k0).replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim(), v = str(v0).replace(/\s+/g, ' ');
+    const f = k.length < 30 && FICHE_LIBELLES.find(([, re]) => re.test(k));
+    if (f && v && v.length < 120 && !fiche[f[0]]) fiche[f[0]] = v;
+  };
+  [].concat(p.additionalProperty || []).forEach(x => x && noter(x.name, nom(x.value) || x.value));
+  $$('dt', doc).forEach(dt => { const dd = dt.nextElementSibling; if (dd && dd.tagName === 'DD') noter(dt.textContent, dd.textContent); });
+  $$('tr', doc).forEach(tr => { const c = tr.children; if (c.length === 2) noter(c[0].textContent, c[1].textContent); });
+  $$('li,p', doc).forEach(el => { if (el.childElementCount > 4) return; const m = str(el.textContent).replace(/\s+/g, ' ').match(/^([^:]{3,25}?)\s*:\s*(.{2,100})$/); if (m) noter(m[1], m[2]); });
+  const sansBalises = t => str(t).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const titre = sansBalises(nom(p.name) || meta('og:title', 'twitter:title') || doc.title);
+  const h1 = sansBalises((doc.querySelector('h1') || {}).textContent);
+  const description = sansBalises((typeof p.description === 'string' && p.description) || meta('og:description', 'description', 'twitter:description'));
+  $$('script,style,noscript,svg,nav,header,footer,form,iframe,template,button,select', doc).forEach(el => el.remove());
+  const corps = doc.querySelector('main,[role="main"],article') || doc.body;
+  return {
+    url, site: siteDe(url), titre: titre.slice(0, 300), h1: h1.slice(0, 300), marque: sansBalises(nom(p.brand) || nom(p.manufacturer) || meta('product:brand')).slice(0, 160),
+    prix, devise, description: description.slice(0, 1500), texte: corps ? sansBalises(corps.textContent).slice(0, 6000) : '', fiche, produit: produits.length > 0,
+  };
+}
+
+const LIEN_COULEURS = [['effervescent', / (champagne|cremant|petillant|mousseux|effervescent|brut nature|extra brut|prosecco|cava|pet nat) /], ['liquoreux', / (liquoreux|moelleux|vendanges tardives|grains nobles|sauternes|barsac|loupiac|monbazillac) /],
+  ['rose', / roses? /], ['blanc', / blancs? /], ['rouge', / rouges? /]];
+const couleurDans = s => { const t = motsDe(s), c = LIEN_COULEURS.find(([, re]) => re.test(t)); return c ? c[0] : ''; };
+const anneeDans = s => { const y = thisYear() + 1; return [...String(s || '').matchAll(/(?:^|\D)((?:19[4-9]|20[0-4])\d)(?!\d)/g)].map(m => +m[1]).find(n => n <= y) || null; };
+/** La plus longue appellation du catalogue écrite dans le texte (5 lettres au moins : pas de faux amis). */
+function appellationDans(textes) {
+  const d = Catalogue.data, cles = d ? d.appKeys : [...APP_GRAPE_MAP.keys()];
+  for (const s of textes) {
+    const t = motsDe(s);
+    let best = '';
+    for (const k of cles) if (k.length >= 5 && k.length > best.length && t.includes(` ${k} `)) best = k;
+    if (best) return d ? d.A[d.appIdx.get(best)] : best.replace(/(^|\s)\S/g, c => c.toUpperCase());
+  }
+  return '';
+}
+/** Le domaine : la fiche, la marque (si ce n'est pas le site), sinon un producteur du catalogue dont tous les mots sont dans le titre. */
+function domaineDans(page, appellation, region) {
+  const d = Catalogue.data, f = page.fiche || {}, site = keyWords(page.site.split('.').slice(-2, -1)[0] || '');
+  const mq = keyWords(page.marque), marque = mq.length && !mq.every(k => site.includes(k)) ? page.marque : '';
+  const brut = str(f.domaine) || marque;
+  if (!d) return { domaine: brut, prods: [] };
+  if (brut) return { domaine: brut, prods: Catalogue.producers({ domaine: brut, region, appellation }) };
+  if (!d.ptok) d.ptok = d.P.map(nameTokens);
+  const exclus = new Set(appKey(appellation).split(' '));
+  const t = new Set(nameTokens(`${page.titre} ${page.h1}`).filter(x => !exclus.has(x) && !/^\d+$/.test(x)));
+  const Ai = appellation ? Catalogue.appOf(appellation) : 0;
+  const cands = Ai ? [...new Set((d.byApp.get(Ai) || []).map(x => x.p))] : d.P.map((_, i) => i);
+  let best = [], n = 0;
+  for (const i of cands) {
+    const k = d.ptok[i];
+    if (!i || !k.length || !k.some(x => x.length >= 4) || !k.every(x => t.has(x))) continue;
+    if (k.length > n) { best = [i]; n = k.length; } else if (k.length === n) best.push(i);
+  }
+  best.sort((a, b) => d.pn[b] - d.pn[a]);
+  return { domaine: best.length ? d.P[best[0]] : '', prods: best.slice(0, 3) };
+}
+/** Le vin du catalogue : chez ce producteur, dans cette appellation, la cuvée nommée dans le titre, sinon le vin sans nom de cuvée. */
+function ligneCatalogue(prods, appellation, couleur, page) {
+  const d = Catalogue.data;
+  if (!d || !prods.length) return null;
+  const Ai = appellation ? Catalogue.appOf(appellation) : 0, t = new Set(keyWords(`${page.titre} ${page.h1}`));
+  let rows = prods.flatMap(p => d.byProd.get(p) || []);
+  if (Ai) rows = rows.filter(x => x.a === Ai);
+  if (!rows.length) return null;
+  const mots = x => { const v = catalogueWine(x), dw = keyWords(v.domaine); return keyWords(v.cuvee).filter(k => !dw.includes(k)); };
+  const score = x => { const m = mots(x); return (!m.length ? 0 : m.every(k => t.has(k)) ? 10 + m.length : -20) + (couleur && x.c === couleur ? 2 : 0); };
+  const [x, sc] = rows.map(r => [r, score(r)]).sort((a, b) => b[1] - a[1])[0];
+  // Sans appellation sur la page : seulement si la cuvée est nommée, ou si le producteur n'a qu'une appellation.
+  if (sc < 0 || (!Ai && sc < 10 && new Set(rows.map(r => r.a)).size > 1)) return null;
+  return x;
+}
+/** Le vin de la page : millésime, couleur et appellation dans le titre ou la fiche, domaine, et sa ligne du catalogue. */
+function reconnaitre(page) {
+  const d = Catalogue.data, f = page.fiche || {}, haut = `${page.titre} ${page.h1}`;
+  const appellation = appellationDans([f.appellation, page.titre, page.h1].filter(Boolean)) || str(f.appellation) || appellationDans([page.description]);
+  const { domaine, prods } = domaineDans(page, appellation, str(f.region));
+  const couleur0 = couleurDans(f.couleur) || couleurDans(haut);
+  const x = ligneCatalogue(prods, appellation, couleur0, page);
+  const app = (x && d.A[x.a]) || appellation, annee = int(f.millesime), lus = splitGrapes(f.cepages);
+  const lu = {
+    domaine: (x ? d.P[x.p] : domaine) || '', cuvee: str(f.cuvee) || (x ? catalogueWine(x).cuvee : ''), appellation: app || '',
+    couleur: couleur0 || (x && x.c) || couleurDans(page.description),
+    millesime: annee && annee >= 1800 && annee <= thisYear() + 1 ? annee : anneeDans(page.titre) || anneeDans(page.h1),
+    region: str(f.region) || (x && d.R[x.r]) || (d && app ? d.appReg.get(Catalogue.appOf(app)) || '' : ''),
+    cepages: (lus.length ? lus : grapesInText(`${haut} ${page.description}`)).join(', '),
+  };
+  const cat = x ? { domaine: d.P[x.p], appellation: d.A[x.a] || '', region: d.R[x.r] || '', couleur: x.c, cepages: Catalogue.grapes(x).join(', '), nom: x.n } : null;
+  return { lu, cat };
+}
+
+/** « Lire la page » : la page téléchargée, dépouillée sur l'appareil, gardée dans « Tes analyses ». */
+async function lireLien(raw) {
+  const err = $('#lien-err'), btn = $('#lien-go'), url = lienPropre(raw);
+  err.hidden = true;
+  if (!url) { err.textContent = "Colle l'adresse complète de la page du vin, qui commence par https://"; err.hidden = false; return; }
+  if (LIEN.busy) return;
+  LIEN.busy = true; btn.disabled = true; btn.textContent = 'Lecture de la page…';
+  try {
+    const [pg] = await Promise.all([chargerPage(url), Catalogue.load()]);
+    const page = extrairePage(str(pg.html), pg.url || url);
+    if (!page.produit && !page.description && page.texte.length < 200) throw new Error("Cette page ne montre presque rien à une appli : le site la construit dans le navigateur. Essaie la photo de l'étiquette, ou la page d'un autre site.");
+    const { lu, cat } = reconnaitre(page);
+    // La même page relue remplace l'ancienne analyse, en gardant l'avis de Tastevin et le vin ajouté.
+    const xs = mesLiens(), avant = xs.find(x => x.url === page.url) || {};
+    const e = { id: uid(), date: nowISO(), url: page.url, site: page.site, lu, cat, catEtat: Catalogue.state,
+      page: { titre: page.titre, h1: page.h1, marque: page.marque, prix: page.prix, devise: page.devise, description: page.description, texte: page.texte },
+      avis: avant.avis || null, avisDate: avant.avisDate || '', avisCout: avant.avisCout || 0, vinId: avant.vinId || '' };
+    if (!garderLiens([e, ...xs.filter(x => x !== avant)])) return;
+    $('#lien-url').value = '';
+    renderConseil();
+    openLien(e.id);
+  } catch (x) {
+    err.textContent = x.message || 'Page illisible.';
+    err.hidden = false;
+  } finally { LIEN.busy = false; btn.disabled = false; btn.textContent = 'Lire la page'; }
+}
+
+function openLien(id) {
+  LIEN.id = id;
+  renderLien();
+  const d = $('#dlg-lien');
+  if (!d.open) d.showModal();
+  $('#ln-body').scrollTop = 0;
+}
+
+/** Vos avis : la note moyenne de la cave pour l'appellation, le domaine et le premier cépage du vin. */
+function avisCave(v) {
+  const d = mesDonnees('0000-00-00'), g0 = splitGrapes(v.cepages)[0] || grapesByApp(v.appellation, v.region, v.couleur)[0] || '';
+  return [
+    v.appellation && [v.appellation, w => appKey(w.appellation) === appKey(v.appellation)],
+    v.domaine && [v.domaine, w => memeDomaine(w.domaine, v.domaine)],
+    g0 && [g0.toLowerCase(), w => grapesOf(w).includes(g0)],
+  ].filter(Boolean).map(([nom, ok]) => {
+    const xs = d.tous.filter(a => a.note && ok(d.wById.get(a.vinId)));
+    return xs.length ? `${nom} ${fmtNote(xs.reduce((s, a) => s + a.note, 0) / xs.length)}/5 (${xs.length} avis)` : '';
+  }).filter(Boolean);
+}
+/** Ta cave : ce vin, ce vin d'un autre millésime, le même domaine, ou la même appellation. */
+function caveLien(v) {
+  const st = w => STOCK.get(w.id) || 0, bt = n => `${n} ${plural(n, 'bouteille', 'bouteilles')}`;
+  const ouvrir = (w, t) => `<button class="link" data-open="${w.id}">${esc(t)}</button>`;
+  const dom = v.domaine ? db.wines.filter(w => memeDomaine(w.domaine, v.domaine)) : [];
+  const meme = dom.filter(w => norm(w.cuvee) === norm(v.cuvee) && (!v.appellation || !w.appellation || appKey(w.appellation) === appKey(v.appellation)));
+  const exact = meme.find(w => (w.millesime || null) === (v.millesime || null));
+  if (exact) return st(exact) ? `${ouvrir(exact, `déjà dans ta cave : ${bt(st(exact))}`)}.` : `${ouvrir(exact, 'déjà eu en cave')}, tout a été bu.`;
+  const autre = meme.find(w => st(w) > 0);
+  if (autre) return `pas ce millésime. ${ouvrir(autre, `Le ${autre.millesime || 'même vin sans millésime'} : ${bt(st(autre))}`)}.`;
+  const d2 = dom.filter(w => st(w) > 0).sort((a, b) => st(b) - st(a))[0] || dom[0];
+  if (d2) return `pas ce vin. Du même domaine : ${ouvrir(d2, [d2.cuvee || d2.appellation || d2.domaine, d2.millesime].filter(Boolean).join(' '))}${st(d2) ? `, ${bt(st(d2))}` : ', tout a été bu'}.`;
+  const app = v.appellation ? db.wines.filter(w => appKey(w.appellation) === appKey(v.appellation) && st(w) > 0) : [];
+  if (app.length) return `rien de ce domaine. De la même appellation : ${ouvrir(app[0], wineLabel(app[0]))}${app.length > 1 ? ` et ${app.length - 1} ${plural(app.length - 1, 'autre', 'autres')}` : ''}.`;
+  return v.domaine || v.appellation ? 'rien de ce domaine ni de cette appellation.' : 'rien à comparer, le vin n’est pas reconnu.';
+}
+/** Garde : la fenêtre habituelle des vins de cette appellation dans la cave, comptée depuis leur millésime. */
+function gardeLien(v) {
+  if (!v.appellation) return '';
+  const xs = db.wines.filter(w => appKey(w.appellation) === appKey(v.appellation) && (!v.couleur || !w.couleur || w.couleur === v.couleur) && w.millesime && w.gardeDe && w.gardeA);
+  if (!xs.length) return '';
+  const med = a => a.sort((x, y) => x - y)[Math.floor((a.length - 1) / 2)];
+  const lo = Math.max(0, med(xs.map(w => w.gardeDe - w.millesime))), hi = Math.max(lo + 1, med(xs.map(w => w.gardeA - w.millesime)));
+  return `pour l'appellation, en général ${lo ? `entre ${lo} et ${hi} ans` : `jusqu'à ${hi} ans`}${v.millesime ? `, soit de ${v.millesime + lo} à ${v.millesime + hi}` : ''}${xs.length < 3 ? ` (d'après ${xs.length > 1 ? `${xs.length} vins` : 'un vin'} de ta cave)` : ''}.`;
+}
+/** Profil probable, sans IA : la moyenne des profils des vins de la cave de même couleur et appellation (sinon du même cépage). */
+function profilProbable(v) {
+  const axes = PROFIL[v.couleur];
+  if (!axes) return null;
+  const g0 = splitGrapes(v.cepages)[0] || grapesByApp(v.appellation, v.region, v.couleur)[0] || '';
+  for (const [par, ok] of [["l'appellation", w => v.appellation && appKey(w.appellation) === appKey(v.appellation)], ['le cépage', w => g0 && grapesOf(w)[0] === g0]]) {
+    const ps = db.wines.filter(w => w.couleur === v.couleur && ok(w)).map(w => profilLu(w.profil)).filter(pr => axes.some(([k]) => valeurProfil(pr, k) != null));
+    if (!ps.length) continue;
+    return { par, n: ps.length, vals: axes.map(([k, label, g, dr]) => { const ns = ps.map(pr => valeurProfil(pr, k)).filter(n => n != null); return [label, g, dr, ns.length ? Math.round(ns.reduce((s, n) => s + n, 0) / ns.length) : null]; }) };
+  }
+  return null;
+}
+/** Les bouchons qui me restent ce mois-ci : ma part si j'en ai une, dans la limite de la cave. */
+const resteMois = () => { const c = S.credits; return c && c.mois != null ? (c.partReste != null ? Math.min(c.partReste, c.mois) : c.mois) : null; };
+function avisLienHTML(e) {
+  const a = e.avis;
+  if (!a) return '';
+  const head = `<div class="ln-tv-head"><span class="ln-tv-ico">${ICO_TV}</span><h3>L'avis de Tastevin</h3></div>`;
+  const reste = resteMois(), n = e.avisCout || cout('lien');
+  const bo = `<p class="ln-bo">${ICO_BOUCHON}${bouchons(n)} ${plural(n, 'utilisé', 'utilisés')}${reste != null ? ` · il t'en reste ${fmtCr(reste)} ce mois-ci` : ''}</p>`;
+  if (a.estVin === false) return `<section class="ln-card" id="ln-tv">${head}<p>${esc(a.avis || "Tastevin n'a pas trouvé de vin précis sur cette page.")}</p></section>${bo}`;
+  const g = a.genre || 0, gt = str(a.genreTexte).replace(/[.!]?$/, '.');
+  const genre = g ? `<p class="ln-genre-h"><span>Ton genre ? ${esc(gt)}</span><small>${g} sur 5</small></p><div class="ln-genre" role="img" aria-label="Correspond à tes goûts : ${g} sur 5">${[1, 2, 3, 4, 5].map(i => `<i${i <= g ? ' class="on"' : ''}></i>`).join('')}</div>`
+    : `<p class="ln-genre-h"><span>Ton genre ?</span></p><p class="hint">Tastevin n'a pas assez de tes notes pour le dire : note les vins que tu bois.</p>`;
+  const why = (a.raisons || []).length ? `<ul class="ln-why">${a.raisons.map(r => `<li class="${r.sens === 'moins' ? 'moins' : 'plus'}">${r.sens === 'moins' ? ICO_MOINS : ICO_PLUS}<span>${esc(r.texte)}</span></li>`).join('')}</ul>` : '';
+  const grid = [['Le prix', a.prix], ['À boire', a.aBoire], ['Avec', a.accords]].filter(([, x]) => x);
+  return `<section class="ln-card" id="ln-tv">${head}${genre}${why}${grid.length ? `<dl class="ln-grid">${grid.map(([k, x]) => `<dt>${k}</dt><dd>${esc(x)}</dd>`).join('')}</dl>` : ''}${a.avis ? `<p class="ln-avis">${esc(a.avis)}</p>` : ''}</section>${bo}`;
+}
+
+function renderLien() {
+  const e = mesLiens().find(x => x.id === LIEN.id), dlg = $('#dlg-lien');
+  if (!e) { if (dlg.open) dlg.close(); return; }
+  const v = lienVue(e), col = colorOf(v.couleur), P = e.page;
+  $('#ln-sub').textContent = fmtDate(str(e.date).slice(0, 10));
+  const prix = P.prix ? `${P.devise && P.devise !== 'EUR' ? `${fmtNum(P.prix)} ${P.devise}` : fmtMoney(P.prix)} sur la page` : '';
+  const head = `<div class="ln-top"><span class="ln-site">${esc(e.site)}</span><a class="link" href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">Ouvrir la page</a></div>
+    <div class="ln-head"><div class="ln-bottle" aria-hidden="true">${ICO_BOUTEILLE}</div><div>
+      <h3>${col.key ? `<span class="dot w-dot" style="--c:${col.hex}"></span>` : ''}${esc(lienTitre(e))}</h3>
+      ${v.domaine && v.domaine !== v.appellation ? `<p class="ln-dom">${esc([v.domaine, v.cuvee].filter(Boolean).join(', '))}</p>` : ''}${prix ? `<p class="ln-prix">${esc(prix)}</p>` : ''}</div></div>`;
+  const c = e.cat, av = avisCave(v), garde = gardeLien(v);
+  const lignes = [
+    ['Catalogue', esc(c ? `reconnu : ${[c.domaine, c.appellation && c.appellation + (c.region ? ` (${c.region})` : ''), c.couleur ? colorOf(c.couleur).label.toLowerCase() : '', c.cepages.toLowerCase()].filter(Boolean).join(', ')}.`
+      : e.catEtat !== 'ok' ? "indisponible pour l'instant (hors ligne ?)."
+      : e.lu.appellation ? `${e.lu.appellation} reconnu${e.lu.region ? ` (${e.lu.region})` : ''}, ${e.lu.domaine ? "mais pas ce domaine" : 'mais pas le domaine'}.` : 'vin non reconnu.')],
+    ['Ta cave', caveLien(v)],
+    ['Vos avis', esc(av.length ? `${av.join(', ')}.` : "pas encore d'avis sur cette appellation ni ce cépage.")],
+    garde && ['Garde', esc(garde)],
+  ].filter(Boolean);
+  const libre = `<section class="ln-card"><div class="ln-card-h"><h3>Ce que l'appli a trouvé</h3><span class="ln-free">Gratuit</span></div>${lignes.map(([k, x]) => `<p><b>${k}</b> · ${x}</p>`).join('')}</section>`;
+  const pp = profilProbable(v);
+  const prof = pp ? `<section class="ln-card ln-prob"><div class="ln-card-h"><h3>Profil probable</h3><small>d'après ${pp.par}, sans IA</small></div>${pp.vals.map(([label, g, dr, n]) => `<div class="pf-row"><span class="pf-k">${label}</span><span class="pf-g">${g}</span><span class="pf-bar" role="img" aria-label="${n ? `${label} : environ ${n} sur 5, de ${g} à ${dr}` : `${label} : pas de repère`}">${[1, 2, 3, 4, 5].map(i => `<i${n && i <= n ? ' class="on"' : ''}></i>`).join('')}</span><span class="pf-d">${dr}</span></div>`).join('')}</section>` : '';
+  const ask = relaisOn() && !e.avis ? `<button type="button" class="btn btn-primary ln-ask" data-act="lien-ask"${LIEN.ask ? ' disabled' : ''}>${ICO_TV}${LIEN.ask ? 'Tastevin lit la page…' : `Demander l'avis de Tastevin · ${bouchons(cout('lien'))}`}</button>` : '';
+  const w = e.vinId && db.wines.find(x => x.id === e.vinId);
+  const add = w ? `<button type="button" class="btn" data-open="${w.id}">Dans ta cave ✓ Voir la fiche</button>` : `<button type="button" class="btn${e.avis ? ' btn-primary' : ''}" data-act="lien-add">Ajouter à la cave</button>`;
+  $('#ln-body').innerHTML = head + avisLienHTML(e) + libre + prof
+    + `<div class="ln-actions">${ask}<div class="ln-two"><button type="button" class="btn" data-close>Retour</button>${add}</div></div>`
+    + `<div class="d-foot"><button class="btn btn-danger" data-act="lien-del" data-lien="${e.id}">Supprimer cette analyse</button></div>`;
+}
+
+function lienRow(e) {
+  const w = e.vinId && db.wines.find(x => x.id === e.vinId), title = lienTitre(e);
+  return `<article class="cs-row" data-lien="${e.id}" tabindex="0">
+    <div class="cs-thumbs"><div class="cs-thumb ln-thumb" aria-hidden="true">${ICO_LIEN}</div></div>
+    <div class="cs-body"><p class="cs-title">${esc(title)}</p><p class="cs-meta">Lien · ${esc(e.site)} · ${e.avis ? 'avis de Tastevin' : 'lu gratuitement'}</p>
+      ${w ? '<div class="cs-pills"><span class="cs-pill is-ok">ajouté à la cave</span></div>' : ''}</div>
+    <button type="button" class="cs-del" data-act="lien-del" data-lien="${e.id}" aria-label="${esc(`Supprimer l'analyse : ${title}`)}" title="Supprimer cette analyse">${ICO_CORBEILLE}</button>
+  </article>`;
+}
+
+/** L'avis de Tastevin (relais, 1 bouchon) : ce que l'appli a extrait de la page, et mes goûts (comme pour le portrait). */
+async function askLien() {
+  const e = mesLiens().find(x => x.id === LIEN.id);
+  if (!e || LIEN.ask || !relaisOn()) return;
+  LIEN.ask = true;
+  renderLien();
+  try {
+    const r = await relais('lien', { page: { url: e.url, site: e.site, ...e.page }, lu: { ...e.lu, catalogue: e.cat ? e.cat.nom : '' }, contexte: portraitContexte(mesDonnees('0000-00-00')) }, 150e3);
+    if (!r.result) throw new Error("Tastevin n'a pas répondu. Réessaie plus tard.");
+    const xs = mesLiens(), f = xs.find(x => x.id === e.id);
+    if (f) { Object.assign(f, { avis: r.result, avisDate: nowISO(), avisCout: cout('lien') }); garderLiens(xs); }
+  } catch (x) {
+    toast(x.message || 'Tastevin ne répond pas. Réessaie plus tard.');
+  } finally {
+    LIEN.ask = false;
+    if ($('#dlg-lien').open) { renderLien(); $('#ln-body').scrollTop = 0; }
+    if (UI.view === 'conseil') renderConseil();
+  }
+}
+
+/** « Ajouter à la cave » : le formulaire « Nouveau vin », prérempli par la page (et par Tastevin, s'il a donné son avis). */
+function addFromLien() {
+  const e = mesLiens().find(x => x.id === LIEN.id);
+  if (!e) return;
+  const v = lienVue(e), a = e.avis && e.avis.estVin !== false ? e.avis : null;
+  openWineForm();
+  const f = $('#wine-form');
+  Object.assign(FORM, { fromLien: e.id, readDone: true, catDone: true });
+  // Ce que Tastevin a lu autrement que l'appli, ou ajouté, devient « rempli par Tastevin » ; le reste vient de la page.
+  const deTastevin = k => !!(a && a[k] != null && a[k] !== '' && String(a[k]) !== String(e.lu[k] ?? ''));
+  const set = (k, x, tv) => { if (x == null || x === '' || !f.elements[k]) return; f.elements[k].value = x; if (tv) claudeFilled(k); };
+  ['domaine', 'cuvee', 'appellation', 'region', 'millesime'].forEach(k => set(k, v[k], deTastevin(k)));
+  if (e.cat) set('pays', 'France');
+  const radio = v.couleur && f.querySelector(`input[name="couleur"][value="${v.couleur}"]`);
+  if (radio) { radio.checked = true; if (deTastevin('couleur')) claudeFilled('couleur'); } else $$('#wf-colors input').forEach(x => (x.checked = false));
+  if (v.cepages) { setGrapes(splitGrapes(v.cepages)); if (deTastevin('cepages')) claudeFilled('cepages'); } else renderGrapes();
+  if (e.page.prix && (!e.page.devise || e.page.devise === 'EUR')) set('prix', e.page.prix);
+  set('fournisseur', e.site);
+  if (a) { set('gardeDe', a.gardeDe, true); set('gardeA', a.gardeA, true); }
+  refreshClaudeTags();
+  checkDuplicate();
+  setAiStatus(a ? "Fiche préremplie d'après la page et l'avis de Tastevin : vérifie-la, indique le nombre de bouteilles, puis ajoute-la."
+    : "Fiche préremplie d'après la page : vérifie-la, indique le nombre de bouteilles, puis ajoute-la.");
+  updateFormPreview();
+}
+function linkLien(id, vinId) {
+  const xs = mesLiens(), e = xs.find(x => x.id === id);
+  if (e) { e.vinId = vinId; garderLiens(xs); }
+  if ($('#dlg-lien').open && LIEN.id === id) renderLien();
+}
+/** Supprimer une analyse de lien : depuis sa corbeille dans « Tes analyses », ou depuis sa fenêtre. */
+function deleteLien(id) {
+  if (!mesLiens().some(x => x.id === id) || !confirm("Supprimer cette analyse de l'historique ? Les vins déjà ajoutés à la cave restent.")) return;
+  garderLiens(mesLiens().filter(x => x.id !== id));
+  if (LIEN.id === id) $('#dlg-lien').close();
+  renderConseil();
+  toast('Analyse supprimée');
 }
 
 /* =========================================================
@@ -7079,6 +7531,9 @@ function wire() {
         case 'cs-del': deleteConseil(act.dataset.cid); break;
         case 'cs-rm': removeConseilBottle(act.dataset.cid, +act.dataset.i); break;
         case 'cs-relaunch': relaunchConseil(act.dataset.cid); break;
+        case 'lien-ask': askLien(); break;
+        case 'lien-add': addFromLien(); break;
+        case 'lien-del': deleteLien(act.dataset.lien); break;
         case 'bulk': openBulk(); break;
         case 'review': UI.review = true; renderCave(); window.scrollTo(0, 0); break;
         case 'review-off': UI.review = false; renderCave(); break;
@@ -7116,6 +7571,8 @@ function wire() {
     }
     const cs = e.target.closest('[data-conseil]');
     if (cs) { openConseil(cs.dataset.conseil); return; }
+    const ln = e.target.closest('[data-lien]');
+    if (ln) { openLien(ln.dataset.lien); return; }
     const chip = e.target.closest('[data-color]');
     if (chip) { UI.color = chip.dataset.color; render(); return; }
     const bt = e.target.closest('[data-btab]');
@@ -7157,6 +7614,7 @@ function wire() {
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.matches('article[data-open]')) openDetail(e.target.dataset.open);
+    if (e.key === 'Enter' && e.target.matches('article[data-lien]')) openLien(e.target.dataset.lien);
   });
   // « Ce que coûte une demande » reste ouvert d'une synchro à l'autre (la carte est redessinée à chaque fois).
   document.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('cr-tarifs')) UI.tarifsOpen = e.target.open; }, true);
@@ -7356,6 +7814,9 @@ function wire() {
   $('#dlg-scan').addEventListener('close', () => scanReset());
   $('#dlg-similar').addEventListener('close', () => { if (!$('#dlg-similar').open) UI.simWine = null; });
   $('#dlg-conseil').addEventListener('close', () => { UI.openConseil = null; UI.csOpen.clear(); if (UI.view === 'conseil') renderConseil(); });
+  $('#lien-card').addEventListener('submit', e => { e.preventDefault(); lireLien($('#lien-url').value); });
+  $('#lien-url').addEventListener('input', () => { $('#lien-err').hidden = true; });
+  $('#dlg-lien').addEventListener('close', () => { if (!$('#dlg-lien').open) LIEN.id = ''; if (UI.view === 'conseil') renderConseil(); });
   $('#dlg-period').addEventListener('close', () => { UI.periodKey = ''; if (UI.view === 'stats') renderStats(); });
   $('#dlg-period').addEventListener('keydown', e => {
     const k = { ArrowLeft: '-1', ArrowRight: '1' }[e.key], b = k && $(`#dlg-period [data-pgo="${k}"]`);

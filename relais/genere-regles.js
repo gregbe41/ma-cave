@@ -15,12 +15,12 @@ const val = n => vm.runInContext(n, ctx);
 
 const CONSTANTES = ['MODEL', 'MAX_TOKENS', 'COLORS', 'FORMATS', 'ACCORDS', 'LABEL_FIELDS', 'NO_CHECK', 'PROFIL_KEYS', 'BUDGETS', 'LIENS', 'IMAGE_TYPES',
   'LABEL_SCHEMA', 'LABEL_PROMPT', 'REVOIR_PROMPT', 'CONSEIL_SCHEMA', 'CONSEIL_PROMPT', 'SUGG_SCHEMA', 'SUGG_PROMPT', 'COTE_SCHEMA', 'COTE_PROMPT',
-  'PORTRAIT_SCHEMA', 'PORTRAIT_PROMPT'];
-const FONCTIONS = ['list', 'num', 'int', 'str', 'norm', 'colorKey', 'accordList', 'profilLu', 'profilTexte', 'tidyLabel', 'tidyConseil', 'tidySuggest', 'tidyPortrait'];
+  'PORTRAIT_SCHEMA', 'PORTRAIT_PROMPT', 'LIEN_SCHEMA', 'LIEN_PROMPT'];
+const FONCTIONS = ['list', 'num', 'int', 'str', 'norm', 'colorKey', 'accordList', 'profilLu', 'profilTexte', 'tidyLabel', 'tidyConseil', 'tidySuggest', 'tidyPortrait', 'tidyLien'];
 
 // Limites de l'API Claude pour les sorties structurées, par requête : au-delà, elle répond 400 « Schema is too complex ».
 // (16 champs à union, anyOf ou liste de types ; 24 propriétés facultatives.) Le profil du vin les a dépassées une fois.
-for (const n of ['LABEL_SCHEMA', 'CONSEIL_SCHEMA', 'SUGG_SCHEMA', 'COTE_SCHEMA', 'PORTRAIT_SCHEMA']) {
+for (const n of ['LABEL_SCHEMA', 'CONSEIL_SCHEMA', 'SUGG_SCHEMA', 'COTE_SCHEMA', 'PORTRAIT_SCHEMA', 'LIEN_SCHEMA']) {
   let unions = 0, facultatifs = 0;
   const parcours = o => {
     if (!o || typeof o !== 'object') return;
