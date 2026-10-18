@@ -3703,7 +3703,11 @@ function renderSyncBox() {
       : k === 'offline' ? 'Hors ligne : tes modifications sont gardées sur cet appareil.'
       : S.lastSync ? done(S.lastSync) : 'Pas encore synchronisée.';
     let d = row(st, k);
-    if (/^https:\/\/drive\.google\.com\//.test(S.driveUrl)) d += `<a class="rg-row rg-link" href="${esc(S.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Google Drive${ICO_EXT}</a>`;
+    // Cave d'un autre compte que celui connecté : son dossier ne s'ouvrirait pas (Google proposerait d'en demander
+    // l'accès, par un e-mail à son propriétaire) ; on propose plutôt de changer de compte.
+    const ailleurs = S.compte && Compte.email() && !Compte.same(S.compte, Compte.email());
+    if (ailleurs) d += `<div class="rg-row"><span class="rg-txt"><b>Sur le compte ${esc(S.compte)}</b><small>Connecte-toi avec ce compte pour l'ouvrir et la synchroniser</small></span><button type="button" class="btn btn-sm" data-act="google-switch">Changer de compte</button></div>`;
+    else if (/^https:\/\/drive\.google\.com\//.test(S.driveUrl)) d += `<a class="rg-row rg-link" href="${esc(S.driveUrl)}" target="_blank" rel="noopener">Ouvrir dans Google Drive${ICO_EXT}</a>`;
     box.innerHTML = d;
     return;
   }
@@ -7428,7 +7432,7 @@ function renderCaves() {
   const ailleurs = e => e.kind === 'drive' && me && e.compte && !Compte.same(e.compte, me);
   const row = e => {
     const role = e.role === 'proprio' ? 'propriétaire' : e.proprioActif ? 'participant' : '';
-    const sub = [`${fmtNum(e.bouteilles || 0)} ${plural(e.bouteilles || 0, 'bouteille', 'bouteilles')}`, role, ailleurs(e) ? e.compte : e.kind === 'drive' ? 'Google Drive' : '', e.key === cur ? 'ouverte' : ''].filter(Boolean).join(' · ');
+    const sub = [`${fmtNum(e.bouteilles || 0)} ${plural(e.bouteilles || 0, 'bouteille', 'bouteilles')}`, role, ailleurs(e) ? e.compte : e.kind === 'drive' ? 'Google Drive' : 'Google Sheet', e.key === cur ? 'ouverte' : ''].filter(Boolean).join(' · ');
     return `<div class="cave-row${e.key === cur ? ' is-cur' : ''}"><button type="button" class="cave-open" data-cave="${e.key}"><span class="cv-name">${esc(caveName(e))}</span><span class="cv-sub">${esc(sub)}</span></button>${e.key === cur ? '' : `<button type="button" class="link cave-del" data-cave-del="${e.key}">Retirer</button>`}</div>`;
   };
   const sorted = CAVES.slice().sort((a, b) => (b.key === cur) - (a.key === cur) || (b.vu || '').localeCompare(a.vu || ''));
