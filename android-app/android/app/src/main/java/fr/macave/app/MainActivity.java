@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
         // Plugins propres à l'appli, à déclarer avant le démarrage du pont avec la page.
         registerPlugin(LabelScannerPlugin.class);
         registerPlugin(GoogleDrivePlugin.class);
+        registerPlugin(PartagePlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

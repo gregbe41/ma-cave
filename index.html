@@ -1188,6 +1188,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
         <p class="form-err" id="lien-err" role="alert" hidden></p>
         <button type="submit" class="btn btn-primary" id="lien-go">Lire la page</button>
         <p class="hint" id="lien-hint"></p>
+        <p class="hint" id="lien-share" hidden>Sur Android : depuis ton navigateur, Partager › Ma cave.</p>
       </form>
       <h2 class="d-h3">Tes analyses</h2>
       <div class="cs-list" id="conseil-list"></div>
@@ -5219,6 +5220,7 @@ function renderConseil() {
   const others = db.conseils.length - list.length;
   const box = $('#conseil-list'), liens = mesLiens();
   $('#lien-card').hidden = !lienOn();
+  $('#lien-share').hidden = !Partage.on;
   $('#lien-hint').textContent = `Gratuit : l'appli lit la page et la compare à ta cave.${relaisOn() ? ` L'avis de Tastevin, si tu le demandes : ${bouchons(cout('lien'))}.` : ''}`;
   const rows = list.map(c => {
     const rs = (c.resultat && c.resultat.bouteilles) || [], n = c.bouteilles.length;
@@ -5861,6 +5863,28 @@ function deleteLien(id) {
   if (LIEN.id === id) $('#dlg-lien').close();
   renderConseil();
   toast('Analyse supprimée');
+}
+
+/* Appli Android : un lien partagé depuis le navigateur (« Partager › Ma cave ») est lu dans Conseil, comme s'il avait
+   été collé. Partager est le geste explicite : la lecture est gratuite, l'avis de Tastevin attend toujours son bouton. */
+const Partage = {
+  get on() { return Native.on && !!Native.P.Partage; },
+  ecouter() {
+    if (!this.on) return;
+    try {
+      Promise.resolve(Native.P.Partage.addListener('partage', e => recevoirPartage(e && e.texte))).catch(() => {});
+      Promise.resolve(Native.P.Partage.recu()).then(r => { if (r && r.texte) recevoirPartage(r.texte); }).catch(() => {});
+    } catch { /* plugin absent ou ancien : on colle le lien à la main */ }
+  },
+};
+function recevoirPartage(texte) {
+  const t = str(texte).slice(0, 2100);
+  if (!t) return;
+  setView('conseil');
+  $('#lien-url').value = t;
+  if (lienPropre(t)) { lireLien(t); return; }
+  $('#lien-err').textContent = "Ce que tu as partagé ne contient pas de lien vers une page web : colle l'adresse de la page du vin.";
+  $('#lien-err').hidden = false;
 }
 
 /* =========================================================
@@ -8001,6 +8025,7 @@ function wire() {
   rememberCave();
   const joined = await acceptInvite(), preset = !joined && applyPreset();
   setView(joined ? 'reglages' : 'cave');
+  Partage.ecouter();
   if (joined) toast('Invitation acceptée. Synchronisation…');
   if (preset) toast('Appli reliée à la cave. Synchronisation…');
   if (API.ready()) sync();
