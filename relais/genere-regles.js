@@ -17,6 +17,23 @@ const CONSTANTES = ['MODEL', 'MAX_TOKENS', 'COLORS', 'FORMATS', 'ACCORDS', 'LABE
   'LABEL_SCHEMA', 'LABEL_PROMPT', 'REVOIR_PROMPT', 'CONSEIL_SCHEMA', 'CONSEIL_PROMPT', 'SUGG_SCHEMA', 'SUGG_PROMPT', 'COTE_SCHEMA', 'COTE_PROMPT'];
 const FONCTIONS = ['list', 'num', 'int', 'str', 'norm', 'colorKey', 'accordList', 'profilLu', 'profilTexte', 'tidyLabel', 'tidyConseil', 'tidySuggest'];
 
+// Limites de l'API Claude pour les sorties structurées, par requête : au-delà, elle répond 400 « Schema is too complex ».
+// (16 champs à union, anyOf ou liste de types ; 24 propriétés facultatives.) Le profil du vin les a dépassées une fois.
+for (const n of ['LABEL_SCHEMA', 'CONSEIL_SCHEMA', 'SUGG_SCHEMA', 'COTE_SCHEMA']) {
+  let unions = 0, facultatifs = 0;
+  const parcours = o => {
+    if (!o || typeof o !== 'object') return;
+    if (o.anyOf || Array.isArray(o.type)) unions++;
+    if (o.type === 'object' && o.properties) facultatifs += Object.keys(o.properties).filter(k => !(o.required || []).includes(k)).length;
+    Object.values(o).forEach(parcours);
+  };
+  parcours(val(n));
+  if (unions > 16 || facultatifs > 24) {
+    console.error(`${n} : ${unions} champs à union (16 au plus) et ${facultatifs} facultatifs (24 au plus) : l'API Claude le refuserait.`);
+    process.exit(1);
+  }
+}
+
 let out = `// Fichier généré par relais/genere-regles.js à partir de apps-script/Code.gs : ne pas le modifier à la main.\n\n`;
 for (const n of CONSTANTES) out += `export const ${n} = ${JSON.stringify(val(n), null, 1)};\n`;
 out += '\n';

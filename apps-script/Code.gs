@@ -513,7 +513,9 @@ const LABEL_SCHEMA = {
     peutEtrePasse: { type: 'boolean' },
     style: nullable({ type: 'string' }),
     accords: { type: 'array', items: { type: 'string', enum: ACCORDS } },
-    profil: nullable({ type: 'object', additionalProperties: false, required: PROFIL_KEYS, properties: PROFIL_KEYS.reduce((o, k) => { o[k] = nullable({ type: 'integer' }); return o; }, {}) }),
+    // Sans « null » : l'API Claude refuse un schéma de plus de 16 champs à union (anyOf), et chaque jauge en ajoutait une.
+    // 0 = sans objet pour cette couleur ; profilLu le ramène à vide.
+    profil: { type: 'object', additionalProperties: false, required: PROFIL_KEYS, properties: PROFIL_KEYS.reduce((o, k) => { o[k] = { type: 'integer', enum: [0, 1, 2, 3, 4, 5] }; return o; }, {}) },
     champsLus: { type: 'array', items: { type: 'string', enum: LABEL_FIELDS } },
     remarque: { type: 'string' },
   },
@@ -522,7 +524,7 @@ const LABEL_PROMPT = [
   "Tu lis la photo d'une étiquette de vin pour pré-remplir la fiche d'un inventaire de cave personnelle. Réponds en français, uniquement selon le schéma JSON imposé.",
   '',
   'Règles :',
-  "- estEtiquette : false si la photo ne montre pas d'étiquette de vin lisible. Dans ce cas, mets tous les autres champs à null, champsLus vide, et explique en une phrase dans remarque.",
+  "- estEtiquette : false si la photo ne montre pas d'étiquette de vin lisible. Dans ce cas, mets tous les autres champs à null (les jauges du profil à 0), champsLus vide, et explique en une phrase dans remarque.",
   "- domaine : le producteur, château ou domaine, tel qu'écrit sur l'étiquette (ex. « Château Musar », « Domaine Tempier »). Pas un négociant cité dans « mis en bouteille par », sauf s'il n'y a pas d'autre producteur.",
   "- cuvee : le nom de la cuvée s'il y en a un, sinon null. Ne répète ni le domaine ni l'appellation.",
   "- appellation : l'appellation ou l'indication géographique (ex. « Saint-Joseph », « Côtes du Rhône Villages », « IGP Pays d'Oc »), sans « Appellation … Contrôlée ».",
@@ -536,7 +538,7 @@ const LABEL_PROMPT = [
   "- peutEtrePasse : true si le vin doit être bu sans tarder parce qu'il a peut-être déjà dépassé son apogée (vin âgé pour son appellation, producteur ou négociant inconnu, millésime faible). Dans ce cas, gardeA = l'année en cours, jamais une année future, et la remarque explique pourquoi et rappelle de vérifier avant d'ouvrir le niveau du vin, sa couleur et le bouchon. Sinon false.",
   "- style : en une ou deux phrases, le vin qu'on peut en attendre (corps, fruit, tanins ou acidité, élevage), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. null si le vin n'est pas identifié.",
   "- accords : de une à quatre catégories de plats, parmi les valeurs autorisées, celles qui lui vont le mieux. Liste vide si le vin n'est pas identifié.",
-  "- profil : le profil probable du vin, en crans de 1 (le moins) à 5 (le plus), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. Rouge : corps (léger → puissant), tanins (souples → fermes), acidite (douce → vive), boise (aucun → marqué), fruit (frais → mûr). Blanc : sucre (sec → moelleux), acidite, mineralite (discrète → marquée), boise, aromes (discrets → exubérants). Rosé : sucre (sec → tendre), acidite, fruit (discret → intense), corps (léger → vineux). Effervescent : dosage (brut nature → doux), bulle (crémeuse → vive), vinosite (légère → ample), evolution (fraîche → briochée). Liquoreux : sucre (moelleux → liquoreux), fraicheur (faible → vive), botrytis (discret → marqué), evolution (fruit frais → confit). Les autres jauges à null ; profil à null si le vin n'est pas identifié.",
+  "- profil : le profil probable du vin, en crans de 1 (le moins) à 5 (le plus), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. Rouge : corps (léger → puissant), tanins (souples → fermes), acidite (douce → vive), boise (aucun → marqué), fruit (frais → mûr). Blanc : sucre (sec → moelleux), acidite, mineralite (discrète → marquée), boise, aromes (discrets → exubérants). Rosé : sucre (sec → tendre), acidite, fruit (discret → intense), corps (léger → vineux). Effervescent : dosage (brut nature → doux), bulle (crémeuse → vive), vinosite (légère → ample), evolution (fraîche → briochée). Liquoreux : sucre (moelleux → liquoreux), fraicheur (faible → vive), botrytis (discret → marqué), evolution (fruit frais → confit). Les autres jauges à 0 (sans objet) ; toutes à 0 si le vin n'est pas identifié.",
   "- champsLus : les noms des champs dont la valeur est écrite sur l'étiquette. N'y mets pas ceux que tu as déduits ou estimés.",
   '- remarque : une phrase courte et utile au propriétaire (ex. « Millésime non visible : regarde la collerette ou la contre-étiquette. »), ou une chaîne vide.',
   '',
