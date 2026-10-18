@@ -16,7 +16,9 @@ const DRIVE = 'https://www.googleapis.com/drive/v3';
 const TOKENINFO = 'https://oauth2.googleapis.com/tokeninfo';
 const DRIVE_FILE = 'https://www.googleapis.com/auth/drive.file';
 // Ce que coûte chaque demande, en bouchons (2 bouchons ≈ une lecture d'étiquette, quelques centimes). Entiers : pas de demi-bouchon.
-export const COUTS = { etiquette: 2, conseil: 2, similaires: 1, revoir: 1, cote: 2 };
+// Le portrait est une demande « pour moi » (comme Conseil), et non pour la cave : sa clé à part permettra de le faire payer
+// un jour par la personne plutôt que par la cave.
+export const COUTS = { etiquette: 2, conseil: 2, similaires: 1, revoir: 1, cote: 2, portrait: 2 };
 const MAX_IMAGE = 7e6;       // caractères base64 par photo (comme le script)
 const MAX_CORPS = 40e6;      // une demande Conseil peut porter plusieurs photos
 const MAX_BOUTEILLES = 10;
@@ -224,6 +226,19 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       const { json } = await demander({ system: R.SUGG_PROMPT, schema: R.SUGG_SCHEMA, maxTokens: 2500,
         content: `Année en cours : ${annee()}.\n${JSON.stringify(ctx).slice(0, 20000)}` });
       return { result: R.tidySuggest(json), credits: await debiter(cave, qui, COUTS.similaires) };
+    },
+
+    /** Portrait de dégustateur (« Mes stats ») : les vins notés par la personne et ce que l'appli a calculé de ses goûts. */
+    async portrait({ cave, qui, p }) {
+      const c = p.contexte && typeof p.contexte === 'object' ? p.contexte : {};
+      const vins = Array.isArray(c.vins) ? c.vins.slice(0, 60).filter(v => v && typeof v === 'object') : [];
+      if (!vins.length) throw erreur(400, 'Aucun vin noté.');
+      const ctx = { notes: entier(c.notes, vins.length), bouteilles: entier(c.bouteilles, 0), vins, palais: Array.isArray(c.palais) ? c.palais.slice(0, 5) : [],
+        dejaEnCave: Array.isArray(c.dejaEnCave) ? c.dejaEnCave.slice(0, 60).map(x => texte(x, 200)) : [] };
+      verifierCredits(await etatCave(cave), qui, COUTS.portrait);
+      const { json } = await demander({ system: R.PORTRAIT_PROMPT, schema: R.PORTRAIT_SCHEMA, maxTokens: 2500,
+        content: `Année en cours : ${annee()}.\n${JSON.stringify(ctx).slice(0, 24000)}` });
+      return { result: R.tidyPortrait(json), credits: await debiter(cave, qui, COUTS.portrait) };
     },
 
     /** Valeur du jour : Claude cherche en ligne le prix actuel d'une bouteille. */

@@ -25,6 +25,7 @@ Ce qu'il fait :
 | `conseil` | 2 par photo | conseil devant un rayon |
 | `similaires` | 1 | cinq vins à découvrir |
 | `cote` | 2 | valeur du jour, cherchée en ligne (trois recherches au plus) |
+| `portrait` | 2 | portrait de dégustateur d'une personne, d'après ses notes (« Mes stats ») |
 | `etat`, `reglages` | 0 | ce qui reste ; réglages du propriétaire |
 
 Chaque demande est un `POST /v1/<demande>` avec l'en-tête `Authorization: Bearer <jeton Google>` et un corps JSON

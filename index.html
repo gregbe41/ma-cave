@@ -33,6 +33,8 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
   --none-fg:#5D6660; --none-bg:#ECE8E1;
   /* Texte couleur accent (--accent-ink, ambre foncé : 5.6:1 sur blanc), étoiles vides, segment choisi, contour des pastilles */
   --star-off:var(--line); --seg-on:var(--surface); --dot-ring:rgba(0,0,0,.15);
+  /* Mes stats : l'échelle des notes (carte, classements), du plus pâle au plus marqué, et le texte posé dessus */
+  --heat1:#F6DDB4; --heat2:#EFBE6E; --heat3:#E8A13A; --heat4:#9A5B0C; --heat-ink3:#1A1206; --heat-ink4:#FFFFFF;
   --card-shadow:0 1px 2px rgba(26,31,28,.05),0 10px 26px -20px rgba(26,31,28,.38); --lift:0 8px 18px -8px rgba(110,64,8,.55);
   --display:"Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
   --sans:"DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -59,6 +61,7 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
     /* Ambre sur fond sombre : 8:1 sur les cartes, 6:1 sur sa teinte ; texte foncé sur les boutons ambre : 9:1.
        Étoiles vides à 3.3:1, segment choisi plus clair que son rail, contour clair autour de la pastille rouge. */
     --star-off:#65716A; --seg-on:#2C3631; --dot-ring:rgba(255,255,255,.3);
+    --heat1:#3B3322; --heat2:#6B5126; --heat3:#B9802E; --heat4:#E8A13A; --heat-ink3:#1A1206; --heat-ink4:#1A1206;
     --card-shadow:0 0 0 1px #222B27; --lift:0 8px 18px -8px rgba(0,0,0,.7);
     color-scheme:dark;
   }
@@ -76,6 +79,7 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
   /* Ambre sur fond sombre : 8:1 sur les cartes, 6:1 sur sa teinte ; texte foncé sur les boutons ambre : 9:1.
      Étoiles vides à 3.3:1, segment choisi plus clair que son rail, contour clair autour de la pastille rouge. */
   --star-off:#65716A; --seg-on:#2C3631; --dot-ring:rgba(255,255,255,.3);
+  --heat1:#3B3322; --heat2:#6B5126; --heat3:#B9802E; --heat4:#E8A13A; --heat-ink3:#1A1206; --heat-ink4:#1A1206;
   --card-shadow:0 0 0 1px #222B27; --lift:0 8px 18px -8px rgba(0,0,0,.7);
   color-scheme:dark;
 }
@@ -385,6 +389,99 @@ legend{padding:0;margin:0 0 8px;font-size:.88rem;font-weight:500;color:var(--mut
 .j-com{margin:4px 0 0;font-family:var(--sans);font-style:italic;line-height:1.55}
 .stars{color:var(--warn);letter-spacing:1px;white-space:nowrap}
 .stars .off{color:var(--star-off)}
+/* Mes stats */
+.ms-qui{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;margin-bottom:10px}
+.ms-qui button{height:40px;font-size:.95rem}
+.s-block .s-sub{margin:-8px 0 12px;font-size:.85rem;line-height:1.4;color:var(--muted)}
+.ms-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%;margin:0 0 12px}
+.ms-tabs button{padding:0 6px;overflow:hidden;text-overflow:ellipsis}
+.ms-figs .fig>span{display:block;color:var(--ink);font-weight:600;line-height:1.3}
+.fig small{display:block;margin-top:1px;color:var(--muted);font-size:.76rem;line-height:1.3}
+.fig b .stars{color:var(--warn);font-size:.8em;margin-right:4px;vertical-align:.08em}
+.ms-note{display:inline-flex;align-items:center;gap:3px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ms-txt{margin:0 0 10px;line-height:1.45}
+.ms-pal .pf-row{min-height:26px}
+.ms-pal .pf-bar i{height:10px}
+.pf-bar i.z,.ms-leg i.z{background:var(--accent)}
+.pf-bar i.b,.ms-leg i.b{background:repeating-linear-gradient(135deg,var(--muted) 0 1.5px,var(--soft) 1.5px 4px);box-shadow:inset 0 0 0 1px var(--muted)}
+.ms-leg{display:grid;gap:6px;margin:10px 0 0;padding:10px 0 0;border-top:1px solid var(--soft);font-size:.78rem;color:var(--muted)}
+.ms-leg span{display:flex;align-items:center;gap:8px}
+.ms-leg i{flex:none;width:22px;height:10px;border-radius:3px}
+.ms-lock{display:grid;gap:8px;padding:12px;border-radius:14px;background:var(--soft)}
+.ms-lock p{margin:0;font-size:.85rem;line-height:1.4;color:var(--muted)}
+.ms-lock .btn{justify-self:start}
+.ms-prog{display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.ms-prog i{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.ms-prog i.ok{background:var(--ok)}
+.heat0{background:var(--soft);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.heat1{background:var(--heat1);color:var(--ink)}
+.heat2{background:var(--heat2);color:var(--ink)}
+.heat3{background:var(--heat3);color:var(--heat-ink3)}
+.heat4{background:var(--heat4);color:var(--heat-ink4)}
+.ms-rank{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.ms-rank li{display:grid;grid-template-columns:minmax(0,7.2em) minmax(0,1fr) 3em 3.6em;align-items:center;column-gap:8px;min-height:30px;font-size:.92rem}
+.ms-rank .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms-rank .t{height:10px;border-radius:5px;background:var(--soft);overflow:hidden}
+.ms-rank .t i{display:block;height:100%;border-radius:5px;box-shadow:none}
+.ms-rank .c{text-align:right;white-space:nowrap;font-size:.78rem;color:var(--muted)}
+.ms-foot{display:grid;gap:6px;margin:12px 0 0;padding:10px 0 0;border-top:1px solid var(--soft);font-size:.9rem;line-height:1.45}
+.ms-foot p{margin:0}
+.ms-foot .muted{color:var(--muted)}
+.ms-map{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(5,52px);gap:6px}
+.ms-map>span{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;padding:0 6px;border-radius:10px}
+.ms-map b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.7rem;font-weight:600;line-height:1.15}
+.ms-map em{font-style:normal;font-size:.84rem;font-weight:700}
+.ms-scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:10px 0 0;font-size:.68rem;line-height:1.2;color:var(--muted)}
+.ms-scale span{display:grid;gap:3px}
+.ms-scale i{height:8px;border-radius:3px}
+.ms-ail{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 0;padding:10px 0 0;border-top:1px solid var(--soft);font-size:.85rem}
+.ms-ail>span{padding:4px 10px;border-radius:999px;font-weight:600;box-shadow:none}
+.ms-split{display:flex;gap:3px;height:14px}
+.ms-split span{min-width:4px;border-radius:2px}
+.ms-split span:first-child{border-radius:7px 2px 2px 7px}
+.ms-split span:last-child{border-radius:2px 7px 7px 2px}
+.ms-split span:only-child{border-radius:7px}
+.ms-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}
+.ms-3>div{display:grid;gap:2px;align-content:start}
+.ms-3 .k{display:flex;align-items:center;gap:6px;font-size:.85rem;font-weight:600}
+.ms-3 .k i{flex:none;width:10px;height:10px;border-radius:50%}
+.ms-3 b{font:500 1.75rem/1.1 var(--display);font-variant-numeric:lining-nums}
+.ms-3 small{min-height:1.2em;font-size:.78rem;color:var(--muted)}
+.btn.ms-wide{width:100%;margin-top:12px}
+.ms-cols{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:12px;align-items:end;height:150px;padding:0 4px;border-bottom:1px solid var(--line)}
+.ms-cols>span{display:flex;flex-direction:column;justify-content:flex-end;gap:4px;height:100%;text-align:center;font-size:.88rem;font-weight:700}
+.ms-cols i{display:block;border-radius:8px 8px 2px 2px;box-shadow:none}
+.ms-cols-l{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:12px;padding:6px 4px 0;text-align:center;font-size:.8rem;font-weight:600;line-height:1.25}
+.ms-cols-l small{display:block;font-weight:400;font-size:.74rem;color:var(--muted)}
+.ms-best{display:grid;gap:4px;justify-items:start;margin:12px 0 0;padding:12px 14px;border-radius:14px;background:var(--accent-tint)}
+.ms-best .k{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink)}
+.ms-best p{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0;font-size:.9rem}
+.ms-bars{height:120px}
+.ms-bars .bar-col{cursor:default}
+.ms-bars .bar-col:hover .bar{filter:none}
+.ms-bars .bar-l{font-size:.64rem}
+.ms-dl{display:grid;grid-template-columns:7.2em minmax(0,1fr);gap:8px 10px;margin:12px 0 0;padding:10px 0 0;border-top:1px solid var(--soft);font-size:.9rem;line-height:1.4}
+.ms-dl dt{font-weight:700}
+.ms-dl dd{margin:0}
+.ms-duo{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.ms-dots{display:flex;flex-wrap:wrap;gap:5px}
+.ms-dots i{width:16px;height:16px;border-radius:50%;background:var(--ok)}
+.ms-dots i.non{background:none;box-shadow:inset 0 0 0 2px var(--late)}
+.ms-coeur li{display:grid;grid-template-columns:12px minmax(0,1fr) auto;column-gap:10px;row-gap:6px;align-items:center}
+.ms-sub{grid-column:2/4;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.82rem;color:var(--muted)}
+.ms-noter{box-shadow:var(--card-shadow),inset 0 0 0 2px var(--accent)}
+.ms-noter .j-top{justify-content:flex-start;align-items:center;gap:10px}
+.ms-noter .j-date{margin-left:auto}
+.ms-noter .star-pick{margin:4px 0 0 14px}
+.ms-unlock .ms-u-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ms-unlock .ms-u-top>span:first-child{display:grid;flex:1;min-width:0}
+.ms-unlock small{font-size:.78rem;color:var(--muted)}
+.ms-u-reste{font-size:.85rem;color:var(--muted);white-space:nowrap}
+.ms-tv-head{display:flex;align-items:center;gap:12px;margin:0 0 10px}
+.ms-tv-head h2{margin:0}
+.ms-tv-ico{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--accent-tint);color:var(--accent-ink)}
+.ms-tv-ico .ico-tv{width:26px;height:26px}
+.ms-tv-l{margin:0 0 6px;line-height:1.45}
 
 /* ---------- Réglages ---------- */
 /* Comme le prototype « Nuit de cave » : des groupes titrés en petites capitales, des cartes faites de lignes,
@@ -1020,6 +1117,10 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
     </section>
 
     <section class="view" id="v-stats" hidden>
+      <div class="seg ms-qui" role="group" aria-label="Les stats de qui">
+        <button type="button" data-stats-qui="moi">Moi</button>
+        <button type="button" data-stats-qui="cave">Toute la cave</button>
+      </div>
       <div class="seg" role="group" aria-label="Période">
         <button data-period="12m">12 mois</button>
         <button data-period="year">Cette année</button>
@@ -1701,7 +1802,8 @@ let S = { ...S_DEFAULTS, photoDeletes: [] };
 let STOCK = new Map(), BY_OWNER = new Map();
 const photoIds = new Set();
 const UI = { view: 'cave', q: '', color: '', sort: 'nom', showEmpty: false, period: '12m', openWine: null, owner: lsGet('macave:owner', ''), lastOwner: null, whoAsked: '', review: false, region: '', taster: '', filtersOpen: false, openConseil: null,
-  csOpen: new Set(), csDeferred: false, csProgress: null, accord: '', boireFiltersOpen: false, compact: lsGet('macave:compact', false) === true, periodKey: '', boireTab: 'prio', idea: 0 };
+  csOpen: new Set(), csDeferred: false, csProgress: null, accord: '', boireFiltersOpen: false, compact: lsGet('macave:compact', false) === true, periodKey: '', boireTab: 'prio', idea: 0,
+  statsQui: lsGet('macave:statsQui', ''), msCouleur: '', msPref: 'cepages', msDuo: '', msNoterTout: false, msPortrait: false };
 
 function loadAll() {
   const d = lsGet(LS_DATA, {});
@@ -2577,9 +2679,37 @@ function renderBoire() {
 }
 
 /* ---------- Statistiques ---------- */
+/** Le début de la période choisie dans les stats (« 2025-11-01 ») ; « Depuis le début » : tout. */
+function statsStart() {
+  const now = new Date(), y = now.getFullYear();
+  if (UI.period === '12m') return ymd(new Date(y, now.getMonth() - 11, 1));
+  if (UI.period === 'year') return `${y}-01-01`;
+  return '0000-00-00';
+}
+/** Les barres des stats, une par mois (une par année pour « Depuis le début »), avec les bouteilles de ces sorties. */
+function statsBuckets(outs) {
+  const now = new Date(), y = now.getFullYear(), buckets = [];
+  if (UI.period === 'all') {
+    const first = Math.min(y, ...outs.map(m => +m.date.slice(0, 4)).filter(Boolean));
+    for (let yy = Math.max(first, y - 14); yy <= y; yy++) buckets.push({ key: String(yy), label: String(yy).slice(2), title: String(yy), n: 0 });
+  } else {
+    const n = UI.period === '12m' ? 12 : now.getMonth() + 1;
+    const s = UI.period === '12m' ? new Date(y, now.getMonth() - 11, 1) : new Date(y, 0, 1);
+    for (let i = 0; i < n; i++) {
+      const d = new Date(s.getFullYear(), s.getMonth() + i, 1);
+      buckets.push({ key: `${d.getFullYear()}-${pad(d.getMonth() + 1)}`, label: d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', ''), title: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }), n: 0 });
+    }
+  }
+  const bMap = new Map(buckets.map(b => [b.key, b]));
+  outs.forEach(m => { const b = bMap.get(UI.period === 'all' ? m.date.slice(0, 4) : m.date.slice(0, 7)); if (b) b.n += m.qte; });
+  return buckets;
+}
+
 function renderStats() {
   $$('[data-period]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.period === UI.period)));
-  const box = $('#stats-body'), now = new Date(), y = now.getFullYear();
+  $$('[data-stats-qui]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.statsQui === msQui())));
+  if (msQui() === 'moi') { renderMesStats(); return; }
+  const box = $('#stats-body');
   const wById = new Map(db.wines.map(w => [w.id, w]));
 
   // Composition actuelle
@@ -2591,9 +2721,7 @@ function renderStats() {
     <div class="stack" role="img" aria-label="Répartition par couleur">${comp.filter(c => c.n).map(c => `<span style="--c:${c.hex};flex:${c.n}" title="${c.label} : ${c.n}"></span>`).join('')}</div>
     <ul class="legend">${comp.filter(c => c.n).map(c => `<li><span class="dot" style="--c:${c.hex}"></span>${c.label} <b>${c.n}</b></li>`).join('')}</ul></section>` : '';
 
-  let start = '0000-00-00';
-  if (UI.period === '12m') start = ymd(new Date(y, now.getMonth() - 11, 1));
-  else if (UI.period === 'year') start = `${y}-01-01`;
+  const start = statsStart();
   const outs = db.moves.filter(m => m.type === 'sortie' && m.date >= start);
   const ins = db.moves.filter(m => m.type === 'entree' && m.date >= start);
 
@@ -2612,20 +2740,7 @@ function renderStats() {
   const valueDrunk = outs.reduce((a, m) => a + ((wById.get(m.vinId) || {}).prix || 0) * m.qte, 0);
 
   // Barres par mois ou par année
-  let buckets = [];
-  if (UI.period === 'all') {
-    const first = Math.min(y, ...outs.map(m => +m.date.slice(0, 4)).filter(Boolean));
-    for (let yy = Math.max(first, y - 14); yy <= y; yy++) buckets.push({ key: String(yy), label: String(yy).slice(2), title: String(yy), n: 0 });
-  } else {
-    const n = UI.period === '12m' ? 12 : now.getMonth() + 1;
-    const s = UI.period === '12m' ? new Date(y, now.getMonth() - 11, 1) : new Date(y, 0, 1);
-    for (let i = 0; i < n; i++) {
-      const d = new Date(s.getFullYear(), s.getMonth() + i, 1);
-      buckets.push({ key: `${d.getFullYear()}-${pad(d.getMonth() + 1)}`, label: d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', ''), title: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }), n: 0 });
-    }
-  }
-  const bMap = new Map(buckets.map(b => [b.key, b]));
-  outs.forEach(m => { const b = bMap.get(UI.period === 'all' ? m.date.slice(0, 4) : m.date.slice(0, 7)); if (b) b.n += m.qte; });
+  const buckets = statsBuckets(outs);
   const bMax = Math.max(1, ...buckets.map(b => b.n));
   // Chaque barre s'ouvre sur le détail de son mois (ou de son année).
   STATS_BUCKETS = buckets.map(b => ({ key: b.key, title: b.title, n: b.n }));
@@ -2749,6 +2864,418 @@ function renderPeriod() {
       }).join('')}</ul>` : ''}`;
 }
 
+/* ---------- Mes stats : les goûts de la personne de cet appareil, d'après ses notes et ses bouteilles ----------
+   Tout se calcule ici, sans bouchon ; seul le portrait passe par Tastevin. Un bloc ne s'affiche qu'avec assez de notes
+   pour dire quelque chose : d'ici là, il attend dans « Ce que tes notes débloquent ». */
+const MS_SEUIL = { palais: 5, prefs: 6, prix: 8, portrait: 10 };
+// Onglet, singulier et pluriel de chaque couleur qui a des jauges.
+const MS_COULEURS = { rouge: ['Rouges', 'rouge', 'rouges'], blanc: ['Blancs', 'blanc', 'blancs'], rose: ['Rosés', 'rosé', 'rosés'], effervescent: ['Bulles', 'effervescent', 'effervescents'], liquoreux: ['Liquoreux', 'liquoreux', 'liquoreux'] };
+// « moyen », accordé au nom de la jauge.
+const MS_MOYEN = { corps: 'moyen', tanins: 'moyens', acidite: 'moyenne', boise: 'moyen', fruit: 'moyen', sucre: 'moyen', mineralite: 'moyenne', aromes: 'moyens', dosage: 'moyen', bulle: 'moyenne', vinosite: 'moyenne', evolution: 'moyenne', fraicheur: 'moyenne', botrytis: 'moyen' };
+// La carte des régions : colonne, ligne (et largeur) de chaque tuile, à peu près à sa place.
+const MS_CARTE = [['Champagne', 3, 1], ['Alsace', 4, 1], ['Loire', 1, 2, 2], ['Bourgogne', 3, 2], ['Jura', 4, 2], ['Bordeaux', 1, 3], ['Beaujolais', 3, 3], ['Savoie', 4, 3],
+  ['Sud-Ouest', 1, 4], ['Rhône', 3, 4], ['Roussillon', 1, 5], ['Languedoc', 2, 5], ['Provence', 3, 5], ['Corse', 4, 5]];
+// Tranches de prix : bornes, étiquette, et la même dans une phrase.
+const MS_PRIX = [[0, 10, 'Sous 10 €', 'sous 10 €'], [10, 20, '10 à 20 €', 'entre 10 et 20 €'], [20, 40, '20 à 40 €', 'entre 20 et 40 €'], [40, Infinity, 'Plus de 40 €', 'au-delà de 40 €']];
+const MS_JOURS = ['le dimanche', 'le lundi', 'le mardi', 'le mercredi', 'le jeudi', 'le vendredi', 'le samedi'];
+const MS_SAISONS = [["l'hiver", [12, 1, 2]], ['le printemps', [3, 4, 5]], ["l'été", [6, 7, 8]], ["l'automne", [9, 10, 11]]];
+const fmtNote = n => (Math.round(n * 10) / 10).toLocaleString('fr-FR');
+const msNiveau = n => (n < 3.5 ? 1 : n < 4 ? 2 : n < 4.5 ? 3 : 4);
+/** « Moi » ou « Toute la cave » : le dernier choix, sinon « Moi » dès que l'appareil sait qui on est. */
+const msQui = () => UI.statsQui || (S.device ? 'moi' : 'cave');
+const msNote = n => `<span class="ms-note"><span class="stars" aria-hidden="true">★</span>${fmtNote(n)}</span>`;
+const msBloc = (titre, sous, corps, cls = '') => `<section class="s-block${cls ? ' ' + cls : ''}"><h2>${titre}</h2>${sous ? `<p class="s-sub">${sous}</p>` : ''}${corps}</section>`;
+const msProg = (n, max) => `<span class="ms-prog" role="img" aria-label="${Math.min(n, max)} sur ${max}"><i${n >= max ? ' class="ok"' : ''} style="width:${Math.round(Math.min(1, n / max) * 100)}%"></i></span>`;
+const msSeg = (attr, items, cur, label) => `<div class="seg ms-tabs" role="group" aria-label="${label}">${items.map(([k, t]) => `<button type="button" ${attr}="${esc(k)}" aria-pressed="${k === cur}">${t}</button>`).join('')}</div>`;
+/** Le cran d'une jauge : celui de la personne s'il l'a corrigé, sinon celui de Tastevin. */
+const valeurProfil = (p, k) => (p[k] ? p[k][1] ?? p[k][0] : null);
+/** La grande région d'un vin de France ; un vin d'ailleurs compte pour son pays. */
+const msRegion = w => { const r = canonRegion(w.region); return REGIONS.includes(r) ? r : w.pays && norm(w.pays) !== 'france' ? str(w.pays) : r; };
+
+/** Mes avis (et les anciennes notes uniques des sorties), et les sorties où j'étais : débouchées par moi ou notées par moi. */
+function mesDonnees(start) {
+  const me = S.device, wById = new Map(db.wines.map(w => [w.id, w]));
+  const sorties = db.moves.filter(m => m.type === 'sortie' && wById.has(m.vinId));
+  const repris = new Set(db.avis.map(a => a.mvId));
+  const tousTout = [...db.avis, ...sorties.filter(m => (m.note || m.commentaire) && !repris.has(m.id))
+    .map(m => ({ vinId: m.vinId, mvId: m.id, date: m.date, qui: m.par || '', note: m.note, commentaire: m.commentaire || '' }))]
+    .filter(a => a.qui && wById.has(a.vinId));
+  const miensTout = tousTout.filter(a => a.qui === me);
+  const mvMoi = new Set(miensTout.map(a => a.mvId));
+  const outsTout = sorties.filter(m => m.par === me || mvMoi.has(m.id));
+  const miens = miensTout.filter(a => a.date >= start), notes = miens.filter(a => a.note);
+  // Une note par vin : la moyenne de mes notes sur la période.
+  const parVin = new Map();
+  notes.forEach(a => {
+    const e = parVin.get(a.vinId) || { s: 0, c: 0, date: '', coms: [] };
+    e.s += a.note; e.c++;
+    if (a.date > e.date) e.date = a.date;
+    if (str(a.commentaire)) e.coms.push(str(a.commentaire));
+    parVin.set(a.vinId, e);
+  });
+  return {
+    me, wById, miensTout, outsTout, miens, notes, start,
+    tous: tousTout.filter(a => a.date >= start), outs: outsTout.filter(m => m.date >= start),
+    vins: [...parVin].map(([id, e]) => ({ w: wById.get(id), note: e.s / e.c, c: e.c, date: e.date, coms: e.coms })),
+  };
+}
+
+/** Mon palais pour une couleur : sur chaque jauge, la zone des vins que j'ai notés 4 ou plus, et les crans où mes notes baissent (2 ou moins). */
+function monPalais(vins, couleur) {
+  const axes = PROFIL[couleur] || [];
+  const notes = vins.filter(v => v.w.couleur === couleur);
+  const avec = notes.filter(v => axes.some(([k]) => valeurProfil(profilLu(v.w.profil), k) != null));
+  const mot = (a, i) => (i <= 2 ? a[2] : i >= 4 ? a[3] : MS_MOYEN[a[0]]);
+  // « souples à moyens » ; sur toute la largeur de la jauge, pas de préférence nette.
+  const mots = (a, xs, et) => { const ws = [...new Set(xs.map(i => mot(a, i)))]; return ws.length > 2 ? '' : ws.join(et); };
+  const dire = (a, w, bas) => (a[0] === 'boise' && w === a[2] ? (bas ? 'sans boisé' : 'peu ou pas de boisé') : `${a[1].toLowerCase()} ${w}`);
+  const lignes = axes.map(a => {
+    const vals = avec.map(v => ({ note: v.note, x: valeurProfil(profilLu(v.w.profil), a[0]) })).filter(o => o.x != null);
+    const aimes = vals.filter(o => o.note >= 4).map(o => o.x).sort((x, y) => x - y);
+    const zone = [];
+    if (aimes.length) {
+      // Avec quatre vins aimés ou plus, la moitié du milieu : un coup de cœur à part ne l'élargit pas.
+      const q = f => aimes[Math.round(f * (aimes.length - 1))];
+      const lo = aimes.length >= 4 ? q(0.25) : aimes[0], hi = aimes.length >= 4 ? q(0.75) : aimes[aimes.length - 1];
+      for (let i = lo; i <= hi; i++) zone.push(i);
+    }
+    // Mes notes baissent là où un vin mal noté se trouve, et aucun vin aimé.
+    const bas = [...new Set(vals.filter(o => o.note <= 2).map(o => o.x))].filter(x => !zone.includes(x) && !aimes.includes(x)).sort((x, y) => x - y);
+    const z = zone.length ? mots(a, zone, ' à ') : '', b = bas.length ? mots(a, bas, ' ou ') : '';
+    return { a, zone, bas, aime: z && dire(a, z, false), moins: b && dire(a, b, true) };
+  });
+  return { couleur, n: notes.length, nProfil: avec.length, aimes: avec.filter(v => v.note >= 4).length, lignes };
+}
+const msCouleursNotees = d => Object.keys(MS_COULEURS).map(k => [k, d.vins.filter(v => v.w.couleur === k).length]).filter(([, n]) => n).sort((a, b) => b[1] - a[1]);
+const msPalaisMax = d => Math.max(0, ...Object.keys(MS_COULEURS).map(k => monPalais(d.vins, k).nProfil));
+
+function palaisHTML(d) {
+  const couleurs = msCouleursNotees(d);
+  if (!couleurs.length || msPalaisMax(d) < MS_SEUIL.palais) return '';
+  const cur = couleurs.some(([k]) => k === UI.msCouleur) ? UI.msCouleur : couleurs[0][0];
+  const P = monPalais(d.vins, cur), [, un, des] = MS_COULEURS[cur];
+  const tabs = couleurs.length > 1 ? msSeg('data-ms-couleur', couleurs.map(([k, n]) => [k, `${MS_COULEURS[k][0]} · ${n}`]), cur, 'Couleur') : '';
+  const sous = P.n > 1 ? `D'après les ${P.n} ${des} que tu as notés et leur profil.` : `D'après le seul ${un} que tu as noté et son profil.`;
+  let corps;
+  if (P.nProfil < MS_SEUIL.palais) {
+    const manque = MS_SEUIL.palais - P.nProfil, sans = P.n - P.nProfil;
+    const fill = sans && relaisOn() && S.role === 'proprio' && tasteMissing().length
+      ? `<button type="button" class="btn btn-sm" data-act="fill-taste">Faire compléter les profils par Tastevin</button>` : '';
+    const aNoter = MS_SEUIL.palais - P.n;
+    corps = `<div class="ms-lock"><b>${aNoter > 0 ? `Encore ${aNoter} ${plural(aNoter, un, des)} à noter` : `Encore ${manque} ${plural(manque, 'profil', 'profils')} à remplir`}</b>
+      <p>Ton palais en ${un} apparaît à partir de ${MS_SEUIL.palais} vins notés au profil rempli. Tu en as noté ${P.n}${sans ? `, dont ${sans} sans profil : décris-${plural(sans, 'le', 'les')} depuis ${plural(sans, 'sa', 'leur')} fiche` : ''}.</p>
+      ${msProg(P.nProfil, MS_SEUIL.palais)}${fill}</div>`;
+  } else {
+    const aime = P.lignes.map(l => l.aime).filter(Boolean), moins = P.lignes.map(l => l.moins).filter(Boolean);
+    const txt = P.aimes
+      ? `${aime.length ? `<b>Ce que tu aimes :</b> ${aime.join(', ')}.` : 'Pas encore de préférence nette.'}${moins.length ? ` <b>Tes notes baissent avec :</b> ${moins.join(', ')}.` : ''}`
+      : `Aucun ${un} noté 4 ou plus pour l'instant : ta zone apparaîtra avec tes coups de cœur.`;
+    const rows = P.lignes.map(({ a: [, label, g, dr], zone, bas }) => {
+      const aria = (zone.length ? `${label} : ta zone de ${zone[0]} à ${zone[zone.length - 1]} sur 5, de ${g} à ${dr}` : `${label} : pas encore de zone`) + (bas.length ? `, tes notes baissent à ${bas.join(' et ')}` : '');
+      return `<div class="pf-row"><span class="pf-k">${label}</span><span class="pf-g">${g}</span><span class="pf-bar" role="img" aria-label="${aria}">${[1, 2, 3, 4, 5].map(i => `<i${zone.includes(i) ? ' class="z"' : bas.includes(i) ? ' class="b"' : ''}></i>`).join('')}</span><span class="pf-d">${dr}</span></div>`;
+    }).join('');
+    corps = `<p class="ms-txt">${txt}</p>${rows}<div class="ms-leg"><span><i class="z"></i>ta zone : les vins que tu as notés 4 et plus</span>${P.lignes.some(l => l.bas.length) ? '<span><i class="b"></i>là où tes notes baissent (2 et moins)</span>' : ''}</div>`;
+  }
+  return msBloc('Ton palais', sous, tabs + corps, 'ms-pal');
+}
+
+/** Mes notes regroupées (par cépage, région ou appellation) : moyenne par vin, nombre de vins. */
+function msGroupes(vins, cle) {
+  const g = new Map();
+  vins.forEach(v => cle(v.w).forEach(nom => { const k = norm(nom), e = g.get(k) || { nom, s: 0, c: 0 }; e.s += v.note; e.c++; g.set(k, e); }));
+  return [...g.values()].map(e => ({ ...e, note: e.s / e.c }));
+}
+const MS_PREFS = [['cepages', 'Cépages', w => splitGrapes(w.cepages)], ['regions', 'Régions', w => [msRegion(w)].filter(Boolean)], ['appellations', 'Appellations', w => (str(w.appellation) ? [str(w.appellation)] : [])]];
+/** Les appellations goûtées sur la période pour la première fois (toutes, pour « Depuis le début »). */
+function msDecouvertes(d) {
+  const app = m => str((d.wById.get(m.vinId) || {}).appellation);
+  const avant = new Set(d.outsTout.filter(m => m.date < d.start).map(app).filter(Boolean).map(norm));
+  const vues = new Map();
+  d.outs.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach(m => { const a = app(m); if (a && !avant.has(norm(a)) && !vues.has(norm(a))) vues.set(norm(a), a); });
+  return [...vues.values()];
+}
+const msPeriode = () => (UI.period === '12m' ? ' en 12 mois' : UI.period === 'year' ? ' cette année' : '');
+
+function prefsHTML(d) {
+  if (d.notes.length < MS_SEUIL.prefs) return '';
+  const [cur, , cle] = MS_PREFS.find(([k]) => k === UI.msPref) || MS_PREFS[0];
+  const liste = msGroupes(d.vins, cle).filter(e => e.c >= 2).sort((a, b) => b.note - a.note || b.c - a.c);
+  const moy = d.notes.reduce((s, a) => s + a.note, 0) / d.notes.length;
+  const pire = liste.length >= 3 && liste[liste.length - 1].note <= moy - 0.3 ? liste[liste.length - 1] : null;
+  const vus = new Set(d.outsTout.flatMap(m => cle(d.wById.get(m.vinId))).map(norm));
+  let autre = '';
+  if (cur === 'cepages') { const j = GRAPES.map(g => g.name).filter(n => !vus.has(norm(n))).slice(0, 3); if (j.length) autre = `Jamais goûté : ${j.join(', ')}.`; }
+  else if (cur === 'regions') { const j = REGIONS.filter(r => !vus.has(norm(r))); if (j.length) autre = `Jamais goûté : ${j.join(', ')}.`; }
+  else {
+    const dec = msDecouvertes(d);
+    if (dec.length) autre = UI.period === 'all' ? `${dec.length} ${plural(dec.length, 'appellation goûtée', 'appellations goûtées')} en tout.`
+      : `${dec.length} ${plural(dec.length, 'appellation découverte', 'appellations découvertes')}${msPeriode()} : ${dec.slice(0, 4).map(esc).join(', ')}${dec.length > 4 ? '…' : '.'}`;
+  }
+  const corps = msSeg('data-ms-pref', MS_PREFS.map(([k, t]) => [k, t]), cur, 'Classer par')
+    + (liste.length
+      ? `<ol class="ms-rank">${liste.slice(0, 8).map(e => `<li><span class="n">${esc(e.nom)}</span><span class="t" aria-hidden="true"><i class="heat${msNiveau(e.note)}" style="width:${(e.note / 5) * 100}%"></i></span>${msNote(e.note)}<span class="c">${e.c} vins</span></li>`).join('')}</ol>`
+      : `<p class="hint">Pas encore deux vins notés pour un même ${cur === 'cepages' ? 'cépage' : cur === 'regions' ? 'coin' : 'nom'}.</p>`)
+    + (pire || autre ? `<div class="ms-foot">${pire ? `<p><b>Moins pour toi :</b> ${esc(pire.nom)}, ${fmtNote(pire.note)} sur ${pire.c} vins.</p>` : ''}${autre ? `<p class="muted">${esc(autre)}</p>` : ''}</div>` : '');
+  return msBloc('Ce que tu préfères', 'Classé par ta note moyenne, dès 2 vins notés.', corps);
+}
+
+function carteHTML(d) {
+  const parNotes = d.notes.length >= 3, st = new Map();
+  const add = (w, f) => { const r = w && msRegion(w); if (!r) return; const e = st.get(r) || { s: 0, c: 0, n: 0 }; f(e); st.set(r, e); };
+  d.vins.forEach(v => add(v.w, e => { e.s += v.note; e.c++; }));
+  d.outs.forEach(m => add(d.wById.get(m.vinId), e => { e.n += m.qte; }));
+  if (!st.size) return '';
+  const niv = e => (!e ? 0 : parNotes ? (e.c ? msNiveau(e.s / e.c) : 0) : e.n >= 7 ? 4 : e.n >= 4 ? 3 : e.n >= 2 ? 2 : e.n ? 1 : 0);
+  const val = e => (!e ? '–' : parNotes ? (e.c ? fmtNote(e.s / e.c) : '–') : e.n ? String(e.n) : '–');
+  const dit = (r, e) => (parNotes ? (e && e.c ? `${r} ${fmtNote(e.s / e.c)}` : `${r} pas noté`) : `${r} ${e ? e.n : 0} ${plural(e ? e.n : 0, 'bouteille', 'bouteilles')}`);
+  const tuiles = MS_CARTE.map(([r, col, row, span = 1]) => `<span class="heat${niv(st.get(r))}" style="grid-column:${col} / span ${span};grid-row:${row}"><b>${r}</b><em>${val(st.get(r))}</em></span>`).join('');
+  const echelle = parNotes ? ['pas noté', 'moins de 3,5', '3,5 à 4', '4 à 4,5', '4,5 et plus'] : ['aucune', '1 bouteille', '2 ou 3', '4 à 6', '7 et plus'];
+  const ailleurs = [...st].filter(([r, e]) => !REGIONS.includes(r) && (parNotes ? e.c : e.n)).sort((a, b) => (parNotes ? b[1].c - a[1].c : b[1].n - a[1].n)).slice(0, 6);
+  const corps = `<div class="ms-map" role="img" aria-label="${esc(MS_CARTE.map(([r]) => dit(r, st.get(r))).join(', '))}">${tuiles}</div>
+    <div class="ms-scale" aria-hidden="true">${echelle.map((t, i) => `<span><i class="heat${i}"></i>${t}</span>`).join('')}</div>
+    ${ailleurs.length ? `<div class="ms-ail"><b>Ailleurs</b>${ailleurs.map(([r, e]) => `<span class="heat${niv(e)}">${esc(r)} · ${parNotes ? `${fmtNote(e.s / e.c)} · ${e.c} ${plural(e.c, 'vin', 'vins')}` : `${e.n} ${plural(e.n, 'bouteille', 'bouteilles')}`}</span>`).join('')}</div>` : ''}`;
+  return msBloc('Ta carte des vins de France', parNotes ? 'Chaque région prend la couleur de ta note moyenne.' : 'En attendant tes notes, chaque région prend la couleur des bouteilles que tu as ouvertes.', corps);
+}
+
+function momentHTML(d) {
+  const M = { tot: { n: 0, s: 0, c: 0 }, point: { n: 0, s: 0, c: 0 }, tard: { n: 0, s: 0, c: 0 } };
+  const maNote = new Map(d.notes.map(a => [a.mvId, a.note]));
+  let sans = 0;
+  d.outs.forEach(m => {
+    const w = d.wById.get(m.vinId), y = +m.date.slice(0, 4), a = w.gardeDe, b = w.gardeA;
+    if (!a && !b) { sans += m.qte; return; }
+    const e = M[a && y < a ? 'tot' : b && y > b ? 'tard' : 'point'];
+    e.n += m.qte;
+    if (maNote.has(m.id)) { e.s += maNote.get(m.id); e.c++; }
+  });
+  const total = M.tot.n + M.point.n + M.tard.n;
+  if (!total) return '';
+  const moy = e => (e.c ? e.s / e.c : null);
+  const K = [['tot', 'Trop tôt', 'var(--young)'], ['point', 'À point', 'var(--ok)'], ['tard', 'Trop tard', 'var(--late)']];
+  const ecart = k => (M[k].c >= 2 && M.point.c >= 2 ? moy(M.point) - moy(M[k]) : 0);
+  const perte = (k, quand) => { const x = ecart(k); return `Ouverts ${quand}, tes vins perdent ${fmtNote(x)} ${plural(Math.round(x * 10) / 10, 'point', 'points')} : ${fmtNote(moy(M[k]))} contre ${fmtNote(moy(M.point))} à point.`; };
+  const bt = n => `${n} ${plural(n, 'bouteille ouverte', 'bouteilles ouvertes')}`;
+  const txt = ecart('tot') >= 0.4 && ecart('tot') >= ecart('tard') ? perte('tot', 'trop tôt')
+    : ecart('tard') >= 0.4 ? perte('tard', 'trop tard')
+    : !M.tot.n && !M.tard.n ? 'Tout a été ouvert au bon moment.'
+    : M.tot.n >= M.tard.n ? `${bt(M.tot.n)} avant ${plural(M.tot.n, 'sa', 'leur')} fenêtre de garde.` : `${bt(M.tard.n)} après ${plural(M.tard.n, 'sa', 'leur')} fenêtre de garde.`;
+  const urg = db.wines.filter(w => ['late', 'urgent'].includes(gardeStatus(w).key)).reduce((s, w) => s + Math.max(0, STOCK.get(w.id) || 0), 0);
+  const corps = `<div class="ms-split" role="img" aria-label="${K.map(([k, t]) => `${M[k].n} ${t.toLowerCase()}`).join(', ')}">${K.filter(([k]) => M[k].n).map(([k, , c]) => `<span style="flex:${M[k].n};background:${c}"></span>`).join('')}</div>
+    <div class="ms-3">${K.map(([k, t, c]) => `<div><span class="k"><i style="background:${c}"></i>${t}</span><b>${M[k].n}</b><small>${moy(M[k]) != null ? `note ${fmtNote(moy(M[k]))}` : ''}</small></div>`).join('')}</div>
+    <div class="ms-foot"><p>${txt}</p>${sans ? `<p class="muted">${sans} ${plural(sans, 'bouteille', 'bouteilles')} sans fenêtre de garde ne ${plural(sans, 'compte', 'comptent')} pas ici.</p>` : ''}</div>
+    ${urg ? `<button type="button" class="btn ms-wide" data-act="goto" data-view="boire" data-tab="prio">${urg} ${plural(urg, 'bouteille', 'bouteilles')} à boire sans tarder</button>` : ''}`;
+  return msBloc('Bu au bon moment ?', `Tes ${total} ${plural(total, 'bouteille ouverte, comparée', 'bouteilles ouvertes, comparées')} à leur fenêtre de garde.`, corps);
+}
+
+function prixHTML(d) {
+  const vp = d.vins.filter(v => v.w.prix > 0);
+  if (vp.length < MS_SEUIL.prix) return '';
+  const bandes = MS_PRIX.map(([lo, hi, t, dit]) => { const xs = vp.filter(v => v.w.prix >= lo && v.w.prix < hi); return { t, dit, hi, c: xs.length, note: xs.length ? xs.reduce((s, v) => s + v.note, 0) / xs.length : 0 }; }).filter(b => b.c);
+  // Ce que disent les tranches d'au moins deux vins : la plus chère déçoit, le plaisir plafonne, ou il suit le prix.
+  const B = bandes.filter(b => b.c >= 2);
+  let txt = '';
+  if (B.length >= 2) {
+    const best = B.reduce((a, b) => (b.note > a.note ? b : a)), last = B[B.length - 1], i = B.findIndex(b => b.note >= best.note - 0.3);
+    if (best.note - last.note >= 0.5) txt = `${last.dit.charAt(0).toUpperCase() + last.dit.slice(1)}, tes vins te plaisent moins : ${fmtNote(last.note)} contre ${fmtNote(best.note)} ${best.dit}.`;
+    else if (i < B.length - 1) txt = best.note - B[i].note < 0.05 ? `Au-delà de ${B[i].hi} €, ton plaisir ne monte plus.` : `Au-delà de ${B[i].hi} €, ton plaisir monte peu : ${fmtNote(best.note - B[i].note)} point de plus au mieux.`;
+    else if (last.note - B[0].note >= 0.3) txt = `Plus tu y mets le prix, plus tu te régales : ${fmtNote(B[0].note)} ${B[0].dit}, ${fmtNote(last.note)} ${last.dit}.`;
+  }
+  // Le meilleur rapport plaisir-prix : parmi les vins notés 4 ou plus, le plus de plaisir au-dessus de la moyenne par euro.
+  const bv = vp.filter(v => v.note >= 4).sort((a, b) => (b.note - 2.5) / b.w.prix - (a.note - 2.5) / a.w.prix)[0];
+  const n = bv ? Math.max(0, STOCK.get(bv.w.id) || 0) : 0;
+  const corps = `<div class="ms-cols" style="--n:${bandes.length}" role="img" aria-label="${esc(bandes.map(b => `${b.t} : ${fmtNote(b.note)} sur ${b.c} ${plural(b.c, 'vin', 'vins')}`).join('. '))}">${bandes.map(b => `<span>${fmtNote(b.note)}<i class="heat${msNiveau(b.note)}" style="height:${Math.round((b.note / 5) * 112)}px"></i></span>`).join('')}</div>
+    <div class="ms-cols-l" style="--n:${bandes.length}" aria-hidden="true">${bandes.map(b => `<span>${b.t}<small>${b.c} ${plural(b.c, 'vin', 'vins')}</small></span>`).join('')}</div>
+    ${txt ? `<div class="ms-foot"><p>${txt}</p></div>` : ''}
+    ${bv ? `<div class="ms-best"><span class="k">Ton meilleur rapport plaisir-prix</span><button class="j-wine" data-open="${bv.w.id}">${esc(wineLabel(bv.w))}</button>
+      <p>${fmtMoney(bv.w.prix, 0)}, noté ${fmtNote(bv.note)}${n ? `<span class="st-pill st-ready">Encore ${n} en cave</span>` : '<span class="st-pill st-none">Plus en cave</span>'}</p></div>` : ''}`;
+  return msBloc('Plaisir et prix', "Ta note moyenne selon le prix d'achat de la bouteille.", corps);
+}
+
+function rythmeHTML(d) {
+  const bues = sum(d.outs, 'qte');
+  if (!bues) return '';
+  const now = new Date(), buckets = statsBuckets(d.outs), max = Math.max(1, ...buckets.map(b => b.n));
+  const bars = `<div class="bars ms-bars" style="--cols:${buckets.length}" role="img" aria-label="${esc('Bouteilles ouvertes : ' + buckets.map(b => `${b.title} ${b.n}`).join(', '))}">${buckets.map(b => `<span class="bar-col"><span class="bar-track"><span class="bar-v">${b.n || ''}</span><span class="bar ${b.n ? '' : 'zero'}" style="height:${(b.n / max) * 100}%"></span></span><span class="bar-l">${b.label}</span></span>`).join('')}</div>`;
+  const bt = n => `${n} ${plural(n, 'bouteille', 'bouteilles')}`;
+  const sous = UI.period === '12m' ? `${bt(bues)} en 12 mois, environ ${fmtNote(bues / 12)} par mois.`
+    : UI.period === 'year' ? `${bt(bues)} cette année, environ ${fmtNote(bues / (now.getMonth() + 1))} par mois.`
+    : `${bt(bues)} depuis ${buckets[0].title}.`;
+  const dl = [];
+  if (bues >= 5) {
+    const j = [0, 0, 0, 0, 0, 0, 0];
+    d.outs.forEach(m => { j[new Date(m.date + 'T12:00:00').getDay()] += m.qte; });
+    const i = j.indexOf(Math.max(...j));
+    if (j[i] >= 2) dl.push(['Ton jour', `${MS_JOURS[i]}, ${j[i]} sur ${bues}`]);
+  }
+  if (bues >= 8 && UI.period !== 'year') {
+    const s = MS_SAISONS.map(([t, ms]) => [t, d.outs.filter(m => ms.includes(+m.date.slice(5, 7))).reduce((x, m) => x + m.qte, 0)]).sort((a, b) => b[1] - a[1])[0];
+    if (s[1] >= 3) dl.push(['Ta saison', `${s[0]}, ${bt(s[1])}`]);
+  }
+  const occ = new Map();
+  d.outs.forEach(m => { const t = str(m.occasion); if (!t) return; const k = norm(t), e = occ.get(k) || { t, n: 0 }; e.n++; occ.set(k, e); });
+  const top = [...occ.values()].filter(e => e.n >= 2).sort((a, b) => b.n - a.n).slice(0, 3);
+  if (top.length) dl.push(['Tes occasions', top.map(e => `${esc(e.t)} (${e.n})`).join(', ')]);
+  return msBloc('Ton rythme', sous, bars + (dl.length ? `<dl class="ms-dl">${dl.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>` : ''));
+}
+
+/** Avec qui je bois : les sorties que nous avons notées tous les deux, et si nos notes se rejoignent (un point d'écart au plus). */
+function duoHTML(d) {
+  const parMv = new Map();
+  d.tous.filter(a => a.note).forEach(a => { if (!parMv.has(a.mvId)) parMv.set(a.mvId, []); parMv.get(a.mvId).push(a); });
+  const duos = new Map();
+  for (const as of parMv.values()) {
+    const moi = as.find(a => a.qui === d.me);
+    if (!moi) continue;
+    as.filter(a => a.qui !== d.me).forEach(a => { if (!duos.has(a.qui)) duos.set(a.qui, []); duos.get(a.qui).push({ vinId: a.vinId, moi: moi.note, lui: a.note }); });
+  }
+  const liste = [...duos].filter(([, xs]) => xs.length >= 3).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], 'fr'));
+  if (!liste.length) return '';
+  const [qui, xs] = liste.find(([q]) => q === UI.msDuo) || liste[0];
+  const accord = x => Math.abs(x.moi - x.lui) <= 1, ok = xs.filter(accord).length;
+  const dots = xs.slice().sort((a, b) => accord(b) - accord(a)).slice(0, 20);
+  const ecart = xs.slice().sort((a, b) => Math.abs(b.moi - b.lui) - Math.abs(a.moi - a.lui))[0];
+  const gros = Math.abs(ecart.moi - ecart.lui) >= 2 ? `<p><b>Votre plus grand écart :</b> ${esc(wineLabel(d.wById.get(ecart.vinId)))}, noté ${ecart.moi} par toi et ${ecart.lui} par ${esc(qui)}.</p>` : '';
+  const aimes = [...new Set(xs.filter(x => x.moi >= 4 && x.lui >= 4).map(x => x.vinId))].slice(0, 2).map(id => esc(wineLabel(d.wById.get(id))));
+  const corps = (liste.length > 1 ? msSeg('data-ms-duo', liste.slice(0, 4).map(([q]) => [q, esc(q)]), qui, 'Avec qui') : '')
+    + `<div class="ms-duo"><span class="ms-dots" role="img" aria-label="D'accord ${ok} fois sur ${xs.length}">${dots.map(x => `<i${accord(x) ? '' : ' class="non"'}></i>`).join('')}</span><b>D'accord ${ok} fois sur ${xs.length}</b></div>
+    <p class="hint">D'accord : vos notes ont au plus un point d'écart.</p>
+    ${gros || aimes.length ? `<div class="ms-foot">${gros}${aimes.length ? `<p><b>Vous avez aimé tous les deux :</b> ${aimes.join(' et ')}.</p>` : ''}</div>` : ''}`;
+  return msBloc(`Avec ${esc(qui)}`, `${xs.length} bouteilles que vous avez notées tous les deux.`, corps);
+}
+
+function coeursHTML(d) {
+  let xs = d.vins.filter(v => v.note >= 4.5), seuil = '4,5';
+  if (!xs.length) { xs = d.vins.filter(v => v.note >= 4); seuil = '4'; }
+  if (!xs.length) return '';
+  xs = xs.sort((a, b) => b.note - a.note || b.date.localeCompare(a.date)).slice(0, 5);
+  return msBloc('Tes coups de cœur', `Les vins que tu as notés ${seuil} et plus, et ce qu'il en reste.`, `<ul class="journal ms-coeur">${xs.map(v => {
+    const n = Math.max(0, STOCK.get(v.w.id) || 0), sub = [v.w.appellation, msRegion(v.w)].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(' · ');
+    return `<li><span class="dot" style="--c:${colorOf(v.w.couleur).hex}"></span><button class="j-wine" data-open="${v.w.id}">${esc(wineLabel(v.w))}</button>${msNote(v.note)}
+      <span class="ms-sub">${sub ? `<span>${esc(sub)}</span>` : ''}${n ? `<span class="st-pill st-ready">Encore ${n} en cave</span>` : `<span class="st-pill st-none">Plus en cave</span><button type="button" class="btn btn-sm" data-act="similar" data-id="${v.w.id}">Vins similaires</button>`}</span></li>`;
+  }).join('')}</ul>`);
+}
+
+/** Les bouteilles ouvertes sur la période, que j'ai débouchées ou goûtées, et pas encore notées. */
+function msANoter(d) {
+  const notees = new Set(d.miensTout.filter(a => a.note).map(a => a.mvId)), goutees = new Set(d.miensTout.map(a => a.mvId));
+  return db.moves.filter(m => m.type === 'sortie' && d.wById.has(m.vinId) && m.date >= d.start && !notees.has(m.id)
+    && (m.par === d.me || goutees.has(m.id) || (!m.par && m.proprio === d.me)))
+    .sort((a, b) => b.date.localeCompare(a.date) || str(b.updatedAt).localeCompare(str(a.updatedAt)));
+}
+function noterHTML(d, xs) {
+  if (!xs.length) return '';
+  const vus = xs.slice(0, UI.msNoterTout ? 30 : 3), reste = xs.length - 3;
+  return `<section class="s-block ms-noter"><h2>Note tes dernières bouteilles</h2>
+    <p class="s-sub">${xs.length > 1 ? `Tu en as ouvert ${xs.length} sans les noter.` : 'Tu en as ouvert une sans la noter.'} Une note suffit, l'avis peut attendre.</p>
+    <ul class="journal">${vus.map(m => { const w = d.wById.get(m.vinId); return `<li><div class="j-top"><span class="dot" style="--c:${colorOf(w.couleur).hex}"></span><button class="j-wine" data-open="${w.id}">${esc(wineLabel(w))}</button><span class="j-date">${fmtDate(m.date)}</span></div>
+      <div class="star-pick" role="group" aria-label="${esc('Ta note pour ' + wineLabel(w))}">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-ms-note="${m.id}" data-n="${n}" aria-label="${n} sur 5">★</button>`).join('')}</div></li>`; }).join('')}</ul>
+    ${reste > 0 && !UI.msNoterTout ? `<button type="button" class="btn ms-wide" data-act="ms-noter-tout">${reste > 1 ? `Voir les ${reste} autres` : "Voir l'autre"}</button>` : ''}</section>`;
+}
+/** Une note donnée d'un geste, dans « Note tes dernières bouteilles » : mon avis sur cette sortie, sans commentaire. */
+function noterVite(mvId, n) {
+  const m = db.moves.find(x => x.id === mvId), me = S.device;
+  if (!m || !me || !(n >= 1 && n <= 5)) return;
+  const now = nowISO(), id = avisId(m.id, me), a = db.avis.find(x => x.id === id);
+  if (a) Object.assign(a, { note: n, updatedAt: now });
+  else db.avis.push({ id, mvId: m.id, vinId: m.vinId, date: m.date, qui: me, note: n, commentaire: '', updatedAt: now });
+  commit();
+  toast(`Noté ${n} sur 5 : ${wineTitle(db.wines.find(w => w.id === m.vinId) || {})}`);
+}
+
+function debloqueHTML(d) {
+  const nb = d.notes.length, tout = d.miensTout.filter(a => a.note).length;
+  const items = [
+    ['Ton palais', msPalaisMax(d), MS_SEUIL.palais, `${MS_SEUIL.palais} vins notés d'une même couleur, au profil rempli`, ['vin', 'vins']],
+    ['Ce que tu préfères', nb, MS_SEUIL.prefs, 'Cépages, régions et appellations', ['note', 'notes']],
+    ['Plaisir et prix', d.vins.filter(v => v.w.prix > 0).length, MS_SEUIL.prix, 'Des vins notés avec leur prix', ['vin', 'vins']],
+  ];
+  if (relaisOn()) items.push(['Ton portrait par Tastevin', tout, MS_SEUIL.portrait, 'Toutes tes notes, depuis le début', ['note', 'notes']]);
+  if (items.every(([, n, max]) => n >= max)) return '';
+  return msBloc('Ce que tes notes débloquent', 'Chaque note ajoute un peu à tes stats.', `<ul class="journal ms-unlock">${items.map(([t, n, max, sub, [u1, u2]]) => `<li>
+      <div class="ms-u-top"><span><b>${t}</b><small>${sub}</small></span>${n >= max ? '<span class="st-pill st-ready">Débloqué</span>' : `<span class="ms-u-reste">encore ${max - n} ${plural(max - n, u1, u2)}</span>`}</div>${msProg(n, max)}</li>`).join('')}</ul>
+    ${nb < 3 ? '<p class="hint">Déjà là, sans aucune note : ton rythme, « Bu au bon moment ? » et ta carte, plus bas.</p>' : ''}`);
+}
+
+/* Le portrait par Tastevin : gardé sur cet appareil, pour cette cave et cette personne. */
+const portraitKey = () => `macave:portrait:${S.fileId || S.apiUrl || 'cave'}:${personId(S.device || '')}`;
+function portraitHTML(d) {
+  const tout = d.miensTout.filter(a => a.note).length;
+  if (!relaisOn() || tout < MS_SEUIL.portrait) return '';
+  const p = lsGet(portraitKey(), null), r = p && p.result;
+  const btn = txt => `<button type="button" class="btn${r ? '' : ' btn-primary'} ms-wide" data-act="ms-portrait"${UI.msPortrait ? ' disabled' : ''}>${UI.msPortrait ? 'Tastevin écrit ton portrait…' : `${txt} · ${bouchons(cout('portrait'))}`}</button>`;
+  const head = `<div class="ms-tv-head"><span class="ms-tv-ico">${ICO_TV}</span><h2>Ton portrait de dégustateur</h2></div>`;
+  if (!r) return `<section class="s-block ms-portrait">${head}<p class="ms-txt">Tastevin lit tes notes, tes avis et le profil de tes vins. Il te décrit ton goût en quelques lignes et te propose trois vins à essayer.</p>${btn('Demander mon portrait')}<p class="hint">Tout le reste de la page est gratuit : c'est calculé sur ton téléphone.</p></section>`;
+  const neuf = tout - (p.n || 0);
+  return `<section class="s-block ms-portrait">${head}<p class="ms-txt">${esc(r.portrait)}</p>
+    ${(r.aime || []).length ? `<p class="ms-tv-l"><b>Ce qui te plaît :</b> ${r.aime.map(esc).join(' · ')}</p>` : ''}
+    ${(r.moins || []).length ? `<p class="ms-tv-l"><b>Moins pour toi :</b> ${r.moins.map(esc).join(' · ')}</p>` : ''}
+    ${(r.essayer || []).length ? `<h3 class="d-h3">À essayer</h3><ul class="journal">${r.essayer.map(v => `<li><b>${esc(v.vin)}</b>${v.budget ? ` <span class="j-meta">· ${esc(v.budget)}</span>` : ''}<p class="j-com">${esc(v.pourquoi)}</p></li>`).join('')}</ul>` : ''}
+    <p class="hint">Portrait du ${fmtDate(p.date)}, d'après ${p.n} ${plural(p.n, 'note', 'notes')}.</p>
+    ${neuf >= 3 ? btn('Refaire mon portrait') : `<p class="hint">Tu pourras le refaire après ${3 - neuf} ${plural(3 - neuf, 'nouvelle note', 'nouvelles notes')}.</p>`}</section>`;
+}
+/** Ce que Tastevin reçoit pour le portrait : mes vins notés (fiche, profil, ma note, mes avis), ce que l'appli a déjà calculé, et les vins en cave. */
+function portraitContexte(d) {
+  const vins = d.vins.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 60).map(v => {
+    const w = v.w, o = { vin: wineLabel(w), note: Math.round(v.note * 10) / 10 };
+    if (w.couleur) o.couleur = colorOf(w.couleur).label;
+    ['appellation', 'region', 'pays', 'cepages', 'millesime', 'style'].forEach(k => { if (w[k] != null && w[k] !== '') o[k] = w[k]; });
+    if (w.prix > 0) o.prix = w.prix;
+    const p = profilLu(w.profil), axes = PROFIL[w.couleur] || [];
+    const t = axes.filter(([k]) => valeurProfil(p, k) != null).map(([k, label, g, dr]) => `${label} ${valeurProfil(p, k)}/5 (${g} → ${dr})`);
+    if (t.length) o.profil = t.join(', ');
+    if (v.coms.length) o.avis = v.coms.join(' / ').slice(0, 300);
+    return o;
+  });
+  const palais = Object.keys(MS_COULEURS).map(k => monPalais(d.vins, k)).filter(P => P.nProfil >= 3)
+    .map(P => ({ couleur: colorOf(P.couleur).label, aime: P.lignes.map(l => l.aime).filter(Boolean), moins: P.lignes.map(l => l.moins).filter(Boolean) }));
+  const dejaEnCave = db.wines.filter(w => (STOCK.get(w.id) || 0) > 0 && (w.domaine || w.appellation)).slice(0, 60)
+    .map(w => [w.appellation, w.domaine, w.cuvee].filter(Boolean).join(' · '));
+  return { notes: d.notes.length, bouteilles: sum(d.outs, 'qte'), vins, palais, dejaEnCave };
+}
+async function askPortrait() {
+  if (!relaisOn() || UI.msPortrait || !S.device) return;
+  const d = mesDonnees('0000-00-00');
+  UI.msPortrait = true;
+  renderStats();
+  try {
+    const r = await relais('portrait', { contexte: portraitContexte(d) }, 150e3);
+    if (!r.result || !r.result.portrait) throw new Error("Tastevin n'a pas écrit de portrait. Réessaie plus tard.");
+    lsSet(portraitKey(), { date: ymd(new Date()), n: d.notes.length, result: r.result });
+    toast('Ton portrait est prêt.');
+  } catch (e) {
+    toast(e.message || 'Tastevin ne répond pas. Réessaie plus tard.');
+  } finally {
+    UI.msPortrait = false;
+    if (UI.view === 'stats') renderStats();
+  }
+}
+
+function renderMesStats() {
+  const box = $('#stats-body');
+  if (!S.device) {
+    box.innerHTML = `<div class="empty"><p class="lead">Qui es-tu ?</p><p>Tes stats viennent de tes notes et des bouteilles que tu ouvres : dis d'abord qui tu es sur cet appareil.</p><button type="button" class="btn btn-primary" data-act="who">Choisir mon prénom</button></div>`;
+    return;
+  }
+  const d = mesDonnees(statsStart()), aNoter = msANoter(d), nb = d.notes.length, bues = sum(d.outs, 'qte');
+  if (!bues && !nb && !aNoter.length) {
+    box.innerHTML = `<div class="empty"><p class="lead">Pas encore de bouteille pour toi${msPeriode() || ''}.</p><p>Tes stats apparaissent dès que tu débouches une bouteille ou que tu notes un vin que tu as bu.</p></div>`;
+    return;
+  }
+  const wp = d.outs.filter(m => d.wById.get(m.vinId).prix > 0), qp = sum(wp, 'qte');
+  const prixMoy = qp ? wp.reduce((s, m) => s + d.wById.get(m.vinId).prix * m.qte, 0) / qp : null;
+  const moy = nb >= 3 ? d.notes.reduce((s, a) => s + a.note, 0) / nb : null, dec = msDecouvertes(d).length;
+  const figs = `<section class="s-block"><h2>En un coup d'œil</h2><div class="figs ms-figs">
+      <div class="fig"><b>${fmtNum(bues)}</b><span>${plural(bues, 'bouteille ouverte', 'bouteilles ouvertes')}</span><small>${nb ? `dont ${nb} ${plural(nb, 'notée', 'notées')} par toi` : "aucune notée pour l'instant"}</small></div>
+      <div class="fig"><b>${moy != null ? `<span class="stars" aria-hidden="true">★</span>${fmtNote(moy)}` : '–'}</b><span>ta note moyenne</span><small>${moy != null ? `sur ${nb} notes` : nb ? `dès 3 notes, tu en as ${nb}` : 'dès 3 notes'}</small></div>
+      <div class="fig"><b>${fmtNum(dec)}</b><span>${UI.period === 'all' ? plural(dec, 'appellation goûtée', 'appellations goûtées') : plural(dec, 'appellation découverte', 'appellations découvertes')}</span><small>${UI.period === 'all' ? 'en tout' : 'goûtées pour la première fois'}</small></div>
+      <div class="fig"><b>${prixMoy != null ? fmtMoney(prixMoy, 0) : '–'}</b><span>par bouteille ouverte</span><small>en moyenne, prix d'achat</small></div>
+    </div></section>`;
+  const debut = nb < MS_SEUIL.portrait;
+  box.innerHTML = figs + (debut ? noterHTML(d, aNoter) + debloqueHTML(d) : '')
+    + palaisHTML(d) + coeursHTML(d) + prefsHTML(d) + carteHTML(d) + momentHTML(d) + prixHTML(d) + rythmeHTML(d) + duoHTML(d)
+    + (debut ? '' : noterHTML(d, aNoter) + debloqueHTML(d)) + portraitHTML(d);
+}
+
 /* ---------- Réglages ---------- */
 function renderReglages() {
   const fill = (sel, v) => { const el = $(sel); if (document.activeElement !== el) el.value = v || ''; };
@@ -2794,7 +3321,7 @@ function renderReglages() {
 const fmtCr = n => (Math.round((n || 0) * 10) / 10).toLocaleString('fr-FR');
 /** « 2 bouchons » ; le tarif d'une demande, tel que le script ou le relais l'annonce (sinon celui d'aujourd'hui). */
 const bouchons = n => `${fmtCr(n)} ${plural(n, 'bouchon', 'bouchons')}`;
-const COUTS_DEFAUT = { label: 2, conseil: 2, suggest: 1, revoir: 1, cote: 2 };
+const COUTS_DEFAUT = { label: 2, conseil: 2, suggest: 1, revoir: 1, cote: 2, portrait: 2 };
 const cout = k => { const c = S.credits && S.credits.couts; return c && c[k] != null ? c[k] : COUTS_DEFAUT[k]; };
 const COTE_RYTHMES = [[3, 'Tous les 3 mois'], [6, 'Tous les 6 mois'], [12, 'Une fois par an'], [24, 'Tous les 2 ans']];
 const gaugeHTML = (left, max, label) => {
@@ -2805,7 +3332,7 @@ const COTE_COURT = { 3: '3 mois', 6: '6 mois', 12: '1 an', 24: '2 ans' };
 /** Ce que coûte chaque demande à Tastevin : une liste, dans un pli qui reste ouvert d'une synchro à l'autre. */
 function tarifsHTML() {
   const l = isDrive()
-    ? [['Lire une étiquette', cout('label')], ['Compléter ou revoir une fiche', cout('revoir')], ['Conseil en magasin, par bouteille', cout('conseil')], ['Vins similaires', cout('suggest')], ['Valeur du jour', cout('cote')]]
+    ? [['Lire une étiquette', cout('label')], ['Compléter ou revoir une fiche', cout('revoir')], ['Conseil en magasin, par bouteille', cout('conseil')], ['Vins similaires', cout('suggest')], ['Valeur du jour', cout('cote')], ['Ton portrait de dégustateur', cout('portrait')]]
     : [['Lire une étiquette', cout('label')], ['Conseil en magasin, par bouteille', cout('conseil')], ['Vins similaires', cout('suggest')]];
   const lead = isDrive() ? "Tastevin passe par le relais de l'appli, en bouchons de la cave."
     : 'Chaque appel immédiat à Tastevin se paie avec la clé API de la cave, en bouchons. La lecture de nuit, par la routine, ne coûte rien.';
@@ -6451,6 +6978,8 @@ function wire() {
         case 'cs-add': addFromConseil(act.dataset.cid, +act.dataset.i); break;
         case 'clear-filters': Object.assign(UI, { color: '', region: '', accord: '', owner: '' }); lsSet('macave:owner', ''); render(); break;
         case 'fill-taste': fillTaste(); break;
+        case 'ms-noter-tout': UI.msNoterTout = true; renderStats(); break;
+        case 'ms-portrait': askPortrait(); break;
         case 'owner-save': saveOwnerCode(); break;
         case 'owner-forget': forgetOwnerCode(); break;
         case 'cs-del': deleteConseil(act.dataset.cid); break;
@@ -6504,6 +7033,17 @@ function wire() {
     if (vm) { UI.compact = vm.dataset.viewMode === 'compact'; lsSet('macave:compact', UI.compact); render(); return; }
     const per = e.target.closest('[data-period]');
     if (per) { UI.period = per.dataset.period; renderStats(); return; }
+    // Mes stats : « Moi » ou « Toute la cave », les onglets des blocs, une note donnée d'un geste.
+    const sq = e.target.closest('[data-stats-qui]');
+    if (sq) { UI.statsQui = sq.dataset.statsQui; lsSet('macave:statsQui', UI.statsQui); renderStats(); return; }
+    const msc = e.target.closest('[data-ms-couleur]');
+    if (msc) { UI.msCouleur = msc.dataset.msCouleur; renderStats(); return; }
+    const msp = e.target.closest('[data-ms-pref]');
+    if (msp) { UI.msPref = msp.dataset.msPref; renderStats(); return; }
+    const msd = e.target.closest('[data-ms-duo]');
+    if (msd) { UI.msDuo = msd.dataset.msDuo; renderStats(); return; }
+    const msn = e.target.closest('[data-ms-note]');
+    if (msn) { noterVite(msn.dataset.msNote, +msn.dataset.n); return; }
     const th = e.target.closest('[data-theme-set]');
     if (th) { lsSet('macave:theme', th.dataset.themeSet); applyTheme(th.dataset.themeSet); return; }
     const pf = e.target.closest('[data-pf]');
