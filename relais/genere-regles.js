@@ -15,7 +15,7 @@ const val = n => vm.runInContext(n, ctx);
 
 const CONSTANTES = ['MODEL', 'MAX_TOKENS', 'COLORS', 'FORMATS', 'ACCORDS', 'LABEL_FIELDS', 'NO_CHECK', 'PROFIL_KEYS', 'BUDGETS', 'LIENS', 'IMAGE_TYPES',
   'LABEL_SCHEMA', 'LABEL_PROMPT', 'REVOIR_PROMPT', 'CONSEIL_SCHEMA', 'CONSEIL_PROMPT', 'SUGG_SCHEMA', 'SUGG_PROMPT', 'COTE_SCHEMA', 'COTE_PROMPT',
-  'PORTRAIT_SCHEMA', 'PORTRAIT_PROMPT', 'LIEN_SCHEMA', 'LIEN_PROMPT'];
+  'PORTRAIT_SCHEMA', 'PORTRAIT_PROMPT', 'PRIX_NIVEAUX', 'LIEN_SCHEMA', 'LIEN_PROMPT'];
 const FONCTIONS = ['list', 'num', 'int', 'str', 'norm', 'colorKey', 'accordList', 'profilLu', 'profilTexte', 'tidyLabel', 'tidyConseil', 'tidySuggest', 'tidyPortrait', 'tidyLien'];
 
 // Limites de l'API Claude pour les sorties structurées, par requête : au-delà, elle répond 400 « Schema is too complex ».
