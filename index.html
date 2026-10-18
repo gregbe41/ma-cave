@@ -1592,6 +1592,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
     <div class="sheet-head"><h2 id="bascule-title">Passer la cave sur Google Drive</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
     <div class="sheet-body">
       <p>L'appli recopie toute la cave dans ton Google Drive : vins, mouvements, avis, personnes, conseils, vins similaires. Ta cave actuelle ne change pas : son Google Sheet, son script et ses photos restent tels quels, et tu peux continuer à t'en servir.</p>
+      <p class="hint">La cave est recopiée dans le Google Drive du compte connecté (Réglages › Compte Google). L'écran reste allumé pendant la bascule : laisse l'appli ouverte jusqu'au bilan.</p>
       <label class="optin" style="margin-top:12px"><input type="checkbox" id="bascule-photos" checked><span><strong>Recopier aussi les photos d'étiquettes.</strong> Elles sont rangées dans le dossier Photos de la nouvelle cave et partagées par lien : seule une personne qui connaît leur adresse, impossible à deviner, peut les voir.</span></label>
       <div id="bascule-etat" class="bascule-etat"></div>
       <div class="btn-row"><button type="button" class="btn btn-primary" data-act="bascule-go">Lancer la bascule</button><button type="button" class="btn" id="bascule-ouvrir" data-act="bascule-ouvrir" hidden>Ouvrir la cave Google Drive</button></div>
@@ -6601,20 +6602,30 @@ async function driveClaude() {
 const basculeCle = () => 'macave:bascule:' + curKey();
 const basculeOk = () => Drive.available() && !isDrive() && API.ready() && (S.role === 'proprio' || !S.proprioActif);
 const BASCULE_TABLES = [['wines', 'Vins'], ['moves', 'Mouvements'], ['avis', 'Avis'], ['people', 'Personnes'], ['conseils', 'Conseils'], ['suggestions', 'Vins similaires'], ['trash', 'Corbeille']];
+/** Le compte Google où se trouve la copie déjà faite (retenu par la bascule, sinon par la cave qu'elle a créée). */
+const basculeCompte = prog => prog.compte || (CAVES.find(c => c.key === prog.key) || {}).compte || '';
+/** Une copie faite avec un autre compte Google que celui connecté : la bascule en refera une dans le bon Drive. */
+const basculeAilleurs = prog => !!prog.fileId && !!basculeCompte(prog) && !!Compte.email() && !Compte.same(basculeCompte(prog), Compte.email());
 function openBascule() {
   if (!basculeOk()) return;
   const prog = lsGet(basculeCle(), {});
-  $('#bascule-etat').innerHTML = prog.fini ? '<p class="hint">Cette cave a déjà été recopiée dans Google Drive. Relancer la bascule met la copie à jour.</p>'
+  $('#bascule-etat').innerHTML = basculeAilleurs(prog)
+    ? `<p class="hint">La copie déjà faite est dans le Google Drive de ${esc(basculeCompte(prog))}. Lancer la bascule en fait une nouvelle dans celui de ${esc(Compte.email())}, le compte connecté.</p>`
+    : prog.fini ? '<p class="hint">Cette cave a déjà été recopiée dans Google Drive. Relancer la bascule met la copie à jour.</p>'
     : prog.fileId ? '<p class="hint">Une bascule a été commencée : la relancer reprend là où elle en était.</p>' : '';
-  $('#bascule-ouvrir').hidden = !prog.fini;
+  $('#bascule-ouvrir').hidden = !prog.fini || basculeAilleurs(prog);
   $('#dlg-bascule').showModal();
 }
 async function basculer() {
   if (!basculeOk()) return;
   const out = $('#bascule-etat'), btn = $('[data-act="bascule-go"]'), avecPhotos = $('#bascule-photos').checked;
   const etape = t => { out.innerHTML = `<p class="bascule-step">${esc(t)}</p>`; };
-  const cle = basculeCle(), prog = lsGet(cle, {});
+  const cle = basculeCle();
+  let prog = lsGet(cle, {});
   btn.disabled = true; $('#bascule-ouvrir').hidden = true;
+  // L'écran reste allumé pendant la bascule : écran éteint, Android coupe le réseau et Google Drive ne répond plus.
+  let veille = null;
+  try { veille = navigator.wakeLock ? await navigator.wakeLock.request('screen') : null; } catch { veille = null; }
   try {
     etape('Synchronisation de la cave actuelle…');
     if (!(await quietSync())) throw new Error(BUSY_MSG);
@@ -6623,6 +6634,10 @@ async function basculer() {
     etape('Connexion à Google…');
     await Drive.connected();
     const me = await Drive.whoami();
+    // Copie faite avec un autre compte Google : on en fait une nouvelle dans le Drive du compte connecté (l'ancienne
+    // ne change pas ; on peut la retirer de « Mes caves » et la supprimer de l'autre Drive).
+    if (prog.fileId && basculeCompte(prog) && !Compte.same(basculeCompte(prog), me)) prog = {};
+    prog.compte = me;
     if (!prog.fileId) {
       etape('Création de la cave dans ton Google Drive…');
       Object.assign(prog, await Drive.createCave(S.nom || 'Ma cave'));
@@ -6703,6 +6718,7 @@ async function basculer() {
     out.innerHTML = `<p class="bascule-step is-ko">${esc(e.auth ? 'Connexion à Google annulée.' : e.message)} Tu peux relancer la bascule : elle reprendra là où elle en était, et ta cave actuelle n'a pas changé.</p>`;
   } finally {
     btn.disabled = false;
+    if (veille) veille.release().catch(() => {});
   }
 }
 
