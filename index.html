@@ -852,6 +852,25 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .cs-pill.is-ok{background:var(--ready-bg);color:var(--ready-fg)}
 .cs-pill.is-fail{background:var(--late-bg);color:var(--late-fg)}
 .cs-pill.is-cave{background:var(--urgent-bg);color:var(--urgent-fg)}
+/* Vue compacte de « Tes analyses » : une ligne par analyse, comme la Cave ; l'état en un mot, la corbeille gardée. */
+.an-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 0 8px}
+.an-head .d-h3{margin:0}
+.cs-list.is-compact{gap:0;background:var(--surface);border-radius:18px;box-shadow:var(--card-shadow);overflow:hidden}
+.cs-c{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;min-height:52px;padding:4px 4px 4px 14px;border-bottom:1px solid var(--soft);cursor:pointer}
+.cs-c:last-child{border-bottom:0}
+.cs-c:hover{background:color-mix(in srgb,var(--ink) 3.5%,transparent)}
+.cs-dots{display:flex;align-items:center;min-width:12px}
+.cs-dots .dot{width:10px;height:10px;box-shadow:inset 0 0 0 1px var(--dot-ring),0 0 0 1.5px var(--surface)}
+.cs-dots .dot + .dot{margin-left:-3px}
+.cs-c .cs-del{margin:0}
+.cs-when{font-size:.76rem;font-weight:700;white-space:nowrap;color:var(--muted)}
+.cs-when.is-new{color:var(--accent-ink)}
+.cs-when.is-wait{color:var(--young-fg)}
+.cs-when.is-ok{color:var(--ready-fg)}
+.cs-when.is-fail{color:var(--late-fg)}
+.cs-when.is-cave{color:var(--urgent-fg)}
+.cs-list.is-compact .cs-others{margin:0;padding:10px 14px}
+.cs-list.is-compact .empty{padding:32px 14px}
 /* Conseil · Vu en ligne : la carte du lien, puis la fenêtre de lecture (gratuite) et l'avis de Tastevin (sur demande) */
 .lien-card{display:flex;flex-direction:column;gap:10px;margin:14px 0 0;padding:18px;border-radius:22px;background:var(--surface);box-shadow:var(--card-shadow)}
 .lien-card h2{margin:0;font-size:1.3rem;line-height:1.2}
@@ -1261,7 +1280,7 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
         <p class="hint" id="lien-hint"></p>
         <p class="hint" id="lien-share" hidden>Sur Android : depuis ton navigateur, Partager › Ma cave.</p>
       </form>
-      <h2 class="d-h3">Tes analyses</h2>
+      <div class="an-head"><h2 class="d-h3">Tes analyses</h2><div class="view-seg" role="group" aria-label="Affichage de la liste"></div></div>
       <div class="cs-list" id="conseil-list"></div>
     </section>
 
@@ -2659,7 +2678,7 @@ function renderTonight(inStock, prio) {
     ${prio ? `<button class="link tn-prio" data-act="goto" data-view="boire" data-tab="prio">${prio} ${plural(prio, 'vin', 'vins')} à boire en priorité</button>` : ''}`;
 }
 
-/* ---------- Vue compacte (Cave et « À boire ») : une ligne par vin, choix retenu sur l'appareil ---------- */
+/* ---------- Vue compacte (Cave, « À boire » et « Tes analyses ») : une ligne par vin, choix retenu sur l'appareil ---------- */
 const VIEW_ICONS = {
   detail: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4.5" width="16" height="6.5" rx="1.6"/><rect x="4" y="13" width="16" height="6.5" rx="1.6"/></svg>',
   compact: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16M4 9.8h16M4 14.2h16M4 18.5h16"/></svg>',
@@ -5458,14 +5477,19 @@ function renderConseil() {
       c.statut === 'echec' && ['is-fail', 'échec'],
       inCave && ['is-cave', inCave === rs.length ? 'déjà dans ta cave' : `${inCave} déjà dans ta cave`],
     ].filter(Boolean);
+    const del = `<button type="button" class="cs-del" data-act="cs-del" data-cid="${c.id}" aria-label="${esc(`Supprimer l'analyse : ${title}`)}" title="Supprimer cette analyse">${ICO_CORBEILLE}</button>`;
+    if (UI.compact) return csRowCompact(`data-conseil="${c.id}"`, rs.map((r, i) => colorOf(csView(r, c.bouteilles[i]).couleur)), title,
+      `${fmtDate((c.date || '').slice(0, 10))} · ${n} ${plural(n, 'bouteille', 'bouteilles')}`, pills.find(([k]) => k === 'is-fail') || pills[0], del);
     return `<article class="cs-row${unseenConseils().includes(c) ? ' is-new' : ''}" data-conseil="${c.id}" tabindex="0">
       <div class="cs-thumbs">${c.bouteilles.slice(0, 3).map((_, i) => `<div class="cs-thumb" data-cs="${c.id}:${i}"></div>`).join('')}</div>
       <div class="cs-body"><p class="cs-title">${esc(title)}</p><p class="cs-meta">${esc(fmtDate((c.date || '').slice(0, 10)))}${c.par ? ` · ${esc(c.par)}` : ''} · ${n} ${plural(n, 'bouteille', 'bouteilles')}</p>
         ${pills.length ? `<div class="cs-pills">${pills.map(([k, t]) => `<span class="cs-pill ${k}">${esc(t)}</span>`).join('')}</div>` : ''}</div>
-      <button type="button" class="cs-del" data-act="cs-del" data-cid="${c.id}" aria-label="${esc(`Supprimer l'analyse : ${title}`)}" title="Supprimer cette analyse">${ICO_CORBEILLE}</button>
+      ${del}
     </article>`;
   }).map((html, i) => [list[i].date || '', html]).concat(liens.map(e => [e.date, lienRow(e)]));
   box.innerHTML = rows.length ? rows.sort((a, b) => b[0].localeCompare(a[0])).map(r => r[1]).join('') : `<div class="empty"><p>Aucun vin analysé pour l'instant.</p></div>`;
+  box.classList.toggle('is-compact', UI.compact && rows.length > 0);
+  renderViewSeg();
   if (others) box.insertAdjacentHTML('beforeend', `<p class="hint cs-others">${others} ${plural(others, 'analyse faite', 'analyses faites')} par d'autres personnes ${plural(others, "reste sur son profil", 'restent sur leur profil')}.</p>`);
   hydrateScans(box);
 }
@@ -6430,14 +6454,26 @@ function renderLien() {
   $('#ln-actions').innerHTML = `<div class="d-row d-btns"><button type="button" class="btn" data-close>Retour</button>${w ? `<button type="button" class="btn" data-open="${w.id}">Dans ta cave ✓</button>` : `<button type="button" class="btn${e.avis ? ' btn-primary' : ''}" data-act="lien-add">Ajouter à la cave</button>`}</div>`;
 }
 
+/** Une analyse en une ligne (vue compacte) : la couleur des vins, le titre, la date ou le site, l'état en un mot, la corbeille. */
+function csRowCompact(attr, cols, title, sub, pill, del) {
+  const dots = cols.filter(c => c.key).slice(0, 3);
+  return `<article class="cs-c" ${attr} tabindex="0">
+    <span class="cs-dots" aria-hidden="true">${(dots.length ? dots : [colorOf('')]).map(c => `<span class="dot" style="--c:${c.hex}"></span>`).join('')}</span>
+    <p class="wc-main"><span class="wc-name">${esc(title)}</span><span class="wc-sub">${esc(sub)}</span></p>
+    ${pill ? `<span class="cs-when ${pill[0]}">${esc(pill[1])}</span>` : '<span></span>'}
+    ${del}
+  </article>`;
+}
 function lienRow(e) {
   const w = e.vinId && db.wines.find(x => x.id === e.vinId), title = lienTitre(e), col = colorOf(lienVue(e).couleur);
+  const del = `<button type="button" class="cs-del" data-act="lien-del" data-lien="${e.id}" aria-label="${esc(`Supprimer l'analyse : ${title}`)}" title="Supprimer cette analyse">${ICO_CORBEILLE}</button>`;
+  if (UI.compact) return csRowCompact(`data-lien="${e.id}"`, [col], title, `Lien · ${e.site}`, w ? ['is-ok', 'ajouté à la cave'] : null, del);
   // En miniature, une bouteille à la couleur du vin (grise si la page ne la dit pas).
   return `<article class="cs-row" data-lien="${e.id}" tabindex="0">
     <div class="cs-thumbs"><div class="cs-thumb ln-thumb" role="img" aria-label="${esc(col.key ? `Vin ${col.label.toLowerCase()}` : 'Vin vu en ligne')}">${bottleSvg(col, 'ln-bt')}</div></div>
     <div class="cs-body"><p class="cs-title">${esc(title)}</p><p class="cs-meta">Lien · ${esc(e.site)} · ${e.avis ? 'avis de Tastevin' : 'lu gratuitement'}</p>
       ${w ? '<div class="cs-pills"><span class="cs-pill is-ok">ajouté à la cave</span></div>' : ''}</div>
-    <button type="button" class="cs-del" data-act="lien-del" data-lien="${e.id}" aria-label="${esc(`Supprimer l'analyse : ${title}`)}" title="Supprimer cette analyse">${ICO_CORBEILLE}</button>
+    ${del}
   </article>`;
 }
 
