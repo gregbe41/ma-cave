@@ -5765,15 +5765,19 @@ function lienPropre(raw) {
 /** Télécharge la page : par le téléphone dans l'appli Android, sinon par le relais. */
 async function chargerPage(url) {
   if (!lienNatif()) return (await relais('page', { url }, 40e3)).page || {};
+  const demande = ua => Native.P.CapacitorHttp.request({ url, method: 'GET', responseType: 'text', connectTimeout: 12e3, readTimeout: 15e3,
+    headers: { Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5', 'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.5', ...(ua ? { 'User-Agent': ua } : {}) } });
+  const statut = x => (x && x.status) || 0, enTravaux = x => statut(x) === 503 && /maintenance/i.test(typeof x.data === 'string' ? x.data.slice(0, 5000) : '');
+  const refuse = x => [401, 403, 429, 503].includes(statut(x)) && !enTravaux(x);
   let r;
-  try {
-    r = await Native.P.CapacitorHttp.request({ url, method: 'GET', responseType: 'text', connectTimeout: 12e3, readTimeout: 15e3,
-      headers: { Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5', 'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.5' } });
-  } catch { throw new Error(navigator.onLine === false ? 'Pas de connexion internet.' : 'Site injoignable : vérifie le lien.'); }
-  const st = (r && r.status) || 0, h = (r && r.headers) || {};
+  try { r = await demande(''); } catch { throw new Error(navigator.onLine === false ? 'Pas de connexion internet.' : 'Site injoignable : vérifie le lien.'); }
+  // L'appli se présente d'abord comme une appli Android. Certains sites refusent les applis (Leclerc) : une seule autre demande,
+  // présentée comme le navigateur du téléphone. Rien d'autre n'est tenté : un site qui refuse encore reste refusé.
+  if (refuse(r) && navigator.userAgent) { try { r = await demande(navigator.userAgent); } catch { /* on garde le premier refus */ } }
+  const st = statut(r), h = (r && r.headers) || {};
   const type = str(h[Object.keys(h).find(k => k.toLowerCase() === 'content-type')]).toLowerCase();
   if (st === 404 || st === 410) throw new Error('Page introuvable : vérifie le lien.');
-  if (st === 503 && /maintenance/i.test(typeof r.data === 'string' ? r.data.slice(0, 5000) : '')) throw new Error("Ce site est en maintenance : réessaie plus tard, ou essaie la photo de l'étiquette.");
+  if (enTravaux(r)) throw new Error("Ce site est en maintenance : réessaie plus tard, ou essaie la photo de l'étiquette.");
   if ([401, 403, 429, 503].includes(st)) throw new Error(PAGE_REFUS);
   if (!st || st >= 400) throw new Error(`Le site a répondu une erreur (${st || 'réseau'}).`);
   if (type && !/html/.test(type)) throw new Error('Ce lien ne mène pas à une page web.');
