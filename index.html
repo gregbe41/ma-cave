@@ -5773,60 +5773,150 @@ async function chargerPage(url) {
   const st = (r && r.status) || 0, h = (r && r.headers) || {};
   const type = str(h[Object.keys(h).find(k => k.toLowerCase() === 'content-type')]).toLowerCase();
   if (st === 404 || st === 410) throw new Error('Page introuvable : vérifie le lien.');
+  if (st === 503 && /maintenance/i.test(typeof r.data === 'string' ? r.data.slice(0, 5000) : '')) throw new Error("Ce site est en maintenance : réessaie plus tard, ou essaie la photo de l'étiquette.");
   if ([401, 403, 429, 503].includes(st)) throw new Error(PAGE_REFUS);
   if (!st || st >= 400) throw new Error(`Le site a répondu une erreur (${st || 'réseau'}).`);
   if (type && !/html/.test(type)) throw new Error('Ce lien ne mène pas à une page web.');
   return { url: r.url || url, html: typeof r.data === 'string' ? r.data.slice(0, 2e6) : '' };
 }
 
-/* La fiche technique d'une page marchande : ses libellés ramenés à quelques champs. */
-const FICHE_LIBELLES = [['appellation', /^(appellation|aoc|aop|denomination)\b/], ['millesime', /^(millesime|annee|vintage)\b/], ['couleur', /^(couleur|type de vin|type|color)$/],
-  ['cepages', /^(cepage|cepages|assemblage|encepagement)\b/], ['region', /^(region|vignoble)$/], ['domaine', /^(domaine|producteur|proprietaire|chateau|maison|vigneron|marque|brand)$/], ['cuvee', /^cuvee$/]];
+/* La fiche technique d'une page marchande : ses libellés ramenés à quelques champs, chaque valeur vérifiée avant d'être gardée. */
+/** Libellé ramené à l'essentiel : « pa_annee-millesime » → « annee millesime », « Couleur (Vin) » → « couleur », « Le domaine » → « domaine ». */
+const cleLibelle = s => norm(s).replace(/^pa[_ -]/, '').replace(/\([^)]*\)/g, ' ').replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^(le|la|les|l) /, '');
+// [champ, libellé, en dernier choix]. « Dénomination légale de vente » ne sert qu'à l'année ; « Origine » est une appellation, sinon une région.
+const FICHE_LIBELLES = [['millesime', /^(millesime|vintage)\b|^annee( du)?( millesime)?$|^denomination legale\b/], ['appellation', /^(appellation|aoc|aop|igp)\b|^denomination$/],
+  ['couleur', /^(couleur|color|colour|sucrosite)\b|^type( de)?( vin)?$/], ['cepages', /^(cepages?|assemblage|encepagement)\b/], ['region', /^(region|vignoble)\b/],
+  ['domaine', /^(domaines?|nom du domaine|nom domaine|nom du (vigneron|producteur)|producteurs?|chateaux?|maison|vigneron|viticulteur|marque|brand)\b/], ['cuvee', /^(nom de la )?cuvee$/],
+  ['domaine', /^proprietaire\b/, 1], ['origine', /^origine\b/, 1]];
+/** Une grande région viticole (« Vallée du Rhône », « Sud-Ouest »), ou une région du catalogue : pas un nom de domaine. */
+const regionConnue = v => REGIONS.includes(canonRegion(v)) || !!(Catalogue.data && Catalogue.data.R.some(x => x && norm(x) === norm(v)));
+const FICHE_OK = {
+  millesime: v => (/^\d{4}$/.test(v) && +v >= 1800 && +v <= thisYear() + 1) || (anneeDans(v) != null && new Set(v.match(/(?:19|20)\d\d/g)).size === 1),
+  // Une seule couleur (« Vin mousseux blanc » passe, pas le menu « Rouge Blanc Rosé »).
+  couleur: v => { const t = motsDe(v.replace(/blancs? de (noirs|blancs)/gi, ' ')); return !!couleurDans(v) && LIEN_COULEURS.filter(([k, re]) => ['rose', 'blanc', 'rouge'].includes(k) && re.test(t)).length <= 1; },
+  // La liste des cépages d'un domaine (encart producteur) n'est pas celle du vin : plus de cinq sans pourcentage, on l'écarte.
+  cepages: v => { const n = Math.max(grapesInText(v).length, v.split(/[,;/+]| et | - /).filter(x => x.trim()).length); return grapesInText(v).length > 0 && (n <= 5 || /%/.test(v)); },
+  region: v => regionConnue(v) && REGIONS.filter(r => motsDe(v).includes(motsDe(r))).filter(r => !/languedoc|roussillon/i.test(r) || !/languedoc.roussillon/i.test(norm(v))).length <= 1,
+  // Un nom propre court : pas une phrase, une année, un « Oui », ni un bouton (« Voir tout »), ni « Domaine partenaire ».
+  domaine: v => v.length <= 60 && v.split(' ').length <= 7 && !/[.!?|\d]/.test(v) && !/^(assortiment|coffret|lot|selection)\b/.test(norm(v)) && !/^(voir|decouvrir|en savoir|tout|tous|plus|oui|non|yes|no|nc|aucune?)\b/.test(norm(v))
+    && v.split(/[\s-]+/).some(w => /^\p{Lu}/u.test(w) && !DOM_STOP.has(norm(w))),
+  appellation: v => v.length <= 60 && v.split(/\s+/).length <= 7 && !/\b(19|20)\d\d\b|\|/.test(v),
+  cuvee: v => v.length <= 60,
+};
+/** Un lot (« 6 x 75cl », « caisse de 6 ») : le nombre de bouteilles, 1 sinon. */
+const lotDe = s => { const m = norm(s).match(/\b(\d{1,2}) ?x ?(?:75|70|50|37[.,]5) ?cl\b|\b(?:caisse|carton|coffret|lot|pack) (?:de )?(\d{1,2})\b/); const n = m ? +(m[1] || m[2]) : 1; return n >= 2 && n <= 24 ? n : 1; };
 /** Ce que dit la page : données produit (JSON-LD, OpenGraph, microdonnées), fiche technique, texte visible. Rien n'y est exécuté. */
 function extrairePage(html, url) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  const nom = v => (typeof v === 'string' ? str(v) : Array.isArray(v) ? nom(v[0]) : v && typeof v === 'object' ? str(v.name || v['@value'] || '') : '');
-  const produits = [];
+  const decode = t => (/&[#a-z0-9]+;/i.test(t) ? new DOMParser().parseFromString(`<body>${t.replace(/</g, '&lt;')}`, 'text/html').body.textContent : t);
+  const sansBalises = t => decode(str(t).replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+  const txt = el => str(el.textContent).replace(/\s+/g, ' ');
+  const nom = v => (typeof v === 'string' ? sansBalises(v) : Array.isArray(v) ? nom(v[0]) : v && typeof v === 'object' ? sansBalises(v.name || v['@value'] || '') : '');
+  const produits = [], fil = [], orgs = [];
   const voir = o => {
     if (!o || typeof o !== 'object' || produits.length > 5) return;
     if (Array.isArray(o)) { o.forEach(voir); return; }
-    if ([].concat(o['@type'] || []).some(t => /^(Product|ProductGroup|IndividualProduct|ProductModel|Wine)$/i.test(String(t)))) produits.push(o);
+    const types = [].concat(o['@type'] || []).map(String);
+    if (types.some(t => /^(Product|ProductGroup|IndividualProduct|ProductModel|Wine)$/i.test(t))) produits.push(o);
+    if (types.includes('BreadcrumbList')) [].concat(o.itemListElement || []).forEach(x => { const n = x && (nom(x.name) || (x.item && typeof x.item === 'object' ? nom(x.item.name) : '')); if (n) fil.push(n); });
+    if (types.some(t => /^(Organization|Corporation|WebSite|Store|OnlineStore|LocalBusiness)$/i.test(t)) && typeof o.name === 'string') orgs.push(nom(o.name));
     ['@graph', 'mainEntity', 'itemOffered'].forEach(k => voir(o[k]));
   };
   $$('script[type="application/ld+json"]', doc).forEach(x => { try { voir(JSON.parse(x.textContent)); } catch { /* bloc illisible */ } });
+  // Données d'une appli Next.js ou JSON embarqué : les objets { name, value } (« Appellation » → « Sauternes »), lus, jamais exécutés.
+  const json = [];
+  const marche = (o, n) => {
+    if (!o || typeof o !== 'object' || n > 12 || json.length > 400) return;
+    if (Array.isArray(o)) { o.forEach(x => marche(x, n + 1)); return; }
+    if (typeof o.name === 'string' && (typeof o.value === 'string' || typeof o.value === 'number')) json.push([o.name, String(o.value)]);
+    Object.values(o).forEach(x => marche(x, n + 1));
+  };
+  $$('script#__NEXT_DATA__,script[type="application/json"]', doc).forEach(x => { try { marche(JSON.parse(x.textContent), 0); } catch { /* bloc illisible */ } });
+  // PrestaShop range la fiche du vin dans l'attribut data-product.
+  $$('[data-product]', doc).slice(0, 3).forEach(x => { try { marche(JSON.parse(x.getAttribute('data-product')), 0); } catch { /* attribut illisible */ } });
   const p = produits[0] || {};
   const meta = (...ns) => { for (const n of ns) { const el = doc.querySelector(`meta[property="${n}"],meta[name="${n}"],meta[itemprop="${n}"]`); const c = el && str(el.getAttribute('content')); if (c) return c; } return ''; };
-  const offres = [].concat(p.offers || []).flatMap(o => (o && typeof o === 'object' ? [o, ...[].concat(o.offers || [])] : []));
-  const offre = offres.find(o => num(o.price) != null || num(o.lowPrice) != null) || {};
-  const ip = doc.querySelector('[itemprop="price"]');
+  // Microdonnées : dans le premier produit balisé (une page en montre souvent d'autres, liés ou conseillés).
+  const scope = doc.querySelector('[itemscope][itemtype*="schema.org/Product" i]');
+  const prop = (n, el = scope || doc) => { const x = el.querySelector(`[itemprop="${n}"]`); return x ? sansBalises(x.getAttribute('content') || x.textContent) : ''; };
+  const mb = scope && scope.querySelector('[itemprop="brand"]');
+  const marqueMicro = mb ? sansBalises(mb.getAttribute('content')) || prop('name', mb) || (mb.childElementCount ? '' : txt(mb)) : '';
+  // Les offres du produit et de ses variantes (« Château X 2019 - 6 x 75cl »), chacune avec son nom pour reconnaître un lot.
+  const offres = [p, ...[].concat(p.hasVariant || [])].flatMap(v => (v && typeof v === 'object' ? [].concat(v.offers || []) : [])
+    .flatMap(o => (o && typeof o === 'object' ? [o, ...[].concat(o.offers || [])] : [])).map(o => ({ o, nom: nom(o.name) || nom(v.name) })));
+  const of0 = offres.find(({ o }) => num(o.price) != null || num(o.lowPrice) != null) || { o: {}, nom: '' }, offre = of0.o;
+  // WooCommerce sans données produit : le prix affiché du produit (le prix promo d'abord), pas celui du panier ni des vins liés.
+  const ip = (scope || doc).querySelector('[itemprop="price"],[itemprop="lowPrice"]') || doc.querySelector('.summary .price ins .woocommerce-Price-amount,p.price ins .woocommerce-Price-amount,.summary .price .woocommerce-Price-amount,p.price .woocommerce-Price-amount')
+    || $$('.woocommerce-Price-amount', doc).find(el => !el.closest('header,nav,del,.related,.upsells,.cross-sells,.products,[class*="cart" i],[class*="panier" i]'));
   let prix = num(offre.price ?? offre.lowPrice) ?? num(meta('product:price:amount', 'og:price:amount')) ?? num(ip && (ip.getAttribute('content') || ip.textContent));
   if (!(prix > 0 && prix < 1e5)) prix = null;
+  const lot = prix ? [of0.nom, nom(p.name), meta('og:title')].map(lotDe).find(n => n > 1) || 1 : 1;
+  if (lot > 1) prix = Math.round(prix / lot * 100) / 100;
   const devise = prix ? str(offre.priceCurrency || meta('product:price:currency', 'og:price:currency', 'priceCurrency') || 'EUR').toUpperCase().slice(0, 3) : '';
-  const fiche = {};
-  const noter = (k0, v0) => {
-    const k = norm(k0).replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim(), v = str(v0).replace(/\s+/g, ' ');
-    const f = k.length < 30 && FICHE_LIBELLES.find(([, re]) => re.test(k));
-    if (f && v && v.length < 120 && !fiche[f[0]]) fiche[f[0]] = v;
-  };
-  [].concat(p.additionalProperty || []).forEach(x => x && noter(x.name, nom(x.value) || x.value));
-  $$('dt', doc).forEach(dt => { const dd = dt.nextElementSibling; if (dd && dd.tagName === 'DD') noter(dt.textContent, dd.textContent); });
-  $$('tr', doc).forEach(tr => { const c = tr.children; if (c.length === 2) noter(c[0].textContent, c[1].textContent); });
-  $$('li,p', doc).forEach(el => { if (el.childElementCount > 4) return; const m = str(el.textContent).replace(/\s+/g, ' ').match(/^([^:]{3,25}?)\s*:\s*(.{2,100})$/); if (m) noter(m[1], m[2]); });
-  // Libellé et valeur dans deux balises voisines, sans deux-points (« <span>Millésime</span><span>2022</span> »).
-  // Deux feuilles seulement : un menu (« Couleur » suivi de la liste des couleurs du site) ne passe pas.
-  $$('li,div', doc).forEach(el => {
-    const c = el.children;
-    if (c.length === 2 && c[0].childElementCount === 0 && c[1].childElementCount <= 1 && str(el.textContent).length < 160) noter(c[0].textContent, c[1].textContent);
-  });
-  const sansBalises = t => str(t).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   const titre = sansBalises(nom(p.name) || meta('og:title', 'twitter:title') || doc.title);
   const h1 = sansBalises((doc.querySelector('h1') || {}).textContent);
-  const description = sansBalises((typeof p.description === 'string' && p.description) || meta('og:description', 'description', 'twitter:description'));
-  $$('script,style,noscript,svg,nav,header,footer,form,iframe,template,button,select', doc).forEach(el => el.remove());
+  const description = sansBalises((typeof p.description === 'string' && p.description) || (scope && prop('description')) || meta('og:description', 'description', 'twitter:description'));
+  const texteEspace = el => { const w = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT), ts = []; let t; while ((t = w.nextNode())) { const x = t.textContent.replace(/\s+/g, ' ').trim(); if (x) ts.push(x); } return ts.join(' '); };
+  // Le fil d'Ariane écrit dans la page, mot à mot (« Accueil › Corse › Ajaccio AOP »).
+  const ariane = $$('[class*="breadcrumb" i],[aria-label*="ariane" i],[aria-label*="breadcrumb" i]', doc).find(el => { const n = txt(el).length; return n > 3 && n < 400; });
+  if (ariane) { const w = doc.createTreeWalker(ariane, NodeFilter.SHOW_TEXT), ts = []; let t; while ((t = w.nextNode())) { const s = str(t.textContent); if (s) ts.push(s); } fil.push(ts.join(' › ')); }
+  const vendeurs = [meta('og:site_name', 'application-name'), ...offres.map(({ o }) => nom(o.seller)), ...orgs].filter(Boolean);
+  // La fiche technique, sans les menus ni le bandeau du site (« Maison › Voir tout » n'est pas un domaine).
+  $$('script,style,noscript,svg,template,iframe,button,select,nav,header,footer,[role="menu"],[role="menubar"],[role="navigation"]', doc).forEach(el => el.remove());
+  const fiche = {}, bas = {};
+  const garder = (f, v0, enBas, seuls) => {
+    const v = str(v0).replace(/^[^\p{L}\d]+/u, '');
+    if (f === 'origine') f = appellationDans([v]) ? 'appellation' : regionConnue(v) ? 'region' : '';
+    if (!f || (seuls && !seuls.includes(f)) || !FICHE_OK[f](v)) return;
+    // Le propriétaire (« Famille Fabre ») ne sert qu'en dernier recours, après la marque et le catalogue.
+    const m = enBas && f !== 'domaine' ? bas : fiche, k = enBas && f === 'domaine' ? 'proprietaire' : f;
+    if (!m[k]) m[k] = v;
+  };
+  const noter1 = (k0, v, seuls) => { const k = cleLibelle(k0), l = k && k.length < 30 && FICHE_LIBELLES.find(([, re]) => re.test(k)); if (l && v) garder(l[0], v, l[2], seuls); };
+  // Un libellé double (« Couleur - Appellation » : « Blanc - Hautes Côtes de Nuits ») donne deux champs.
+  const noter = (k0, v0, seuls) => {
+    const v = str(v0).replace(/\s+/g, ' ').replace(/^[:\s]+/, '');
+    if (!v || v.length > 120) return;
+    const ks = str(k0).split(/\s[-–/]\s/), vs = v.split(/\s[-–/]\s/);
+    if (ks.length === 2 && vs.length === 2) { noter1(ks[0], str(vs[0]), seuls); noter1(ks[1], str(vs[1]), seuls); } else noter1(k0, v, seuls);
+  };
+  [].concat(p.additionalProperty || []).forEach(x => x && noter(x.name, nom(x.value) || x.value));
+  $$('dt', doc).forEach(dt => { const dd = dt.nextElementSibling; if (dd && dd.tagName === 'DD') noter(txt(dt), txt(dd)); });
+  $$('tr', doc).forEach(tr => { const c = tr.children; if (c.length === 2) noter(txt(c[0]), txt(c[1])); });
+  $$('li,p', doc).forEach(el => { if (el.childElementCount > 4) return; const m = txt(el).match(/^([^:]{3,25}?)\s*:\s*(.{2,100})$/); if (m) noter(m[1], m[2]); });
+  // « <li><label>Couleur</label> Rosé</li> » : le libellé dans une balise, la valeur en texte nu.
+  $$('li,p,div', doc).forEach(el => {
+    const c = el.firstElementChild;
+    if (!c || [...el.children].filter(x => x.tagName !== 'BR').length !== 1 || !/^(LABEL|STRONG|B|SPAN|EM)$/.test(c.tagName)) return;
+    const nu = [...el.childNodes].filter(x => x.nodeType === 3).map(x => x.textContent).join(' ').replace(/\s+/g, ' ').trim();
+    if (nu) noter(txt(c), nu);
+  });
+  // Libellé et valeur dans deux balises voisines (« <span>Millésime</span><span>2022</span> »), une icône à côté ne compte pas.
+  // Chacune doit être une feuille, une fois ses enveloppes ôtées : un menu (« Couleur » et la liste des couleurs du site) ne passe pas.
+  const plein = el => !/^(IMG|SVG|BR|HR|PICTURE|SOURCE|INPUT)$/.test(el.tagName) && txt(el).length > 0;
+  const feuille = el => { let e = el; while (e.childElementCount === 1 && txt(e) === txt(e.firstElementChild)) e = e.firstElementChild; return [...e.children].every(x => /^(A|B|STRONG|EM|SPAN|BR|SUP|SMALL|I)$/.test(x.tagName) && !x.childElementCount); };
+  $$('li,div,span,p,tr,h2,h3,h4,h5,h6', doc).forEach(el => {
+    if (el.childElementCount > 4 || el.textContent.length > 400) return;
+    const c = [...el.children].filter(plein);
+    if (c.length === 2 && txt(el).length < 200 && feuille(c[0]) && feuille(c[1])) noter(txt(c[0]), txt(c[1]));
+  });
+  // Suite de titres et de valeurs (« <h5>Millésime</h5><div>2020</div><h5>Appellation</h5>… »).
+  $$('div,p,span,li,td,th,dt,label,strong,b,h2,h3,h4,h5,h6', doc).forEach(el => {
+    const nx = el.nextElementSibling;
+    if (!nx || el.childElementCount > 3 || el.textContent.length > 40 || !feuille(el)) return;
+    const k = cleLibelle(el.textContent);
+    if (!k || !FICHE_LIBELLES.some(([, re]) => re.test(k)) || el.closest('[class*="menu" i],[class*="filter" i],[class*="filtre" i],[class*="facet" i],[class*="mega" i]')) return;
+    if (txt(nx).length < 120) noter(txt(el), txt(nx), /^(H[3-6]|DT|TH|LABEL|STRONG)$/.test(el.tagName) ? null : ['millesime', 'couleur', 'cepages', 'region']);
+  });
+  json.forEach(([k, v]) => noter(k, sansBalises(v)));
+  for (const k in bas) if (!fiche[k]) fiche[k] = bas[k];
+  $$('form', doc).forEach(el => el.remove());
   const corps = doc.querySelector('main,[role="main"],article') || doc.body;
   return {
-    url, site: siteDe(url), titre: titre.slice(0, 300), h1: h1.slice(0, 300), marque: sansBalises(nom(p.brand) || nom(p.manufacturer) || meta('product:brand')).slice(0, 160),
-    prix, devise, description: description.slice(0, 1500), texte: corps ? sansBalises(corps.textContent).slice(0, 6000) : '', fiche, produit: produits.length > 0,
+    url, site: siteDe(url), titre: titre.slice(0, 300), h1: h1.slice(0, 300), ogTitre: sansBalises(meta('og:title')).slice(0, 300), titrePage: sansBalises(doc.title).slice(0, 300),
+    fil: fil.join(' › ').slice(0, 600), categorie: nom(p.category).slice(0, 200), motsCles: meta('keywords').slice(0, 300),
+    marque: (nom(p.brand) || nom(p.manufacturer) || meta('product:brand') || marqueMicro).slice(0, 160), vendeurs: [...new Set(vendeurs)].slice(0, 6), couleur: nom(p.color) || nom(offre.color),
+    prix, devise, lot, description: description.slice(0, 1500), texte: corps ? texteEspace(corps).slice(0, 6000) : '', fiche, produit: produits.length > 0,
   };
 }
 
@@ -5837,61 +5927,277 @@ const anneeDans = s => { const y = thisYear() + 1; return [...String(s || '').ma
 const cheminDe = url => { try { return decodeURIComponent(new URL(url).pathname).replace(/[-_/.]+/g, ' '); } catch { return ''; } };
 /** « GELIN Pierre » → « Gelin Pierre » : les noms écrits en capitales, remis en minuscules. */
 const joliNom = s => str(s).replace(/\b\p{Lu}{2,}\b/gu, m => m[0] + m.slice(1).toLowerCase());
-/** La cuvée, quand la page ne la nomme pas : ce qui reste du titre sans l'appellation, le domaine, la couleur ni l'année
-    (« Gevrey Chambertin Clos de Meixvelle Gelin » → « Clos de Meixvelle »). */
-function cuveeDansTitre(titre, appellation, domaine) {
-  if (!titre || !appellation) return '';
-  const hors = new Set([...norm(appellation).split(/[^a-z0-9]+/), ...keyWords(domaine), 'vin', 'vins', 'rouge', 'blanc', 'rose', 'aoc', 'aop', 'bouteille', 'magnum'].filter(Boolean));
-  if (!norm(titre).split(/[^a-z0-9]+/).filter(Boolean).some(m => norm(appellation).split(/[^a-z0-9]+/).includes(m))) return '';
-  // « Crozes-Hermitage » : un mot composé de l'appellation est écarté s'il n'en a que des morceaux.
-  const horsDuVin = m => { const xs = norm(m).split(/[^a-z0-9]+/).filter(Boolean); return !xs.length || xs.every(x => hors.has(x)); };
-  const mots = str(titre).split(/[\s,–—|()]+/).filter(m => m && !horsDuVin(m) && !/^\d{4}$/.test(m) && !/^\d+([.,]\d+)?\s*c?l$/i.test(m));
-  while (mots.length && /^(de|du|des|la|le|les|-|et|en)$/i.test(mots[0])) mots.shift();
-  while (mots.length && /^(de|du|des|la|le|les|-|et|en)$/i.test(mots[mots.length - 1])) mots.pop();
-  const c = mots.join(' ');
-  return mots.some(m => m.length >= 4) && c.length <= 50 ? c : '';
+/** Les cépages d'une fiche (« Merlot 74% - Cabernet Sauvignon 26% ») : la liste écrite, sinon les cépages reconnus dans le texte. */
+let GRAPE_PC = null;
+/** Les cépages écrits avec leur part dans un texte (« 40 % Pinot Noir 40 % Pinot Meunier 20 % Chardonnay ») : le premier groupe seulement. */
+function cepagesPourcent(s) {
+  if (!GRAPE_PC) {
+    const n = [...GRAPES.map(g => grapeKey(g.name)), ...Object.keys(GRAPE_ALIASES)].sort((a, b) => b.length - a.length).join('|');
+    GRAPE_PC = [new RegExp(`(?<![\\d%])\\d{1,3}(?: \\d{1,2})? ?% (?:de |d )?(${n})(?= |$)`, 'g'), new RegExp(`(?:^| )(${n}) (?:a )?\\d{1,3}(?: \\d{1,2})? ?%`, 'g')];
+  }
+  const t = ` ${norm(s).replace(/[^a-z0-9%]+/g, ' ')} `;
+  const groupe = re => {
+    const out = [];
+    let fin = -1;
+    for (const m of t.matchAll(re)) { if (fin >= 0 && m.index - fin > 120) break; out.push(canonGrape(m[1])); fin = m.index + m[0].length; }
+    return [...new Set(out)];
+  };
+  return GRAPE_PC.map(groupe).sort((a, b) => b.length - a.length)[0];
 }
-/** L'année écrite juste après le mot « millésime » (« Millésime : 2022 », « millésime 2019 ») : dans la description ou le texte. */
-const anneeApresMillesime = s => { const m = String(s || '').match(/mill[eé]sime[^0-9]{0,15}((?:19[4-9]|20[0-4])\d)(?!\d)/i); return m && +m[1] <= thisYear() + 1 ? +m[1] : null; };
-/** La plus longue appellation du catalogue écrite dans le texte (5 lettres au moins : pas de faux amis). */
-function appellationDans(textes) {
+const cepagesLus = s => {
+  const xs = str(s).replace(/\d+([.,]\d+)?\s*%/g, ' ').replace(/[()]/g, ' ').split(/[,;/+]| et | - /).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  return xs.length && xs.length <= 8 && xs.every(x => x.length <= 30) ? [...new Set(xs.map(canonGrape).filter(Boolean))] : grapesInText(s);
+};
+
+/* Appellations courantes que le catalogue ne range pas comme telles : [nom, région, autre écriture]. */
+const APP_GENERIQUES = [['Champagne', 'Champagne'], ['Bordeaux', 'Bordeaux'], ['Alsace', 'Alsace'], ['Alsace Grand Cru', 'Alsace'], ['Beaujolais', 'Beaujolais'],
+  ['Languedoc', 'Languedoc'], ['Vin de France', ''], ["Pays d'Oc", 'Languedoc'], ['Bourgogne Hautes-Côtes de Nuits', 'Bourgogne', 'Hautes-Côtes de Nuits'],
+  ['Bourgogne Hautes-Côtes de Beaune', 'Bourgogne', 'Hautes-Côtes de Beaune']];
+const APP_GEN = new Map(APP_GENERIQUES.flatMap(([n, r, ...autres]) => [n, ...autres].map(x => [appKey(x), [n, r]])));
+/** Les appellations du catalogue qui portent un nom de cépage (« Chardonnay ») : jamais lues dans un texte, trop de faux amis. */
+let APP_CEPAGES = null;
+const appCepage = k => (APP_CEPAGES || (APP_CEPAGES = new Set([...GRAPES.map(g => grapeKey(g.name)), ...Object.keys(GRAPE_ALIASES)]))).has(k);
+/** La plus longue appellation du catalogue (ou courante) écrite dans le texte, 5 lettres au moins : pas de faux amis.
+    Avec debut, seulement celle par laquelle le texte commence. */
+function appellationDans(textes, debut = false, mode = 'tout') {
   const d = Catalogue.data, cles = d ? d.appKeys : [...APP_GRAPE_MAP.keys()];
+  const ici = (t, k) => k.length >= 5 && !appCepage(k) && (debut ? t.startsWith(` ${k} `) : t.includes(` ${k} `));
   for (const s of textes) {
     const t = motsDe(s);
-    let best = '';
-    for (const k of cles) if (k.length >= 5 && k.length > best.length && t.includes(` ${k} `)) best = k;
-    if (best) return d ? d.A[d.appIdx.get(best)] : best.replace(/(^|\s)\S/g, c => c.toUpperCase());
+    let cat = '', gen = '';
+    for (const k of cles) if (k.length > cat.length && ici(t, k)) cat = k;
+    for (const k of APP_GEN.keys()) if (k.length > gen.length && ici(t, k)) gen = k;
+    // Mode « précis » : une appellation du catalogue, ou une courante qui la prolonge (« Bourgogne Hautes-Côtes de Nuits ») ;
+    // mode « courant » : seulement les courantes (« Champagne », « Bordeaux »).
+    if (mode === 'precis' && gen && !(cat && gen.length > cat.length && gen.includes(cat))) gen = '';
+    if (mode === 'courant') cat = '';
+    const best = gen.length > cat.length ? gen : cat;
+    if (best) return best === gen ? APP_GEN.get(gen)[0] : d ? d.A[d.appIdx.get(cat)] : cat.replace(/(^|\s)\S/g, c => c.toUpperCase());
   }
   return '';
 }
-/** Le domaine : la fiche, la marque (si ce n'est pas le site), sinon un producteur du catalogue dont tous les mots sont dans le titre. */
+/** L'appellation nommée dans une phrase (« en AOC Sauternes », « appellation Ajaccio ») : ailleurs, un nom de lieu n'est pas une appellation. */
+function appellationApres(s) {
+  for (const m of String(s || '').matchAll(/(?:^|[^\p{L}])(?:a\.?o\.?[cp]\.?|appellations?(?: d.origine(?: contr[oô]l[ée]e| prot[ée]g[ée]e)?)?)\s+/giu)) {
+    const a = appellationDans([String(s).slice(m.index + m[0].length, m.index + m[0].length + 50)], true);
+    if (a) return a;
+  }
+  return '';
+}
+/** La région d'une appellation : celle de la plupart de ses vins au catalogue, ou celle d'une appellation courante. */
+const regionDeApp = app => { const g = APP_GEN.get(appKey(app)), ai = Catalogue.appOf(app); return g ? g[1] : ai && Catalogue.data ? Catalogue.data.appReg.get(ai) || '' : ''; };
+/** L'appellation de la page : la fiche, puis les titres, puis le fil d'Ariane et les mots-clés, puis une phrase qui la nomme.
+    Une appellation plus précise écrite ailleurs l'emporte (« Saint-Émilion » sur la fiche, « Saint-Émilion Grand Cru » dans le titre). */
+function appellationDe(page) {
+  const f = page.fiche || {}, forts = [page.titre, page.h1, page.ogTitre, page.titrePage].filter(Boolean), faibles = [page.fil, page.categorie, page.motsCles].filter(Boolean);
+  const brute = str(f.appellation).replace(/^(a\.?o\.?[cp]\.?|igp)\s+/i, '');
+  // Les appellations courantes (« Bordeaux ») après les précises, même lues plus loin (« …-fronsac-rouge-2018 » dans l'adresse).
+  faibles.push(cheminDe(page.url));
+  let app = (f.appellation && appellationDans([f.appellation])) || appellationDans(forts, false, 'precis') || brute || appellationDans(faibles, false, 'precis')
+    || appellationDans([...forts, ...faibles], false, 'courant') || appellationApres(page.description) || appellationApres(page.texte);
+  const d = Catalogue.data, k0 = appKey(app);
+  if (d && k0) {
+    const ts = [...forts, ...faibles].map(motsDe);
+    let best = '';
+    for (const k of d.appKeys) if (k.length > best.length && k.startsWith(k0 + ' ') && ts.some(t => t.includes(` ${k} `))) best = k;
+    if (best) app = d.A[d.appIdx.get(best)];
+  }
+  return app;
+}
+/** Le marchand n'est pas le domaine : un nom fait des mots de l'adresse du site (« Comptoir des Millésimes »), de son nom ou de son vendeur. */
+function estMarchand(page, s) {
+  const colle = x => norm(x).replace(/[^a-z0-9]+/g, ''), k = keyWords(s), hote = colle(page.site);
+  return !k.length || k.every(x => hote.includes(x)) || (page.vendeurs || []).some(v => colle(v) === colle(s));
+}
+/** « Château la Truffière » dans « AOP Monbazillac Château la Truffière blanc 75cl » : le nom qui suit Château, Domaine ou Mas. */
+function chateauDuTitre(textes, appellation) {
+  const hors = new Set(['rouge', 'blanc', 'rose', 'vin', 'aoc', 'aop', 'igp', 'grand', 'cru', 'premier', 'magnum', 'bouteille', 'cuvee', 'vignobles', 'famille', 'domaines', 'maison']), ka = appKey(appellation);
+  for (const s of textes) {
+    const ws = str(s).split(/[\s,|–—()]+/).filter(Boolean), i = ws.findIndex(w => /^(ch[aâ]teau|domaine|mas)$/i.test(w));
+    if (i < 0) continue;
+    const out = [ws[i]];
+    for (let j = i + 1; j < ws.length; j++) {
+      const w = ws[j], k = norm(w).replace(/[^a-z0-9]+/g, '');
+      // On s'arrête à la couleur, à l'année, au format, à l'appellation.
+      if (!k || hors.has(k) || /\d/.test(w) || w === '-' || (ka && motsDe(ws.slice(j).join(' ')).startsWith(` ${ka} `))) break;
+      if (/^(de|du|des|la|le|les|d|l|et)$/.test(k) || /^(d|l)['’]/i.test(w) || /^\p{Lu}/u.test(w)) out.push(w); else break;
+    }
+    while (out.length > 1 && /^(de|du|des|la|le|les|et)$/i.test(out[out.length - 1])) out.pop();
+    if (out.length > 1) return joliNom(out.join(' '));
+  }
+  return '';
+}
+/** Le domaine : la fiche, la marque (si ce n'est pas le marchand), un producteur du catalogue dont tous les mots sont dans le titre,
+    « Château X » dans le titre ; en dernier, le propriétaire nommé par la fiche ou la marque du site s'il est connu du catalogue. */
 function domaineDans(page, appellation, region) {
-  const d = Catalogue.data, f = page.fiche || {}, site = keyWords(page.site.split('.').slice(-2, -1)[0] || '');
-  const mq = keyWords(page.marque), marque = mq.length && !mq.every(k => site.includes(k)) ? page.marque : '';
-  const brut = str(f.domaine) || marque;
-  if (!d) return { domaine: brut, prods: [] };
+  const d = Catalogue.data, f = page.fiche || {};
+  // Une marque qui n'est pas le « Château X » du titre est celle du distributeur ou de la société (« Pierre Chanau », « Vignobles Dorneau »).
+  const ch = chateauDuTitre([page.titre, page.h1], appellation), memes = (a, b) => keyWords(a).every(k => keyWords(b).some(x => presque(x, k)));
+  const fd = str(f.domaine) && !estMarchand(page, f.domaine) ? str(f.domaine) : '';
+  const marque = page.marque && !estMarchand(page, page.marque) && (!ch || memes(ch, page.marque) || memes(page.marque, ch)) ? page.marque : '';
+  const brut = fd || marque;
+  if (!d) return { domaine: brut || chateauDuTitre([page.titre, page.h1], appellation), prods: [] };
   if (brut) return { domaine: brut, prods: Catalogue.producers({ domaine: brut, region, appellation }) };
   if (!d.ptok) d.ptok = d.P.map(nameTokens);
   const exclus = new Set(appKey(appellation).split(' '));
   const t = new Set(nameTokens(`${page.titre} ${page.h1}`).filter(x => !exclus.has(x) && !/^\d+$/.test(x)));
-  const Ai = appellation ? Catalogue.appOf(appellation) : 0;
-  const cands = Ai ? [...new Set((d.byApp.get(Ai) || []).map(x => x.p))] : d.P.map((_, i) => i);
-  let best = [], n = 0;
-  for (const i of cands) {
-    const k = d.ptok[i];
-    if (!i || !k.length || !k.some(x => x.length >= 4) || !k.every(x => t.has(x))) continue;
-    if (k.length > n) { best = [i]; n = k.length; } else if (k.length === n) best.push(i);
-  }
-  best.sort((a, b) => d.pn[b] - d.pn[a]);
-  return { domaine: best.length ? d.P[best[0]] : '', prods: best.slice(0, 3) };
+  const chercher = cands => {
+    let best = [], n = 0;
+    for (const i of cands) {
+      const k = d.ptok[i];
+      if (!i || !k.length || !k.some(x => x.length >= 4) || !k.every(x => t.has(x))) continue;
+      if (k.length > n) { best = [i]; n = k.length; } else if (k.length === n) best.push(i);
+    }
+    return best.sort((a, b) => d.pn[b] - d.pn[a]);
+  };
+  const Ai = appellation ? Catalogue.appOf(appellation) : 0, k0 = appKey(appellation);
+  const deApps = as => [...new Set(as.flatMap(a => (d.byApp.get(a) || []).map(x => x.p)))];
+  let best = chercher(Ai ? deApps([Ai]) : d.P.map((_, i) => i));
+  // Rien dans l'appellation exacte : ses voisines plus précises (« Saint-Émilion » → « Saint-Émilion Grand Cru »).
+  if (!best.length && k0) best = chercher(deApps(d.appKeys.filter(k => k.startsWith(k0 + ' ')).map(k => d.appIdx.get(k))));
+  if (best.length) return { domaine: d.P[best[0]], prods: best.slice(0, 3) };
+  if (ch) return { domaine: ch, prods: Catalogue.producers({ domaine: ch, region, appellation }) };
+  const repli = [str(f.proprietaire), str(f.domaine), page.marque, ...(page.vendeurs || [])].find(s => s && Catalogue.producers({ domaine: s, region, appellation }).length) || '';
+  return { domaine: repli, prods: repli ? Catalogue.producers({ domaine: repli, region, appellation }) : [] };
 }
+/** Deux morceaux de nom pareils, à une faute de frappe près (« Beucher » pour « Buecher ») quand ils sont assez longs. */
+function presque(a, b) {
+  if (a === b) return true;
+  if (Math.min(a.length, b.length) < 6 || Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  while (i < a.length && a[i] === b[i]) i++;
+  const r = (x, y) => a.slice(x) === b.slice(y);
+  return r(i + 1, i + 1) || r(i + 1, i) || r(i, i + 1) || (a[i] === b[i + 1] && a[i + 1] === b[i] && r(i + 2, i + 2));
+}
+const PUB_TITRE = /(^|\s)(achat|acheter|achetez|au meilleur prix|meilleurs? prix|à prix \S+|pas cher|en ligne|direct producteur|livraison \S+|promo|vente( de vins?)?|(lot|caisse|carton|coffret|pack) (de )?\d+( bouteilles?)?( de 75 ?cl)?|\d+ ?x ?75 ?cl|à partir de \S+|\d+([.,]\d+)? ?€+|€+)(?=\s|$)/gi;
+const MOTS_VIDES = new Set(['de', 'du', 'des', 'd', 'l', 'la', 'le', 'les', 'et', 'en', 'a', 'au']);
+/** La cuvée, quand la page ne la nomme pas : ce qui reste d'un titre sans l'appellation, le domaine, la couleur, l'année,
+    le format, le nom du site ni la publicité (« Gevrey Chambertin Clos de Meixvelle Gelin » → « Clos de Meixvelle »). */
+function cuveeDansTitre(page, appellation, domaines) {
+  if (!appellation) return '';
+  const g = APP_GEN.get(appKey(appellation));
+  const apps = [appellation, ...APP_GENERIQUES.filter(([n]) => g && n === g[0]).flatMap(([, , ...autres]) => autres)].map(a => appKey(a).split(' '));
+  const morceaux = s => norm(s).split(/[^a-z0-9]+/).filter(Boolean);
+  // Le premier titre qui nomme l'appellation.
+  const titre = [page.titre, page.h1, page.ogTitre, page.titrePage].find(s => s && apps.some(a => motsDe(s).includes(` ${a.join(' ')} `)));
+  if (!titre) return '';
+  const colle = s => norm(s).replace(/[^a-z0-9]+/g, ''), hote = colle(page.site), vendeurs = (page.vendeurs || []).map(colle);
+  // Les segments (« | », « – », « - ») sans le nom du site ni la société qui exploite le domaine (« Vignobles Dorneau »).
+  const segs = titre.split(/\s+[|–—-]\s+|\s*\|\s*/).map(s => s.replace(PUB_TITRE, ' ').trim())
+    .filter(s => s && !(colle(s).length >= 4 && (hote.includes(colle(s)) || vendeurs.includes(colle(s)))) && !/^(vignobles?|famille|scea|sca|gaec|earl|sarl|sas|ets|etablissements) /.test(norm(s))
+      && !/^(article|produit|fiche produit|accueil|boutique|e ?shop)$/.test(norm(s)));
+  // Chaque mot écrit, avec ses morceaux comparables (« d’Alsace » : d, alsace) ; on retire des morceaux, puis les mots vidés.
+  const W = segs.flatMap(s => s.split(/[\s,·●:;]+/).filter(Boolean)).map(w => ({ w, ps: morceaux(w), out: [] }));
+  const P = W.flatMap((x, i) => x.ps.map((m, j) => ({ m, i, j, out: false })));
+  const retirer = (a, b) => { for (let k = a; k < b; k++) P[k].out = true; };
+  const trouver = (seq, depuis = 0) => {
+    for (let k = depuis; k + seq.length <= P.length; k++) if (seq.every((m, j) => !P[k + j].out && presque(P[k + j].m, m))) return k;
+    return -1;
+  };
+  const avant = k => (k > 0 && !P[k - 1].out ? P[k - 1].m : '');
+  // « grand vin de bordeaux » est une mention, pas la cuvée (« Grand Vin » seul en est une).
+  const mention = seqs => seqs.forEach(seq => { for (let k = trouver(seq); k >= 0; k = trouver(seq)) retirer(k, k + seq.length); });
+  mention([['grand', 'vin', 'de', 'bordeaux']]);
+  for (const seq of apps) {
+    const k = trouver(seq);
+    if (k < 0) continue;
+    let a = k, b = k + seq.length;
+    while (a > 0 && !P[a - 1].out && /^(aoc|aop|igp|a|o|c|p|appellation)$/.test(P[a - 1].m)) a--;
+    retirer(a, b);
+    break;
+  }
+  // Le domaine tel qu'écrit (« du Château d'Anglès », « Domaine Barmes Beucher ») ; sinon ses mots distinctifs, un à un,
+  // sauf derrière « de » : « D de Dauzac » est une cuvée de Dauzac.
+  const PREFIXE = /^(chateau|domaine|domaines|maison|mas|champagne|vignobles)$/;
+  let fait = false;
+  for (const dom of domaines.filter(Boolean)) {
+    const tout = morceaux(dom), coeur = tout.filter((m, j) => !(j === 0 && PREFIXE.test(m)));
+    for (const seq of [tout, coeur]) {
+      if (!seq.length) continue;
+      for (let k = trouver(seq); k >= 0; k = trouver(seq, k + 1)) {
+        let a = k;
+        if (a > 0 && PREFIXE.test(avant(a))) a--;
+        if (a === k && seq.length === 1 && /^(de|du|des|d)$/.test(avant(k))) continue;
+        if (a > 0 && /^(de|du|d)$/.test(avant(a))) a--;
+        retirer(a, k + seq.length);
+        fait = true;
+        break;
+      }
+      if (fait) break;
+    }
+    if (fait) break;
+  }
+  if (!fait) for (const m of new Set(domaines.filter(Boolean).flatMap(keyWords))) {
+    for (let k = trouver([m]); k >= 0; k = trouver([m], k + 1)) {
+      if (/^(de|du|des|d)$/.test(avant(k))) continue;
+      retirer(PREFIXE.test(avant(k)) ? k - 1 : k, k + 1);
+      break;
+    }
+  }
+  // Les mentions de classement, une fois l'appellation ôtée (« Saint-Émilion Grand Cru Classé » → « Classé »).
+  mention([['premier', 'grand', 'cru', 'classe'], ['grand', 'cru', 'classe'], ['cru', 'classe'], ['cru', 'bourgeois'], ['grand', 'cru'], ['premier', 'cru'], ['1er', 'cru'], ['classe']]);
+  P.forEach(x => { if (x.out) W[x.i].out.push(x.j); });
+  // « Blanc de Noirs », « Blanc de Blancs » : un nom de cuvée, pas la couleur.
+  W.forEach((x, i) => { if (/^blancs?$/.test(colle(x.w)) && W[i + 2] && colle(W[i + 1].w) === 'de' && /^(noirs|blancs)$/.test(colle(W[i + 2].w))) x.garde = true; });
+  const BRUIT = /^(rouges?|blancs?|roses?|vins?|aoc|aop|igp|bouteille|magnum|\d+(cl|ml|l)|cl|ml)$/;
+  let mots = W.filter((x, i) => {
+    const reste = x.ps.filter((m, j) => !x.out.includes(j));
+    if (!reste.length || (x.out.length && reste.every(m => MOTS_VIDES.has(m)))) return false;
+    const c = colle(x.w);
+    if (/^(19|20)\d\d$/.test(c) || BRUIT.test(c) && !x.garde && !(c === 'vin' && i > 0 && colle(W[i - 1].w) === 'grand')) return false;
+    if (/^\d+([.,]\d+)?$/.test(x.w) && W[i + 1] && /^(cl|ml|l|litres?)$/i.test(W[i + 1].w)) return false;
+    return true;
+  }).map(x => x.w);
+  // « Les Poyeux » garde son article ; « de », « et » en tête ne sont que des restes.
+  while (mots.length && /^(de|du|des|d|l|et|en|a|au)$/.test(norm(mots[0]))) mots.shift();
+  while (mots.length && (MOTS_VIDES.has(norm(mots[mots.length - 1])) || /^[-–]$/.test(mots[mots.length - 1]))) mots.pop();
+  if (mots.length > 1 && norm(mots[0]) === 'cuvee') mots.shift();
+  const c = mots.join(' ');
+  return mots.some(m => m.length >= 4) && c.length <= 50 ? c : '';
+}
+/** La couleur de presque tous les vins d'une appellation au catalogue (9 sur 10, cinq vins au moins) : Fleurie rouge, Coteaux du Layon liquoreux. */
+const COULEUR_APP = new Map();
+function couleurDeApp(app) {
+  const d = Catalogue.data, a = app ? Catalogue.appOf(app) : 0;
+  if (!d || !a) return '';
+  if (!COULEUR_APP.has(a)) {
+    const n = {}, xs = d.byApp.get(a) || [];
+    xs.forEach(x => { n[x.c] = (n[x.c] || 0) + 1; });
+    const [c, k] = Object.entries(n).sort((u, v) => v[1] - u[1])[0] || ['', 0];
+    COULEUR_APP.set(a, xs.length >= 5 && k >= 0.9 * xs.length ? c : '');
+  }
+  return COULEUR_APP.get(a);
+}
+/** « Cuvée des Seigneurs », « Cuvée Les Marnes » : le nom qui suit le mot cuvée dans un titre, sans le domaine ni l'appellation. */
+function cuveeNommee(textes, appellation) {
+  const ka = appKey(appellation);
+  for (const s of textes) {
+    const ws = str(s).split(/[\s,|–—()]+/).filter(Boolean), i = ws.findIndex(w => /^[Cc]uv[ée]e$/.test(w));
+    if (i < 0) continue;
+    const out = [];
+    for (let j = i + 1; j < ws.length; j++) {
+      const w = ws[j], k = norm(w).replace(/[^a-z0-9]+/g, '');
+      if (!k || /\d/.test(w) || /^(chateau|domaine|mas|maison|champagne|aoc|aop|igp|vin|rouge|blanc|rose)$/.test(k) || (ka && motsDe(ws.slice(j).join(' ')).startsWith(` ${ka} `))) break;
+      if (/^(de|du|des|la|le|les|d|l|et|en)$/.test(k) || /^(d|l)['’]/i.test(w) || /^\p{Lu}/u.test(w)) out.push(w); else break;
+    }
+    while (out.length && /^(de|du|des|la|le|les|et|en)$/i.test(out[out.length - 1])) out.pop();
+    if (out.some(w => w.length >= 4)) return out.join(' ');
+  }
+  return '';
+}
+/** L'année écrite juste après le mot « millésime » (« Millésime : 2022 », « millésime 2019 ») : dans la description ou le texte. */
+const anneeApresMillesime = s => { const m = String(s || '').match(/mill[eé]sime[^0-9]{0,15}((?:19[4-9]|20[0-4])\d)(?!\d)/i); return m && +m[1] <= thisYear() + 1 ? +m[1] : null; };
 /** Le vin du catalogue : chez ce producteur, dans cette appellation, la cuvée nommée dans le titre, sinon le vin sans nom de cuvée. */
 function ligneCatalogue(prods, appellation, couleur, page) {
   const d = Catalogue.data;
   if (!d || !prods.length) return null;
-  const Ai = appellation ? Catalogue.appOf(appellation) : 0, t = new Set(keyWords(`${page.titre} ${page.h1}`));
+  // Les mots du titre, l'appellation ôtée une fois : « D de Dauzac - Bordeaux AOC » ne nomme pas « Le Bordeaux de Dauzac ».
+  const Ai = appellation ? Catalogue.appOf(appellation) : 0, ka = appKey(appellation), g = APP_GEN.get(ka);
+  const t = new Set([page.titre, page.h1].flatMap(s => keyWords(ka ? motsDe(s).replace(` ${ka} `, ' ') : s)));
   let rows = prods.flatMap(p => d.byProd.get(p) || []);
   if (Ai) rows = rows.filter(x => x.a === Ai);
+  // Une appellation courante (« Bordeaux ») : les vins du producteur rangés sans appellation, dans cette région.
+  else if (g) rows = rows.filter(x => !d.A[x.a] && (!g[1] || d.R[x.r] === g[1]));
   if (!rows.length) return null;
   const mots = x => { const v = catalogueWine(x), dw = keyWords(v.domaine); return keyWords(v.cuvee).filter(k => !dw.includes(k)); };
   const score = x => { const m = mots(x); return (!m.length ? 0 : m.every(k => t.has(k)) ? 10 + m.length : -20) + (couleur && x.c === couleur ? 2 : 0); };
@@ -5903,19 +6209,48 @@ function ligneCatalogue(prods, appellation, couleur, page) {
 /** Le vin de la page : millésime, couleur et appellation dans le titre ou la fiche, domaine, et sa ligne du catalogue. */
 function reconnaitre(page) {
   const d = Catalogue.data, f = page.fiche || {}, haut = `${page.titre} ${page.h1}`;
-  const appellation = appellationDans([f.appellation, page.titre, page.h1].filter(Boolean)) || str(f.appellation) || appellationDans([page.description]);
-  const { domaine, prods } = domaineDans(page, appellation, str(f.region));
-  const couleur0 = couleurDans(f.couleur) || couleurDans(haut);
+  const appellation = appellationDe(page);
+  const regionLue = f.region ? (REGIONS.includes(canonRegion(f.region)) ? canonRegion(f.region) : str(f.region)) : '';
+  const { domaine, prods } = domaineDans(page, appellation, regionLue);
+  // Un Sauternes est liquoreux, un crémant effervescent, même quand la page dit « blanc ».
+  const cd = couleurDeApp(appellation), ca = couleurDans(appellation) || (['liquoreux', 'effervescent'].includes(cd) ? cd : '');
+  const couleur0 = (['liquoreux', 'effervescent'].includes(ca) && ca) || couleurDans(f.couleur) || couleurDans(page.couleur) || couleurDans(haut);
   const x = ligneCatalogue(prods, appellation, couleur0, page);
-  const app = (x && d.A[x.a]) || appellation, annee = int(f.millesime), lus = splitGrapes(f.cepages);
-  const dom = joliNom((x ? d.P[x.p] : domaine) || '');
+  // L'appellation du catalogue, sauf si la page en dit une plus précise (« Bourgogne Hautes-Côtes de Nuits » pour « Bourgogne »).
+  const ac = x ? d.A[x.a] || '' : '', plus = ac && appKey(appellation).startsWith(appKey(ac) + ' ') ? appKey(appellation).slice(appKey(ac).length + 1) : '';
+  const app = (!plus && ac) || appellation || ac, lus = cepagesLus(f.cepages);
+  // La cuvée du catalogue sans ce qui est déjà dans l'appellation de la page (« Hautes Côtes de Nuits Blanc » → rien).
+  const sansPlus = c => {
+    const r = (plus && appKey(c).startsWith(plus) ? c.split(/\s+/).slice(plus.split(' ').length).join(' ') : c).split(', ').filter(x => appKey(x) !== appKey(app) && !REGIONS.includes(x)).join(', ');
+    return /^(rouge|blanc|rose)?$/.test(appKey(r)) ? '' : r;
+  };
+  // Le nom du catalogue qui ne dit que le domaine et son classement (« Château de Pressac Grand Cru Classé ») n'est pas une cuvée.
+  const nu = c => norm(c).replace(/\b(premier |1er )?(grand )?cru( classe)?\b|\bcru bourgeois\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+  const cuveeCat = x ? (c => (nu(d.P[x.p]) === nu(c) ? '' : c))(sansPlus(catalogueWine(x).cuvee)) : '';
+  // Le nom du catalogue, sauf si la page l'écrit plus complet (« Château Montus » pour « Montus »).
+  // Seuls « Château », « Domaine »… de plus : « D de Dauzac » n'est pas une autre écriture de « Château Dauzac ».
+  const toks = s => norm(s).split(/[^a-z0-9]+/).filter(Boolean), nc = x ? d.P[x.p] : '';
+  const extra = domaine && nc ? toks(domaine).filter(k => !toks(nc).includes(k)) : [];
+  const pageDit = domaine && nc && toks(nc).every(k => toks(domaine).includes(k) || DOM_STOP.has(k))
+    && extra.every(k => DOM_STOP.has(k)) && (!extra.length || extra.some(k => /^(chateau|domaine|domaines|mas|clos|maison|champagne)$/.test(k)));
+  const dom0 = joliNom((pageDit ? domaine : nc || domaine) || '');
+  // Le même nom écrit avec ses accents et son apostrophe dans le titre (« Château d'Anglès » pour « Château d Anglès »).
+  const signe = s => toks(s).filter(k => !DOM_STOP.has(k)).sort().join(), riche = s => (s.match(/[^\x00-\x7F]|'/g) || []).length;
+  // Entre parenthèses, le propriétaire : « Prieuré Saint Christophe (Michel Grisard) ».
+  const dom = ([dom0, ...[page.titre, page.h1, page.ogTitre].map(t => chateauDuTitre([t], app))].filter(s => s && signe(s) === signe(dom0)).sort((a, b) => riche(b) - riche(a))[0] || dom0).replace(/\s*\([^)]*\)$/, '');
+  // La cuvée du catalogue, écrite comme sur la page quand c'est la même (« Clos de Meixvelle » pour « Clos Meixvelle »).
+  const ct = cuveeDansTitre(page, app, [dom, str(f.domaine), page.marque, nc]), memesMots = (a, b) => keyWords(a).sort().join() === keyWords(b).sort().join();
+  // Le titre plus complet que le catalogue (« Brut Authentic » pour « Brut ») l'emporte ; « Cuvée X » écrit dans un titre aussi.
+  const cn = cuveeNommee([page.h1, page.titre, page.ogTitre, page.titrePage], app);
+  let cuveeLue = (cuveeCat && ct && keyWords(cuveeCat).every(k => keyWords(ct).includes(k)) ? ct : cuveeCat) || ct;
+  if (cn && (!cuveeLue || keyWords(cn).every(k => keyWords(cuveeLue).includes(k)))) cuveeLue = cn;
   const lu = {
-    domaine: dom, cuvee: str(f.cuvee) || (x ? catalogueWine(x).cuvee : '') || cuveeDansTitre(page.titre || page.h1, app, dom), appellation: app || '',
+    domaine: dom, cuvee: str(f.cuvee).replace(/^cuv[ée]e\s+/i, '') || cuveeLue, appellation: app || '',
     // L'adresse de la page dit souvent la couleur (« …/vins-rouges/… ») quand la page ne la dit pas.
-    couleur: couleur0 || (x && x.c) || couleurDans(page.description) || couleurDans(cheminDe(page.url)),
-    millesime: annee && annee >= 1800 && annee <= thisYear() + 1 ? annee : anneeDans(page.titre) || anneeDans(page.h1) || anneeApresMillesime(page.description) || anneeApresMillesime(page.texte),
-    region: str(f.region) || (x && d.R[x.r]) || (d && app ? d.appReg.get(Catalogue.appOf(app)) || '' : ''),
-    cepages: (lus.length ? lus : grapesInText(`${haut} ${page.description}`)).join(', '),
+    couleur: couleur0 || (x && x.c) || couleurDans(page.description) || couleurDans(cheminDe(page.url)) || couleurDeApp(app),
+    millesime: (/^\d{4}$/.test(str(f.millesime)) && +f.millesime >= 1800 && +f.millesime <= thisYear() + 1 ? +f.millesime : anneeDans(f.millesime)) || anneeDans(page.titre) || anneeDans(page.h1) || anneeApresMillesime(page.description) || anneeApresMillesime(page.texte),
+    region: regionLue || (x && d.R[x.r]) || (app ? regionDeApp(app) : ''),
+    cepages: ([lus, cepagesPourcent(page.description), cepagesPourcent(page.texte), grapesInText(`${haut} ${page.description}`)].find(g => g.length) || []).join(', '),
   };
   const cat = x ? { domaine: d.P[x.p], appellation: d.A[x.a] || '', region: d.R[x.r] || '', couleur: x.c, cepages: Catalogue.grapes(x).join(', '), nom: x.n } : null;
   return { lu, cat };
@@ -5936,7 +6271,7 @@ async function lireLien(raw) {
     // La même page relue remplace l'ancienne analyse, en gardant l'avis de Tastevin et le vin ajouté.
     const xs = mesLiens(), avant = xs.find(x => x.url === page.url) || {};
     const e = { id: uid(), date: nowISO(), url: page.url, site: page.site, lu, cat, catEtat: Catalogue.state,
-      page: { titre: page.titre, h1: page.h1, marque: page.marque, prix: page.prix, devise: page.devise, description: page.description, texte: page.texte },
+      page: { titre: page.titre, h1: page.h1, marque: page.marque, prix: page.prix, devise: page.devise, lot: page.lot > 1 ? page.lot : undefined, description: page.description, texte: page.texte },
       avis: avant.avis || null, avisDate: avant.avisDate || '', avisCout: avant.avisCout || 0, vinId: avant.vinId || '' };
     if (!garderLiens([e, ...xs.filter(x => x !== avant)])) return;
     $('#lien-url').value = '';
@@ -6070,6 +6405,7 @@ function renderLien() {
       : e.lu.appellation ? `${e.lu.appellation} reconnu${e.lu.region ? ` (${e.lu.region})` : ''}, mais pas ce domaine.` : 'vin non reconnu.')],
     ['Vos avis', esc(av.length ? `${av.join(', ')}.` : "pas encore d'avis sur cette appellation ni ce cépage.")],
     garde && ['Garde habituelle', esc(majuscule(garde))],
+    P.lot > 1 && P.prix && ['Le prix', esc(`vendu par ${P.lot} sur la page : ${fmtMoney(P.prix * P.lot)} le lot, soit ${fmtMoney(P.prix)} la bouteille.`)],
     px && px.pc && ['Tes prix', esc(`tes achats de ${v.appellation} vont de ${euros(px.pc.lo)} à ${euros(px.pc.hi)} (${px.pc.n} vins) : ${{ bon: 'ce prix est dans tes habitudes', un_peu_cher: 'celui-ci est un peu plus cher', cher: 'celui-ci est nettement plus cher' }[px.pc.niveau]}.`)],
     desc && !norm(`${P.titre} ${P.h1}`).includes(norm(desc)) && ['La page dit', esc(desc.length > 420 ? desc.slice(0, 420).replace(/\s+\S*$/, '') + '…' : desc)],
   ];
