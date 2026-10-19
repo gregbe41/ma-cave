@@ -985,6 +985,13 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
 .taste-name{flex:1;min-width:84px;font-weight:600}
 .taste-name small{font-weight:400;font-size:.8rem;color:var(--muted);margin-left:4px}
 .taste-row .star-pick button{width:36px;height:40px;font-size:1.45rem}
+.star-pick.is-off button{opacity:.35}
+.taste-ecart{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 8px}
+.taste-ecart > span{font-size:.8rem;color:var(--muted);margin-right:2px}
+.taste-ecart .chip{height:32px;padding:0 11px;font-size:.8rem}
+.taste-ecart-why{margin:-2px 0 8px}
+.ms-ecart{margin:2px 0 0 14px}
+.avis-ecart{display:inline-block;padding:1px 8px;border-radius:999px;background:var(--late-bg);color:var(--late-fg);font-size:.76rem;font-weight:700;white-space:nowrap}
 .taste-del{width:36px;height:36px;border:0;background:none;color:var(--muted);font-size:1.3rem;line-height:1}
 .taste-com,.taste-new input{font-size:1rem;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-width:0}
 .taste-com{display:block;margin-top:6px;resize:vertical;line-height:1.45}
@@ -2254,7 +2261,10 @@ function canonTaster(raw) {
   const id = personId(n), hit = tasters().find(p => personId(p) === id);
   return hit || (n === n.toLowerCase() ? n.charAt(0).toUpperCase() + n.slice(1) : n);
 }
-const avisHTML = a => `<span class="avis"><b>${esc(a.qui)}</b> ${starsHTML(a.note)}${a.commentaire ? ` <q>${esc(a.commentaire)}</q>` : ''}</span>`;
+/* Une bouteille qu'on ne note pas parce qu'elle n'était pas en état : son avis reste, sans note, et ne compte pas dans les goûts. */
+const ECARTS = [['vieux', 'Trop vieux'], ['bouchon', 'Bouchonné'], ['abime', 'Abîmé']];
+const ecartLabel = k => (ECARTS.find(([x]) => x === k) || [])[1] || '';
+const avisHTML = a => `<span class="avis"><b>${esc(a.qui)}</b> ${a.ecart ? `<span class="avis-ecart" title="Pas noté : ne compte pas dans les goûts">${esc(ecartLabel(a.ecart).toLowerCase())}</span>` : starsHTML(a.note)}${a.commentaire ? ` <q>${esc(a.commentaire)}</q>` : ''}</span>`;
 /** Reprend l'ancienne note unique d'une sortie comme avis de celui qui l'a saisie. */
 function migrateNotes() {
   if (API.ready() && (S.serverVersion || 0) < 10) return;  // le script doit d'abord savoir garder les avis
@@ -3435,7 +3445,7 @@ function coeursHTML(d) {
 
 /** Les bouteilles ouvertes sur la période, que j'ai débouchées ou goûtées, et pas encore notées. */
 function msANoter(d) {
-  const notees = new Set(d.miensTout.filter(a => a.note).map(a => a.mvId)), goutees = new Set(d.miensTout.map(a => a.mvId));
+  const notees = new Set(d.miensTout.filter(a => a.note || a.ecart).map(a => a.mvId)), goutees = new Set(d.miensTout.map(a => a.mvId));
   return db.moves.filter(m => m.type === 'sortie' && d.wById.has(m.vinId) && m.date >= d.start && !notees.has(m.id)
     && (m.par === d.me || goutees.has(m.id) || (!m.par && m.proprio === d.me)))
     .sort((a, b) => b.date.localeCompare(a.date) || str(b.updatedAt).localeCompare(str(a.updatedAt)));
@@ -3446,18 +3456,21 @@ function noterHTML(d, xs) {
   return `<section class="s-block ms-noter"><h2>Note tes dernières bouteilles</h2>
     <p class="s-sub">${xs.length > 1 ? `Tu en as ouvert ${xs.length} sans les noter.` : 'Tu en as ouvert une sans la noter.'} Une note suffit, l'avis peut attendre.</p>
     <ul class="journal">${vus.map(m => { const w = d.wById.get(m.vinId); return `<li><div class="j-top"><span class="dot" style="--c:${colorOf(w.couleur).hex}"></span><button class="j-wine" data-open="${w.id}">${esc(wineLabel(w))}</button><span class="j-date">${fmtDate(m.date)}</span></div>
-      <div class="star-pick" role="group" aria-label="${esc('Ta note pour ' + wineLabel(w))}">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-ms-note="${m.id}" data-n="${n}" aria-label="${n} sur 5">★</button>`).join('')}</div></li>`; }).join('')}</ul>
+      <div class="star-pick" role="group" aria-label="${esc('Ta note pour ' + wineLabel(w))}">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-ms-note="${m.id}" data-n="${n}" aria-label="${n} sur 5">★</button>`).join('')}</div>
+      <div class="taste-ecart ms-ecart" role="group" aria-label="${esc('Pas de note pour ' + wineLabel(w))}"><span>Ou sans note :</span>${ECARTS.map(([k, l]) => `<button type="button" class="chip" data-ms-ecart="${m.id}" data-k="${k}">${l}</button>`).join('')}</div></li>`; }).join('')}</ul>
     ${reste > 0 && !UI.msNoterTout ? `<button type="button" class="btn ms-wide" data-act="ms-noter-tout">${reste > 1 ? `Voir les ${reste} autres` : "Voir l'autre"}</button>` : ''}</section>`;
 }
-/** Une note donnée d'un geste, dans « Note tes dernières bouteilles » : mon avis sur cette sortie, sans commentaire. */
-function noterVite(mvId, n) {
+/** Une note donnée d'un geste, dans « Note tes dernières bouteilles » : mon avis sur cette sortie, sans commentaire.
+    Ou, à la place, « Trop vieux », « Bouchonné », « Abîmé » : pas de note, et la bouteille ne compte pas dans mes goûts. */
+function noterVite(mvId, n, ecart = '') {
   const m = db.moves.find(x => x.id === mvId), me = S.device;
-  if (!m || !me || !(n >= 1 && n <= 5)) return;
-  const now = nowISO(), id = avisId(m.id, me), a = db.avis.find(x => x.id === id);
-  if (a) Object.assign(a, { note: n, updatedAt: now });
-  else db.avis.push({ id, mvId: m.id, vinId: m.vinId, date: m.date, qui: me, note: n, commentaire: '', updatedAt: now });
+  if (!m || !me || (!ecart && !(n >= 1 && n <= 5)) || (ecart && !ecartLabel(ecart))) return;
+  const now = nowISO(), id = avisId(m.id, me), a = db.avis.find(x => x.id === id), note = ecart ? null : n;
+  if (a) { Object.assign(a, { note, updatedAt: now }); if (ecart) a.ecart = ecart; else delete a.ecart; }
+  else db.avis.push({ id, mvId: m.id, vinId: m.vinId, date: m.date, qui: me, note, commentaire: '', ...(ecart ? { ecart } : {}), updatedAt: now });
   commit();
-  toast(`Noté ${n} sur 5 : ${wineTitle(db.wines.find(w => w.id === m.vinId) || {})}`);
+  const w = wineTitle(db.wines.find(x => x.id === m.vinId) || {});
+  toast(ecart ? `${ecartLabel(ecart)}, sans note : ${w} ne compte pas dans tes goûts` : `Noté ${n} sur 5 : ${w}`);
 }
 
 function debloqueHTML(d) {
@@ -4476,7 +4489,7 @@ function simClaudeHTML(w, sg) {
       : "Tastevin répond d'ici une à deux minutes. Tu peux fermer cette fenêtre : sa réponse restera dans la fiche.";
     wait = `<p class="sim-wait"><span class="pw-spin" aria-hidden="true"></span><span>${esc(wait)}${sg && sg.note && !sending ? `<br><small>${esc(sg.note)}</small>` : ''}</span></p>`;
   }
-  const hasAvis = db.avis.some(a => a.vinId === w.id && (a.note || a.commentaire));
+  const hasAvis = db.avis.some(a => a.vinId === w.id && (a.note || a.commentaire || a.ecart));
   if (!r) {
     let body;
     if (!API.ready()) body = '<p class="hint">Relie l\'appli à la cave (Réglages) pour demander aussi l\'avis de Tastevin.</p>';
@@ -6568,8 +6581,10 @@ let TASTE = [];   // avis en cours de saisie dans « Déboucher » : { qui, note
 function renderTasters() {
   $('#mf-tasters').innerHTML = TASTE.map((t, i) => `<div class="taste-row" data-who="${esc(t.qui)}" data-i="${i}">
       <div class="taste-head"><span class="taste-name">${esc(t.qui)}${t.qui === S.device ? ' (moi)' : isGuest(t.qui) ? ' <small>invité</small>' : ''}</span>
-        <div class="star-pick" role="group" aria-label="Note de ${esc(t.qui)}">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-tstar="${n}" class="${n <= (t.note || 0) ? 'on' : ''}" aria-label="${n} sur 5" aria-pressed="${n === t.note}">★</button>`).join('')}</div>
+        <div class="star-pick${t.ecart ? ' is-off' : ''}" role="group" aria-label="Note de ${esc(t.qui)}">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-tstar="${n}" class="${n <= (t.note || 0) ? 'on' : ''}" aria-label="${n} sur 5" aria-pressed="${n === t.note}">★</button>`).join('')}</div>
         <button type="button" class="taste-del" aria-label="Retirer ${esc(t.qui)}">×</button></div>
+      <div class="taste-ecart" role="group" aria-label="${esc(`Pas de note pour ${t.qui} : la bouteille n'était pas en état`)}"><span>Ou sans note :</span>${ECARTS.map(([k, l]) => `<button type="button" class="chip" data-tecart="${k}" aria-pressed="${t.ecart === k}">${l}</button>`).join('')}</div>
+      ${t.ecart ? `<p class="hint taste-ecart-why">${esc(`${ecartLabel(t.ecart)} : pas de note, ce vin ne compte pas dans les goûts${t.qui === S.device ? '' : ` de ${t.qui}`}.`)}</p>` : ''}
       <textarea class="taste-com" rows="2" maxlength="1000" placeholder="Son avis (facultatif)" aria-label="Avis de ${esc(t.qui)}">${esc(t.commentaire)}</textarea>
     </div>`).join('');
   const listed = new Set(TASTE.map(t => t.qui)), all = tasters();
@@ -6578,18 +6593,21 @@ function renderTasters() {
 }
 function addTaster(raw) {
   const qui = canonTaster(raw);
-  if (qui && !TASTE.some(t => t.qui === qui)) TASTE.push({ qui, note: null, commentaire: '' });
+  if (qui && !TASTE.some(t => t.qui === qui)) TASTE.push({ qui, note: null, commentaire: '', ecart: '' });
   renderTasters();
 }
 /** Enregistre les avis de la sortie : un par personne, ceux qu'on a retirés passent par la corbeille. */
 function saveAvis(mv) {
   const now = nowISO(), keep = new Set();
   for (const t of TASTE) {
-    const id = avisId(mv.id, t.qui), rec = { mvId: mv.id, vinId: mv.vinId, date: mv.date, qui: t.qui, note: t.note || null, commentaire: str(t.commentaire) };
+    const id = avisId(mv.id, t.qui), ecart = t.ecart || '', rec = { mvId: mv.id, vinId: mv.vinId, date: mv.date, qui: t.qui, note: ecart ? null : t.note || null, commentaire: str(t.commentaire) };
     keep.add(id);
     const a = db.avis.find(x => x.id === id);
-    if (!a) db.avis.push({ id, ...rec, updatedAt: now });
-    else if (Object.keys(rec).some(k => a[k] !== rec[k])) Object.assign(a, rec, { updatedAt: now });
+    if (!a) db.avis.push({ id, ...rec, ...(ecart ? { ecart } : {}), updatedAt: now });
+    else if (Object.keys(rec).some(k => a[k] !== rec[k]) || (a.ecart || '') !== ecart) {
+      Object.assign(a, rec, { updatedAt: now });
+      if (ecart) a.ecart = ecart; else delete a.ecart;
+    }
   }
   db.avis.filter(a => a.mvId === mv.id && !keep.has(a.id)).forEach(a => db.trash.push({ id: a.id, kind: 'avis', at: now }));
   db.avis = db.avis.filter(a => a.mvId !== mv.id || keep.has(a.id));
@@ -6627,7 +6645,7 @@ function openMove(wineId, type, moveId, pre = {}) {
     $('#mf-from').hidden = !(os.length > 1 || (os[0] && os[0][0] !== S.device));
   }
   // Qui l'a bu : moi par défaut pour une nouvelle bouteille ; une ancienne note unique devient l'avis de celui qui l'a saisie.
-  TASTE = type !== 'sortie' ? [] : m ? avisOf(m.id).map(a => ({ qui: a.qui, note: a.note, commentaire: a.commentaire })) : S.device ? [{ qui: S.device, note: null, commentaire: '' }] : [];
+  TASTE = type !== 'sortie' ? [] : m ? avisOf(m.id).map(a => ({ qui: a.qui, note: a.note, commentaire: a.commentaire, ecart: a.ecart || '' })) : S.device ? [{ qui: S.device, note: null, commentaire: '', ecart: '' }] : [];
   if (m && type === 'sortie' && !TASTE.length && (m.note || m.commentaire)) TASTE.push({ qui: m.par || S.device || 'Inconnu', note: m.note || null, commentaire: m.commentaire || '' });
   $('#mf-taste-new').value = '';
   if (type === 'sortie') renderTasters();
@@ -7145,7 +7163,7 @@ function suggestContexte(w) {
   const st = stockMap(), vin = {};
   ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'millesime', 'cepages', 'style'].forEach(k => { if (w[k] != null && w[k] !== '') vin[k] = w[k]; });
   if (w.couleur) vin.couleur = colorOf(w.couleur).label;
-  const avis = db.avis.filter(a => a.vinId === w.id && (a.note || a.commentaire)).map(a => ({ qui: a.qui, note: a.note ? a.note + '/5' : null, commentaire: str(a.commentaire).slice(0, 300) }));
+  const avis = db.avis.filter(a => a.vinId === w.id && (a.note || a.commentaire || a.ecart)).map(a => ({ qui: a.qui, note: a.note ? a.note + '/5' : null, commentaire: [ecartLabel(a.ecart), str(a.commentaire)].filter(Boolean).join(' : ').slice(0, 300) }));
   db.moves.filter(m => m.vinId === w.id && m.type === 'sortie' && (m.note || m.commentaire) && !db.avis.some(a => a.mvId === m.id))
     .forEach(m => avis.push({ qui: m.par || '?', note: m.note ? m.note + '/5' : null, commentaire: str(m.commentaire).slice(0, 300) }));
   const dejaEnCave = db.wines.filter(x => x.id !== w.id && st.get(x.id) > 0 && (x.domaine || x.appellation)).slice(0, 80)
@@ -8325,6 +8343,8 @@ function wire() {
     if (msd) { UI.msDuo = msd.dataset.msDuo; renderStats(); return; }
     const msn = e.target.closest('[data-ms-note]');
     if (msn) { noterVite(msn.dataset.msNote, +msn.dataset.n); return; }
+    const mse = e.target.closest('[data-ms-ecart]');
+    if (mse) { noterVite(mse.dataset.msEcart, 0, mse.dataset.k); return; }
     const th = e.target.closest('[data-theme-set]');
     if (th) { lsSet('macave:theme', th.dataset.themeSet); applyTheme(th.dataset.themeSet); return; }
     const pf = e.target.closest('[data-pf]');
@@ -8594,10 +8614,16 @@ function wire() {
   $('#mf-tasters').addEventListener('click', e => {
     const r = e.target.closest('.taste-row');
     if (!r) return;
-    const t = TASTE[+r.dataset.i], s = e.target.closest('[data-tstar]');
+    const t = TASTE[+r.dataset.i], s = e.target.closest('[data-tstar]'), ec = e.target.closest('[data-tecart]');
     if (s) {
       t.note = t.note === +s.dataset.tstar ? null : +s.dataset.tstar;
-      $$('[data-tstar]', r).forEach(b => { b.classList.toggle('on', +b.dataset.tstar <= (t.note || 0)); b.setAttribute('aria-pressed', String(+b.dataset.tstar === t.note)); });
+      // Une note donnée efface « Trop vieux » et ses voisins ; l'inverse aussi.
+      if (t.note) t.ecart = '';
+      renderTasters();
+    } else if (ec) {
+      t.ecart = t.ecart === ec.dataset.tecart ? '' : ec.dataset.tecart;
+      if (t.ecart) t.note = null;
+      renderTasters();
     } else if (e.target.closest('.taste-del')) { TASTE.splice(+r.dataset.i, 1); renderTasters(); }
   });
   $('#mf-tasters').addEventListener('input', e => {
