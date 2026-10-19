@@ -211,6 +211,11 @@ legend{padding:0;margin:0 0 8px;font-size:.88rem;font-weight:500;color:var(--mut
 .tn-idea:nth-child(2) span{color:var(--young-fg)}
 .tn-idea b{font:700 1.02rem/1.2 var(--display)}
 .tn-prio{margin:2px 0 4px;font-size:.9rem}
+/* Page web : ce qu'on y fait, et que l'IA est dans l'appli (une fois, jusqu'à « Compris ») */
+.web-ia{display:flex;align-items:center;gap:12px;margin:8px 0 10px;padding:12px 12px 12px 14px;border-radius:18px;background:var(--accent-tint);color:var(--ink)}
+.web-ia > .ico-tv{flex:none;width:26px;height:26px;color:var(--accent-ink)}
+.web-ia p{flex:1;margin:0;font-size:.88rem;line-height:1.4}
+.web-ia .btn{flex:none}
 /* « Réduire » : l'idée du soir tient alors sur une ligne, qui la rappelle ; touchée, la carte revient. */
 .tonight{position:relative}
 .tonight .tn-bottle{margin-top:30px}
@@ -1214,6 +1219,7 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
     </header>
 
     <section class="view" id="v-cave">
+      <div id="web-note"></div>
       <div id="tonight"></div>
       <div id="tally"></div>
       <div class="tools">
@@ -1967,6 +1973,11 @@ const Native = (() => {
   const on = !!(C && C.isNativePlatform && C.isNativePlatform());
   return { on, P: on ? C.Plugins || {} : {} };
 })();
+/* Sur la page web, on consulte et on gère la cave ; l'IA (lecture des étiquettes, conseils, vins similaires, portrait)
+   ne travaille que dans l'appli Android : la page web ne l'appelle jamais, ni par le relais ni par le script.
+   Les tests automatisés (navigator.webdriver) se comportent comme l'appli, sauf avec window.__web. */
+const iaIci = () => Native.on || (!!navigator.webdriver && !window.__web);
+const IA_APPLI = "Pampre, l'IA qui lit les étiquettes, conseille et propose des vins, travaille dans l'appli Android.";
 /* Pampre (l'IA de l'appli, propulsée par Claude) : la vrille du pampre et son étincelle ; le bouchon, l'unité de ses crédits. */
 const ICO_TV = '<svg class="ico-tv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20C6 13 9.5 9 14 9c3.5 0 5.5 2.5 4.3 5-1.1 2.2-4.5 2-4.5-.4 0-1.4 1.2-2 2.2-1.4"/><path class="ico-fill" d="M18.5 2.5c.3 1.7.8 2.2 2.5 2.5-1.7.3-2.2.8-2.5 2.5-.3-1.7-.8-2.2-2.5-2.5 1.7-.3 2.2-.8 2.5-2.5z"/></svg>';
 const ICO_CORBEILLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15"/><path d="M9.5 7V4.8h5V7"/><path d="M6.5 7l.9 12.2a1.5 1.5 0 0 0 1.5 1.3h6.2a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/><path d="M10 11v5.5M14 11v5.5"/></svg>';
@@ -2059,6 +2070,7 @@ function loadAll() {
   db = { wines: d.wines || [], moves: d.moves || [], trash: d.trash || [], people: d.people || [], avis: d.avis || [], conseils: d.conseils || [], suggestions: d.suggestions || [], photos: d.photos || [] };
   S = { ...S, ...lsGet(LS_SET, {}) };
   if (!Array.isArray(S.photoDeletes)) S.photoDeletes = [];
+  if (!iaIci()) S.labelOn = false;   // la page web ne lit pas les étiquettes
 }
 const persist = () => lsSet(LS_DATA, db);
 const saveSettings = () => lsSet(LS_SET, S);
@@ -2571,7 +2583,7 @@ function renderCave() {
   const prio = inStock.filter(w => ['late', 'urgent'].includes(gardeStatus(w).key)).length;
   const pending = db.wines.filter(w => w.lecture === 'attente').length, revue = db.wines.filter(w => w.lecture === 'revoir').length;
   const night = [pending && `${pending} ${plural(pending, 'étiquette sera lue', 'étiquettes seront lues')}`, revue && `${revue} ${plural(revue, 'fiche sera revue', 'fiches seront revues')}`].filter(Boolean);
-  const nightTxt = night.length ? ` ${night.join(' et ').replace(/^./, c => c.toUpperCase())} cette nuit.` : '';
+  const nightTxt = night.length ? ` ${night.join(' et ').replace(/^./, c => c.toUpperCase())}${iaIci() ? ' cette nuit.' : " par Pampre, dans l'appli Android."}` : '';
   const review = db.wines.filter(toReview).length;
   if (!review) UI.review = false;
 
@@ -2579,12 +2591,15 @@ function renderCave() {
   const mix = COLORS.map(c => [c, inStock.filter(w => w.couleur === c.key).reduce((a, w) => a + stockOf(w), 0)]).filter(([, n]) => n > 0);
   const other = bottles - mix.reduce((a, [, n]) => a + n, 0);
   const mixTxt = [...mix.map(([c, n]) => `${c.label.toLowerCase()} ${n}`), other > 0 ? `non précisée ${other}` : ''].filter(Boolean).join(', ');
-  const more = [nightTxt && `${nightTxt.trim()}${S.routineOn ? ' <button class="link" data-act="read-now">Lire maintenant</button>' : ''}`,
+  const more = [nightTxt && `${nightTxt.trim()}${S.routineOn && iaIci() ? ' <button class="link" data-act="read-now">Lire maintenant</button>' : ''}`,
     review && !UI.review && `<button class="link" data-act="review">${review} ${plural(review, 'fiche à vérifier', 'fiches à vérifier')}</button>`].filter(Boolean).join(' ');
   const kick = $('#top-kicker');
   kick.hidden = UI.view !== 'cave' || !db.wines.length;
   kick.textContent = `${tonightLabel()} · ${fmtNum(bottles)} ${plural(bottles, 'bouteille', 'bouteilles')}`;
   renderTonight(inStock, prio);
+  // Sur la page web, une fois : ce qu'on y fait, et où se trouve l'IA.
+  $('#web-note').innerHTML = !iaIci() && !lsGet('macave:web-ia-vu', false)
+    ? `<div class="web-ia" role="note">${ICO_TV}<p><b>Sur le web, tu consultes et gères ta cave.</b> ${IA_APPLI}</p><button type="button" class="btn btn-sm" data-act="web-ia-ok">Compris</button></div>` : '';
   $('#tally').innerHTML = db.wines.length ? `<section class="summary" aria-label="Résumé de la cave">
     <div class="cave-head"><h2 class="cave-h">La cave</h2><p class="tally"><span class="tally-n">${fmtNum(bottles)}</span> ${plural(bottles, 'bouteille', 'bouteilles')}</p></div>
     <p class="tally-sub">${inStock.length} ${plural(inStock.length, 'vin', 'vins')} en cave${whose}${value ? ` · achat ${fmtMoney(value, 0)}` : ''}${today ? ` · <span title="Valeur du jour : estimation de Pampre pour ${valued.length} ${plural(valued.length, 'vin', 'vins')}, prix d'achat pour les autres">aujourd'hui ~${fmtMoney(today, 0)}</span>` : ''}</p>
@@ -2772,7 +2787,7 @@ function readNote(w) {
     <div class="btn-row"><button class="btn" data-act="clear-alert" data-id="${w.id}">Il va bien, retirer l'alerte</button></div></div>`);
   if (w.lecture === 'attente') out.push(`<div class="d-note is-wait"><p>L'étiquette sera lue ${plusTard()} : la fiche sera complétée automatiquement.</p></div>`);
   if (w.lecture === 'revoir') out.push(`<div class="d-note is-wait"><p>Pampre repassera sur cette fiche ${plusTard()} : il remplira les champs vides et mettra à jour ses propres estimations, sans toucher à ce qui a été saisi à la main.</p>
-    <div class="btn-row">${S.routineOn ? `<button class="btn" data-act="read-now">Maintenant</button>` : ''}<button class="btn" data-act="cancel-review" data-id="${w.id}">Annuler</button></div></div>`);
+    <div class="btn-row">${S.routineOn && iaIci() ? `<button class="btn" data-act="read-now">Maintenant</button>` : ''}<button class="btn" data-act="cancel-review" data-id="${w.id}">Annuler</button></div></div>`);
   if (w.lecture === 'echec') out.push(`<div class="d-note is-fail"><p>La lecture de l'étiquette a échoué${w.lectureNote ? ` : ${esc(w.lectureNote)}` : '.'}</p>
     <div class="btn-row"><button class="btn" data-act="reread" data-id="${w.id}">Relancer la lecture cette nuit</button></div></div>`);
   if (w.lecture === 'faite' && (g.length || w.lectureNote)) out.push(`<div class="d-note"><p>Fiche complétée par Pampre à partir de l'étiquette.${g.length ? ` Estimé, à vérifier : ${g.map(k => FIELD_NAMES[k]).join(', ')}.` : ''}</p>
@@ -3924,6 +3939,7 @@ function renderSyncBox() {
 /** Carte Pampre, sous les bouchons : les actions sur toute la cave et le lien vers les réglages du propriétaire. */
 function renderTasteBox() {
   const drive = isDrive(), owner = S.role === 'proprio';
+  if (!iaIci()) { $('#taste-box').innerHTML = `<p class="rg-note">${IA_APPLI} Ses bouchons et ses réglages s'y trouvent aussi.</p>`; return; }
   let h = '';
   // Style et accords des vins déjà en cave. Cave Drive : Pampre les ajoute aussitôt, à la demande du propriétaire.
   // Cave à script (v12 ou plus) : à la routine suivante ; réservé au propriétaire à partir du script v16, sauf tant
@@ -4813,6 +4829,7 @@ function requestNightRead() {
 function photoStatus() {
   if (!API.ready()) setAiStatus("Photo prête. Relie l'appli au script (Réglages) pour faire lire les étiquettes.");
   else if (S.labelOn && navigator.onLine) readLabel();
+  else if (!iaIci()) setAiStatus("Photo enregistrée : remplis la fiche à la main. Pampre lit les étiquettes dans l'appli Android.");
   else if (!claudeOn()) setAiStatus("Photo enregistrée. Pampre n'est pas branché sur cette cave : remplis la fiche à la main.");
   else {
     setAiStatus(`L'étiquette sera lue ${plusTard()} : tu peux enregistrer sans remplir le reste.`);
@@ -5114,6 +5131,7 @@ function pickAdd(k) {
 }
 
 function openBulk() {
+  if (!iaIci()) { toast("L'ajout par photos se fait dans l'appli Android, avec Pampre : ici, ajoute les vins un par un."); return; }
   if (!claudeOn()) { toast("L'ajout par photos demande Pampre (clé API Claude ou routine) : ajoute les vins un par un."); return; }
   if ($('#dlg-form').open) $('#dlg-form').close();
   BULK.items.forEach(it => URL.revokeObjectURL(it.url));
@@ -5467,6 +5485,7 @@ function renderConseil() {
   const on = claudeOn();
   $('#v-conseil .conseil-intro').hidden = !on;
   $('#conseil-off').hidden = on;
+  if (!iaIci()) $('#conseil-off').innerHTML = `<p><strong>Les conseils de Pampre se demandent dans l'appli Android.</strong> Photographie une étiquette, ou partage la page d'un vin, depuis ton téléphone. Ici, tu retrouves tes analyses.</p>`;
   const list = db.conseils.filter(myConseil).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const others = db.conseils.length - list.length;
   const box = $('#conseil-list'), liens = mesLiens();
@@ -6963,13 +6982,13 @@ const Drive = {
     const { meta, cave, merged } = action === 'sync' ? await Drive.sync(payload.db || {}) : await Drive.read();
     const r = {
       ok: true, version: SCRIPT_VERSION, nom: cave.nom || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true,
-      label: !!GOOGLE.relais, routineOn: false, routineVu: '', credits: null, webUrl: '',
+      label: !!GOOGLE.relais && iaIci(), routineOn: false, routineVu: '', credits: null, webUrl: '',
       driveUrl: cave.dossier ? `https://drive.google.com/drive/folders/${cave.dossier}` : '', folderId: cave.dossier || '', photosId: cave.dossierPhotos || '',
       driveOwner: (meta.owners && meta.owners[0] && (meta.owners[0].displayName || meta.owners[0].emailAddress)) || '',
     };
     if (merged) r.db = merged;
     // Ce qui reste des crédits Claude de la cave (sans le relais, ou s'il ne répond pas, la carte reste masquée).
-    if (GOOGLE.relais) {
+    if (GOOGLE.relais && iaIci()) {
       try { const e = await relais('etat', {}, 30e3); r.credits = creditsRelais(e.credits); r.coteMois = e.credits.coteMois; S.editeur = !!e.editeur; }
       catch { /* sans crédits affichés */ }
     }
@@ -7102,9 +7121,10 @@ async function pullPhotosDrive() {
    ici lui-même, aussitôt : il lit les étiquettes et revoit les fiches qu'il a lui-même demandées (jamais deux appareils
    pour la même fiche, donc jamais deux paiements), et l'appareil du propriétaire cherche la valeur du jour, en gardant
    au moins la moitié des crédits du mois pour le reste. */
-const relaisOn = () => isDrive() && !!GOOGLE.relais;
+const relaisOn = () => iaIci() && isDrive() && !!GOOGLE.relais;
 const plusTard = () => (relaisOn() ? 'dans un instant' : 'cette nuit');
 async function relais(action, p = {}, timeout = 150e3, again = true) {
+  if (!iaIci()) throw Object.assign(new Error(IA_APPLI), { code: 'web' });
   if (!GOOGLE.relais) throw Object.assign(new Error("Pampre n'est pas encore branché sur les caves Google Drive."), { code: 'drive' });
   if (!Drive.token || Date.now() > Drive.until) await Drive.signIn();
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), timeout);
@@ -7829,7 +7849,7 @@ function updateSyncUI() {
 function serverInfo(r) {
   if (r.sheetUrl) S.sheetUrl = r.sheetUrl;
   if ('webUrl' in r) S.webUrl = r.webUrl || '';
-  if ('label' in r) S.labelOn = !!r.label;
+  if ('label' in r) S.labelOn = !!r.label && iaIci();
   if ('routineOn' in r) S.routineOn = !!r.routineOn;
   if ('routineVu' in r) S.routineVu = r.routineVu || '';
   if ('version' in r) S.serverVersion = r.version || 0;
@@ -7849,13 +7869,14 @@ function serverInfo(r) {
    passage noté depuis moins de 8 jours). Un script antérieur à la v14 ne le dit pas : on suppose qu'il y a une routine.
    Sans Claude, l'appli ne promet pas de lecture « cette nuit » et propose la saisie à la main. */
 const routineAlive = () => S.routineOn || (!!S.routineVu && Date.now() - Date.parse(S.routineVu) < 8 * 864e5) || (S.serverVersion || 0) < 14;
-const claudeOn = () => !API.ready() || S.labelOn || routineAlive();
+const claudeOn = () => iaIci() && (!API.ready() || S.labelOn || routineAlive());
 // Les fiches « à revoir » demandent le script v9 : un script plus ancien effacerait la demande.
 const reviewOn = () => API.ready() && (S.serverVersion || 0) >= 9 && claudeOn();
 
 /* « Lire maintenant » : envoie les photos, puis demande au script de lancer la routine Claude tout de suite. */
 let readNowBusy = false, readWatch = null;
 async function readNow(intro = '') {
+  if (!iaIci()) { toast(IA_APPLI); return; }
   if (readNowBusy || !API.ready()) return;
   readNowBusy = true;
   try {
@@ -8259,6 +8280,7 @@ function wire() {
         case 'goto': if (act.dataset.tab) UI.boireTab = act.dataset.tab; setView(act.dataset.view); break;
         case 'next-idea': UI.idea++; renderCave(); break;
         // « Réduire » l'idée du soir, puis « Afficher » : le choix reste sur l'appareil.
+        case 'web-ia-ok': lsSet('macave:web-ia-vu', true); renderCave(); break;
         case 'tonight-fold': case 'tonight-open': {
           UI.tonightClosed = act.dataset.act === 'tonight-fold';
           lsSet('macave:tonightClosed', UI.tonightClosed);
