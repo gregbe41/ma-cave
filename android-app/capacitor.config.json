@@ -1,6 +1,6 @@
 {
   "appId": "fr.macave.app",
-  "appName": "Ma cave",
+  "appName": "Tastevin",
   "webDir": "www",
   "android": {
     "backgroundColor": "#F4F2EE"

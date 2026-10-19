@@ -1,7 +1,7 @@
-// Construit l'APK de Ma cave.
+// Construit l'APK de Tastevin (anciennement Ma cave ; les fichiers gardent leur nom ma-cave*.apk).
 //   node scripts/apk.js maison     → dist/ma-cave-maison.apk : relié d'office à la cave de cave.local.json (sur ce PC seulement, jamais publié)
 //   node scripts/apk.js generique  → dist/ma-cave.apk : vierge, publiable ; chacun le relie à sa propre cave
-//   node scripts/apk.js essai ["Ma cave v2"] → dist/ma-cave-essai.apk : comme « maison », mais s'installe À CÔTÉ de l'appli
+//   node scripts/apk.js essai ["Tastevin v2"] → dist/ma-cave-essai.apk : comme « maison », mais s'installe À CÔTÉ de l'appli
 //                                    habituelle (identifiant fr.macave.app.essai, nom à part) pour essayer une nouvelle version ;
 //                                    il embarque aussi le prototype « cave dans Google Drive » (lien en bas des Réglages)
 // « maison » et « generique » portent le même identifiant (fr.macave.app) et doivent être signés avec la même clé : on peut alors
@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 
 const kind = ['generique', 'essai'].includes(process.argv[2]) ? process.argv[2] : 'maison';
-const label = kind === 'essai' ? (process.argv[3] || 'Ma cave (essai)').replace(/"/g, '') : '';
+const label = kind === 'essai' ? (process.argv[3] || 'Tastevin (essai)').replace(/"/g, '') : '';
 const root = path.join(__dirname, '..');
 const android = path.join(root, 'android');
 const run = (cmd, cwd = root) => { console.log(`\n> ${cmd}`); execSync(cmd, { cwd, stdio: 'inherit' }); };

@@ -11,9 +11,9 @@ try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'lig
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Ma cave">
-<title>Ma cave</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>">
+<meta name="apple-mobile-web-app-title" content="Tastevin">
+<title>Tastevin</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='64' height='64'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23E8A13A'/%3E%3Cpath d='M36.6 14.6h6.8v8.2c0 3.2 1.1 5 3.4 7.3 2.9 2.9 4.2 5.6 4.2 9.8V80a4 4 0 0 1-4 4H33a4 4 0 0 1-4-4V39.9c0-4.2 1.3-6.9 4.2-9.8 2.3-2.3 3.4-4.1 3.4-7.3z' fill='%231E1610'/%3E%3Crect x='36.2' y='13.4' width='7.6' height='5.6' rx='1.3' fill='%231E1610'/%3E%3Crect x='31.8' y='52' width='16.4' height='17' rx='1.8' fill='%23E8A13A'/%3E%3Cpath d='M35.6 58.2h8.8M37.2 62.6h5.6' stroke='%231E1610' stroke-width='1.6' stroke-linecap='round'/%3E%3Cg transform='translate(62.5 71.2) scale(1.16) translate(-63 -69.6)'%3E%3Cpath d='M47.6 69.6c.4 6.6 7 11.4 15.4 11.4s15-4.8 15.4-11.4z' fill='%23F4EFE7' stroke='%231E1610' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M51.8 75.6c3 2.2 6.9 3.4 11.2 3.4' fill='none' stroke='%23D9D1C4' stroke-width='1.7' stroke-linecap='round'/%3E%3Cellipse cx='63' cy='69.6' rx='15.4' ry='4.8' fill='%23F4EFE7' stroke='%231E1610' stroke-width='2'/%3E%3Cellipse cx='63' cy='70' rx='12.2' ry='3.2' fill='%237A1E2C'/%3E%3Cpath d='M59.6 70.5c1.1-1.4 5.7-1.4 6.8 0' fill='none' stroke='%23B8485A' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M78.2 69.4h2' stroke='%231E1610' stroke-width='2.1' stroke-linecap='round'/%3E%3Ccircle cx='83.3' cy='69.4' r='3.3' fill='none' stroke='%231E1610' stroke-width='2.3'/%3E%3C/g%3E%3Cpath d='M70 41.2c.55 3 1.85 4.3 4.85 4.85-3 .55-4.3 1.85-4.85 4.85-.55-3-1.85-4.3-4.85-4.85 3-.55 4.3-1.85 4.85-4.85z' fill='%231E1610'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet">
@@ -122,7 +122,8 @@ h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:-.015em}
 @media (min-width:960px){
   .app{display:grid;grid-template-columns:236px 1fr}
   .nav{position:sticky;top:0;left:auto;right:auto;bottom:auto;height:100vh;flex-direction:column;align-items:stretch;gap:2px;border-radius:0;box-shadow:none;border-right:1px solid var(--line);padding:calc(32px + var(--sat)) 14px calc(32px + var(--sab)) calc(14px + var(--sal))}
-  .brand{display:block;font:600 1.6rem/1 var(--display);padding:0 12px 28px}
+  .brand{display:flex;align-items:center;gap:10px;font:600 1.6rem/1 var(--display);padding:0 12px 28px}
+  .brand-logo{flex:none;width:38px;height:38px}
   .nav .nav-btn{flex:0 0 auto;flex-direction:row;justify-content:flex-start;gap:10px;font-size:.98rem;padding:6px 8px}
   .nav .nav-ico{width:32px;height:32px}
   .nav .nav-btn[aria-current="page"]{background:var(--accent-tint)}
@@ -1182,7 +1183,7 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
 <body>
 <div class="app">
   <nav class="nav" aria-label="Sections">
-    <div class="brand">Ma cave</div>
+    <div class="brand"><svg class="brand-logo" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="50" fill="#E8A13A"/><path d="M36.6 14.6h6.8v8.2c0 3.2 1.1 5 3.4 7.3 2.9 2.9 4.2 5.6 4.2 9.8V80a4 4 0 0 1-4 4H33a4 4 0 0 1-4-4V39.9c0-4.2 1.3-6.9 4.2-9.8 2.3-2.3 3.4-4.1 3.4-7.3z" fill="#1E1610"/><rect x="36.2" y="13.4" width="7.6" height="5.6" rx="1.3" fill="#1E1610"/><rect x="31.8" y="52" width="16.4" height="17" rx="1.8" fill="#E8A13A"/><path d="M35.6 58.2h8.8M37.2 62.6h5.6" stroke="#1E1610" stroke-width="1.6" stroke-linecap="round"/><g transform="translate(62.5 71.2) scale(1.16) translate(-63 -69.6)"><path d="M47.6 69.6c.4 6.6 7 11.4 15.4 11.4s15-4.8 15.4-11.4z" fill="#F4EFE7" stroke="#1E1610" stroke-width="2" stroke-linejoin="round"/><path d="M51.8 75.6c3 2.2 6.9 3.4 11.2 3.4" fill="none" stroke="#D9D1C4" stroke-width="1.7" stroke-linecap="round"/><ellipse cx="63" cy="69.6" rx="15.4" ry="4.8" fill="#F4EFE7" stroke="#1E1610" stroke-width="2"/><ellipse cx="63" cy="70" rx="12.2" ry="3.2" fill="#7A1E2C"/><path d="M59.6 70.5c1.1-1.4 5.7-1.4 6.8 0" fill="none" stroke="#B8485A" stroke-width="1.5" stroke-linecap="round"/><path d="M78.2 69.4h2" stroke="#1E1610" stroke-width="2.1" stroke-linecap="round"/><circle cx="83.3" cy="69.4" r="3.3" fill="none" stroke="#1E1610" stroke-width="2.3"/></g><path d="M70 41.2c.55 3 1.85 4.3 4.85 4.85-3 .55-4.3 1.85-4.85 4.85-.55-3-1.85-4.3-4.85-4.85 3-.55 4.3-1.85 4.85-4.85z" fill="#1E1610"/></svg>Tastevin</div>
     <button class="nav-btn" data-view="cave"><span class="nav-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2.5h4v3.8l1.6 2.6V21a1 1 0 0 1-1 1H9.4a1 1 0 0 1-1-1V8.9L10 6.3z"/><path d="M8.4 13h7.2"/></svg></span>Ce soir</button>
     <button class="nav-btn" data-view="boire"><span class="nav-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11l-.6 5.5a4.9 4.9 0 0 1-9.8 0z"/><path d="M12 13.5V20M8 21h8"/></svg></span>À boire</button>
     <div class="nav-add"><button class="fab" data-act="add-menu" aria-label="Ajouter des bouteilles"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
@@ -1278,7 +1279,7 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
         <p class="form-err" id="lien-err" role="alert" hidden></p>
         <button type="submit" class="btn btn-primary" id="lien-go">Lire la page</button>
         <p class="hint" id="lien-hint"></p>
-        <p class="hint" id="lien-share" hidden>Sur Android : depuis ton navigateur, Partager › Ma cave.</p>
+        <p class="hint" id="lien-share" hidden>Sur Android : depuis ton navigateur, Partager › Tastevin.</p>
       </form>
       <div class="an-head"><h2 class="d-h3">Tes analyses</h2><div class="view-seg" role="group" aria-label="Affichage de la liste"></div></div>
       <div class="cs-list" id="conseil-list"></div>
@@ -6536,7 +6537,7 @@ async function deleteLien(id) {
   toast('Analyse supprimée');
 }
 
-/* Appli Android : un lien partagé depuis le navigateur (« Partager › Ma cave ») est lu dans Conseil, comme s'il avait
+/* Appli Android : un lien partagé depuis le navigateur (« Partager › Tastevin ») est lu dans Conseil, comme s'il avait
    été collé. Partager est le geste explicite : la lecture est gratuite, l'avis de Tastevin attend toujours son bouton. */
 const Partage = {
   get on() { return Native.on && !!Native.P.Partage; },
@@ -6826,7 +6827,7 @@ const Drive = {
     const folder = await Drive.req('POST', `${DRIVE_API}/files?fields=id`, { json: { name: `Ma cave – ${nom}`, mimeType: DRIVE_FOLDER } });
     const photos = await Drive.req('POST', `${DRIVE_API}/files?fields=id`, { json: { name: 'Photos', mimeType: DRIVE_FOLDER, parents: [folder.id] } });
     const cave = { app: 'ma-cave', format: CAVE_FORMAT, nom, creeeLe: nowISO(), dossier: folder.id, dossierPhotos: photos.id, db: emptyDb() };
-    const f = await Drive.upload({ name: 'cave.json', parents: [folder.id], mimeType: 'application/json', description: `Cave « ${nom} » de l'appli Ma cave.` }, cave);
+    const f = await Drive.upload({ name: 'cave.json', parents: [folder.id], mimeType: 'application/json', description: `Cave « ${nom} » de l'appli Tastevin.` }, cave);
     return { fileId: f.id, folderId: folder.id, photosId: photos.id };
   },
   /** cave.json et l'état du fichier (révision, propriétaire). L'état d'abord : un contenu lu après ne peut qu'être plus récent. */
@@ -7462,7 +7463,7 @@ async function inviteDrive() {
     if (!S.folderId) throw new Error('Le dossier de la cave est inconnu : synchronise, puis réessaie.');
     await Drive.share(S.folderId, email);
     input.value = '';
-    await shareInvite({ d: S.fileId, n: S.nom || '' }, `Rejoins ma cave « ${S.nom || 'Ma cave'} » dans Ma cave. Dans l'appli, touche le nom de la cave en haut de l'écran, puis colle ce lien dans « Rejoindre une autre cave » :`, email);
+    await shareInvite({ d: S.fileId, n: S.nom || '' }, `Rejoins ma cave « ${S.nom || 'Ma cave'} » dans Tastevin. Dans l'appli, touche le nom de la cave en haut de l'écran, puis colle ce lien dans « Rejoindre une autre cave » :`, email);
   } catch (e) {
     toast(e.auth ? 'Connexion à Google annulée.' : e.message);
   } finally {
@@ -7902,7 +7903,7 @@ async function sync({ interactive = false } = {}) {
    Invitation
    ========================================================= */
 function invite() {
-  return shareInvite({ u: S.apiUrl, s: S.secret, n: S.nom || '' }, 'Rejoins notre cave dans Ma cave :');
+  return shareInvite({ u: S.apiUrl, s: S.secret, n: S.nom || '' }, 'Rejoins notre cave dans Tastevin :');
 }
 /** Le lien d'invitation, envoyé par la feuille de partage (ou copié). Cave à script : { u, s, n } ; cave Drive : { d, n }. */
 async function shareInvite(payload, intro, who = '') {
@@ -7913,14 +7914,14 @@ async function shareInvite(payload, intro, who = '') {
   const base = Native.on ? S.webUrl || PUBLIC_URL : location.origin + location.pathname;
   const link = base ? `${base}#rejoindre=${code}` : '';
   const text = link ? intro
-    : `Pour rejoindre notre cave, colle ce code dans Ma cave › Mes caves › Rejoindre une autre cave : #rejoindre=${code}`;
+    : `Pour rejoindre notre cave, colle ce code dans Tastevin › Mes caves › Rejoindre une autre cave : #rejoindre=${code}`;
   if (who) toast(`Cave partagée avec ${who}. Envoie-lui maintenant le lien.`);
   if (Native.on && Native.P.Share) {
-    try { await Native.P.Share.share({ title: 'Ma cave', text, url: link || undefined, dialogTitle: 'Inviter quelqu\'un' }); } catch {}
+    try { await Native.P.Share.share({ title: 'Tastevin', text, url: link || undefined, dialogTitle: 'Inviter quelqu\'un' }); } catch {}
     return;
   }
   try {
-    if (navigator.share) { await navigator.share({ title: 'Ma cave', text, url: link }); return; }
+    if (navigator.share) { await navigator.share({ title: 'Tastevin', text, url: link }); return; }
   } catch (e) { if (e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(link); toast("Lien d'invitation copié. Envoie-le à la personne à inviter."); }
   catch { demander("Copie ce lien d'invitation", "Puis envoie-le à la personne à inviter.", { valeur: link, lecture: true, ok: 'Fermer', annuler: '' }); }
@@ -8156,7 +8157,7 @@ async function exportJSON() {
     // Pas de téléchargement dans l'appli Android : le fichier passe par le menu de partage (Drive, e-mail…).
     try {
       const { uri } = await Native.P.Filesystem.writeFile({ path: name, data: json, directory: 'CACHE', encoding: 'utf8' });
-      await Native.P.Share.share({ title: 'Sauvegarde de Ma cave', files: [uri], dialogTitle: 'Enregistrer la sauvegarde' });
+      await Native.P.Share.share({ title: 'Sauvegarde de Tastevin', files: [uri], dialogTitle: 'Enregistrer la sauvegarde' });
     } catch (e) { if (!/cancel/i.test(String(e && e.message))) toast("L'export a échoué."); }
     return;
   }
@@ -8176,7 +8177,7 @@ async function importJSON(file) {
     commit();
     const added = db.wines.length - before;
     toast(added > 0 ? `${added} ${plural(added, 'vin importé', 'vins importés')}` : 'Import terminé, tout était déjà à jour');
-  } catch { toast("Ce fichier n'est pas une sauvegarde de Ma cave."); }
+  } catch { toast("Ce fichier n'est pas une sauvegarde de Tastevin."); }
 }
 
 /* =========================================================
