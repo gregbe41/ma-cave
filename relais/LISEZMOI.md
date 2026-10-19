@@ -29,6 +29,8 @@ Ce qu'il fait :
 | `lien` | 1 | l'avis de Pampre sur un vin vu en ligne (Conseil › « Vu en ligne ? »), d'après les goûts de la personne |
 | `page` | 0 | lit la page d'un site marchand pour l'appli, sans IA : le navigateur ne le peut pas. Liens publics seulement (ni adresse IP, ni réseau local, redirections vérifiées), 2 Mo lus au plus, `PAGES_JOUR` pages par jour et par cave |
 | `etat`, `reglages` | 0 | ce qui reste ; réglages du propriétaire |
+| `signaler` | 0 | signaler une réponse de Pampre (choquante, fausse…), comme Google Play l'exige des applis d'IA : gardée pour l'éditeur avec le mot de la personne et son adresse Google ; `SIGNALEMENTS_JOUR` par jour et par cave |
+| `signalements` | 0 | les 100 derniers signalements, toutes caves : réservé à l'éditeur (`ADMINS`) |
 | `depense` | 0 | ce que Pampre coûte vraiment chez Anthropic, en dollars, ce mois-ci et le mois d'avant : réservé à l'éditeur (`ADMINS`) |
 
 **Coût réel** : après chaque réponse de Claude, le relais calcule son prix d'après l'usage renvoyé (jetons envoyés, reçus,
@@ -54,6 +56,7 @@ Chaque demande est un `POST /v1/<demande>` avec l'en-tête `Authorization: Beare
 | `LIMITE_USD` | la limite de dépense mensuelle de la clé, réglée dans la console Anthropic (100 $ par défaut) : pour dire combien de bouchons elle permet |
 | `PRIX_ENTREE`, `PRIX_SORTIE`, `PRIX_CACHEECRIT5M`, `PRIX_CACHEECRIT1H`, `PRIX_CACHELU`, `PRIX_RECHERCHES` | les prix d'Anthropic, en dollars par million de jetons (pour 1 000 recherches web) ; par défaut ceux de Claude Opus 5.5 relus le 18 octobre 2026 : 4, 20, 5, 8, 0,2 et 10 |
 | `PAGES_JOUR` | les pages de sites marchands lues par jour et par cave pour « Vu en ligne ? » (60 par défaut ; chacune compte une écriture KV) |
+| `SIGNALEMENTS_JOUR` | les réponses de Pampre qu'on peut signaler par jour et par cave (20 par défaut ; chacune compte deux écritures KV) |
 
 ## L'essayer sur un ordinateur
 

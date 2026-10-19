@@ -118,7 +118,7 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
   async function etatCave(cave) {
     const { jour, mois } = aujourdhui(maintenant());
     const e = (await store.get('cave:' + cave)) || {};
-    if (e.jour !== jour) Object.assign(e, { jour, nJour: 0, nPages: 0 });
+    if (e.jour !== jour) Object.assign(e, { jour, nJour: 0, nPages: 0, nSignalements: 0 });
     if (e.mois !== mois) Object.assign(e, { mois, nMois: 0, qui: {} });
     if (!e.qui || typeof e.qui !== 'object') e.qui = {};
     if (!e.reglages || typeof e.reglages !== 'object') e.reglages = {};
@@ -301,6 +301,28 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       const mois = aujourdhui(maintenant()).mois, avant = moisAvant(mois), vide = m => ({ mois: m, usd: 0, bouchons: 0, demandes: 0, actions: {} });
       const ce = (await store.get('depense:' + mois)) || vide(mois), prec = (await store.get('depense:' + avant)) || vide(avant);
       return { depense: { limiteUsd, prix, ceMois: resume(ce), moisPrecedent: resume(prec) } };
+    },
+
+    /** Signaler une réponse de Pampre (règle de Google Play sur les contenus produits par l'IA) : gardé pour l'éditeur,
+        avec la réponse, le motif, le mot de la personne et son adresse Google. Gratuit, quelques-uns par jour et par cave. */
+    async signaler({ cave, qui, p }) {
+      const motif = ['choquant', 'faux', 'autre'].includes(p.motif) ? p.motif : '';
+      if (!motif) throw erreur(400, 'Choisis ce qui ne va pas dans la réponse.');
+      const quoi = ['lien', 'conseil', 'portrait', 'similaires', 'etiquette'].includes(p.quoi) ? p.quoi : 'autre';
+      const e = await etatCave(cave), max = entier(env.SIGNALEMENTS_JOUR, 20);
+      if ((e.nSignalements || 0) >= max) throw erreur(429, `Assez de signalements aujourd'hui pour cette cave (${max}). Réessaie demain.`, 'quota');
+      e.nSignalements = (e.nSignalements || 0) + 1;
+      await store.put('cave:' + cave, e);
+      const liste = (await store.get('signalements')) || [];
+      liste.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: maintenant().toISOString(), cave, qui: qui.email,
+        quoi, motif, commentaire: texte(p.commentaire, 1000).trim(), texte: texte(p.texte, 4000) });
+      await store.put('signalements', liste.slice(0, 200));
+      return { signale: true };
+    },
+    /** Les derniers signalements, toutes caves : réservé à l'éditeur (ADMINS). */
+    async signalements({ qui }) {
+      if (!admins.includes(qui.email)) throw erreur(403, "Réservé à l'éditeur de l'appli.", 'editeur');
+      return { signalements: ((await store.get('signalements')) || []).slice(0, 100) };
     },
 
     async reglages({ cave, qui, p }) {

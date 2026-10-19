@@ -708,6 +708,26 @@ dialog.ask{max-width:480px}
 .cr-form > .hint{margin:12px 2px 0}
 /* Coût réel de Pampre (éditeur) */
 #depense-body .rg-h{margin-left:2px}
+/* Signaler une réponse de Pampre */
+.sig-btn{display:inline-flex;align-items:center;gap:5px;margin:10px 0 0;padding:6px 0;border:0;background:none;color:var(--muted);font:600 .8rem var(--sans);cursor:pointer}
+.sig-btn:hover,.sig-btn:focus-visible{color:var(--late-fg)}
+.ico-sig{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sig-motifs{display:grid;gap:8px;margin:0 0 14px;padding:0;border:0}
+.sig-motifs legend{margin:0 0 8px;padding:0;font-weight:700}
+.sig-m{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);cursor:pointer}
+.sig-m input{width:18px;height:18px;margin:0;accent-color:var(--accent)}
+#sig-form .f{margin:0}
+#sig-form .hint{margin:12px 0 0}
+.sig-list{margin:0;padding:0;list-style:none}
+.sig-list li{padding:14px 16px;border-bottom:1px solid var(--line2)}
+.sig-list li:last-child{border-bottom:0}
+.sig-l1{display:flex;justify-content:space-between;gap:10px;margin:0}
+.sig-l1 span,.sig-l2{color:var(--muted);font-size:.85rem}
+.sig-l2{margin:2px 0 0;overflow-wrap:anywhere}
+.sig-com{margin:8px 0 0}
+.sig-txt{margin:8px 0 0}
+.sig-txt summary{cursor:pointer;color:var(--accent-ink);font-weight:600;font-size:.88rem}
+.sig-txt pre{max-height:260px;overflow:auto;margin:8px 0 0;padding:10px;border-radius:10px;background:var(--soft);white-space:pre-wrap;overflow-wrap:anywhere;font:.8rem/1.45 ui-monospace,Consolas,monospace}
 #depense-body > .hint{margin:12px 2px 0}
 .dp-mois{background:var(--bg);box-shadow:inset 0 0 0 1px var(--line2);gap:8px}
 .dp-big{margin:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
@@ -1757,6 +1777,32 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
   </div>
 </dialog>
 
+<!-- Signaler une réponse de Pampre -->
+<dialog class="sheet" id="dlg-signaler" aria-labelledby="sig-title">
+  <form class="sheet-wrap" id="sig-form" novalidate>
+    <div class="sheet-head"><h2 id="sig-title">Signaler une réponse de Pampre</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body">
+      <fieldset class="sig-motifs"><legend>Qu'est-ce qui ne va pas ?</legend>
+        <label class="sig-m"><input type="radio" name="motif" value="choquant"><span>Elle est choquante ou déplacée</span></label>
+        <label class="sig-m"><input type="radio" name="motif" value="faux"><span>Elle est fausse ou trompeuse</span></label>
+        <label class="sig-m"><input type="radio" name="motif" value="autre"><span>Autre chose</span></label>
+      </fieldset>
+      <label class="f">Dis-en plus si tu veux<textarea name="commentaire" rows="3" maxlength="1000"></textarea></label>
+      <p class="form-err" id="sig-err" role="alert" hidden></p>
+      <p class="hint">La réponse de Pampre, ton message et ton adresse Google partent chez l'éditeur de l'appli : il s'en sert pour corriger Pampre, et peut te répondre.</p>
+      <div class="btn-row"><button type="button" class="btn" data-close>Annuler</button><button type="submit" class="btn btn-primary" id="sig-go">Envoyer</button></div>
+    </div>
+  </form>
+</dialog>
+
+<!-- Les signalements reçus, pour l'éditeur de l'appli -->
+<dialog class="sheet" id="dlg-signalements" aria-labelledby="sigs-title">
+  <div class="sheet-wrap">
+    <div class="sheet-head"><h2 id="sigs-title">Signalements<span class="sub">Les réponses de Pampre signalées, toutes caves</span></h2><button type="button" class="icon-btn" data-close aria-label="Fermer">×</button></div>
+    <div class="sheet-body" id="sigs-body"></div>
+  </div>
+</dialog>
+
 <!-- Coût réel de Pampre, pour l'éditeur de l'appli -->
 <dialog class="sheet" id="dlg-depense" aria-labelledby="dp-title">
   <div class="sheet-wrap">
@@ -1978,7 +2024,7 @@ const Native = (() => {
    Les tests automatisés (navigator.webdriver) se comportent comme l'appli, sauf avec window.__web. */
 const iaIci = () => Native.on || (!!navigator.webdriver && !window.__web);
 // Ce que la page web peut demander au relais : rien qui passe par l'IA.
-const RELAIS_SANS_IA = ['page'];
+const RELAIS_SANS_IA = ['page', 'signaler', 'signalements'];
 const IA_APPLI = "Pampre, l'IA qui lit les étiquettes, conseille et propose des vins, travaille dans l'appli Android.";
 /* Pampre (l'IA de l'appli, propulsée par Claude) : la vrille du pampre et son étincelle ; le bouchon, l'unité de ses crédits. */
 const ICO_TV = '<svg class="ico-tv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20C6 13 9.5 9 14 9c3.5 0 5.5 2.5 4.3 5-1.1 2.2-4.5 2-4.5-.4 0-1.4 1.2-2 2.2-1.4"/><path class="ico-fill" d="M18.5 2.5c.3 1.7.8 2.2 2.5 2.5-1.7.3-2.2.8-2.5 2.5-.3-1.7-.8-2.2-2.5-2.5 1.7-.3 2.2-.8 2.5-2.5z"/></svg>';
@@ -3521,7 +3567,7 @@ function portraitHTML(d) {
     ${(r.moins || []).length ? `<p class="ms-tv-l"><b>Moins pour toi :</b> ${r.moins.map(esc).join(' · ')}</p>` : ''}
     ${(r.essayer || []).length ? `<h3 class="d-h3">À essayer</h3><ul class="journal">${r.essayer.map(v => `<li><b>${esc(v.vin)}</b>${v.budget ? ` <span class="j-meta">· ${esc(v.budget)}</span>` : ''}<p class="j-com">${esc(v.pourquoi)}</p></li>`).join('')}</ul>` : ''}
     <p class="hint">Portrait du ${fmtDate(p.date)}, d'après ${p.n} ${plural(p.n, 'note', 'notes')}.</p>
-    ${neuf >= 3 ? btn('Refaire mon portrait') : `<p class="hint">Tu pourras le refaire après ${3 - neuf} ${plural(3 - neuf, 'nouvelle note', 'nouvelles notes')}.</p>`}</section>`;
+    ${neuf >= 3 ? btn('Refaire mon portrait') : `<p class="hint">Tu pourras le refaire après ${3 - neuf} ${plural(3 - neuf, 'nouvelle note', 'nouvelles notes')}.</p>`}${signalerHTML('portrait', 'portrait')}</section>`;
 }
 /** Ce que Pampre reçoit pour le portrait : mes vins notés (fiche, profil, ma note, mes avis), ce que l'appli a déjà calculé, et les vins en cave. */
 function portraitContexte(d) {
@@ -3718,6 +3764,64 @@ const dollars = x => {
     : v > 0 ? v.toLocaleString('fr-FR', { maximumSignificantDigits: 2 }) : '0';
   return `${t} $`;
 };
+/* ---------- Signaler une réponse de Pampre ----------
+   Google Play demande aux applis d'IA générative qu'on puisse signaler, sans quitter l'appli, une réponse choquante.
+   Sous chaque réponse de Pampre, « Signaler » ouvre une feuille : un motif, un mot si on veut ; le relais garde le
+   signalement pour l'éditeur (Réglages › Pampre › Signalements). */
+const ICO_DRAPEAU = '<svg class="ico-sig" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4.5c3.5-2 6.5 2 10 0 1.4-.8 2.6-1 4-.6v9c-1.4-.4-2.6-.2-4 .6-3.5 2-6.5-2-10 0"/></svg>';
+const SIG = { quoi: '', ref: '', envoi: false };
+const SIG_MOTIFS = { choquant: 'Choquante ou déplacée', faux: 'Fausse ou trompeuse', autre: 'Autre chose' };
+const SIG_QUOI = { lien: 'Avis sur un vin vu en ligne', conseil: 'Conseil en magasin', portrait: 'Portrait de « Mes stats »', similaires: 'Vins similaires', etiquette: "Lecture d'étiquette", autre: 'Autre' };
+const signalerOn = () => isDrive() && !!GOOGLE.relais;
+const signalerHTML = (quoi, ref) => (signalerOn() ? `<button type="button" class="sig-btn" data-act="signaler" data-quoi="${quoi}" data-ref="${esc(ref)}">${ICO_DRAPEAU}Signaler</button>` : '');
+/** La réponse signalée, telle que Pampre l'a écrite. */
+function reponseSignalee(quoi, ref) {
+  let r = null;
+  if (quoi === 'lien') { const e = mesLiens().find(x => x.id === ref); r = e && e.avis; }
+  else if (quoi === 'conseil') { const [cid, i] = String(ref).split(':'), c = db.conseils.find(x => x.id === cid); r = c && c.resultat && (i === 'reco' ? c.resultat.recommandation : (c.resultat.bouteilles || [])[+i]); }
+  else if (quoi === 'portrait') { const p = lsGet(portraitKey(), null); r = p && p.result; }
+  else if (quoi === 'similaires') { const sg = suggestionOf(ref); r = sg && sg.resultat; }
+  return r == null ? '' : (typeof r === 'string' ? r : JSON.stringify(r)).slice(0, 4000);
+}
+function openSignaler(quoi, ref) {
+  Object.assign(SIG, { quoi, ref, envoi: false });
+  $('#sig-form').reset();
+  $('#sig-err').hidden = true;
+  $('#sig-go').disabled = false;
+  $('#dlg-signaler').showModal();
+}
+async function envoyerSignalement(ev) {
+  ev.preventDefault();
+  if (SIG.envoi) return;
+  const f = $('#sig-form'), err = $('#sig-err'), go = $('#sig-go'), motif = (f.querySelector('input[name="motif"]:checked') || {}).value;
+  if (!motif) { err.textContent = 'Choisis ce qui ne va pas dans la réponse.'; err.hidden = false; return; }
+  SIG.envoi = true; go.disabled = true; go.textContent = 'Envoi…';
+  try {
+    await relais('signaler', { quoi: SIG.quoi, motif, commentaire: str(f.elements.commentaire.value).slice(0, 1000), texte: reponseSignalee(SIG.quoi, SIG.ref) }, 30e3);
+    $('#dlg-signaler').close();
+    toast("Merci, c'est envoyé à l'éditeur de l'appli.");
+  } catch (x) {
+    err.textContent = x.message || "L'envoi n'a pas abouti. Réessaie plus tard.";
+    err.hidden = false;
+  } finally { SIG.envoi = false; go.disabled = false; go.textContent = 'Envoyer'; }
+}
+/** Pour l'éditeur : les réponses signalées, les plus récentes d'abord. */
+async function openSignalements() {
+  const body = $('#sigs-body');
+  body.innerHTML = '<p class="hint">Lecture du relais…</p>';
+  $('#dlg-signalements').showModal();
+  let xs;
+  try { xs = (await relais('signalements', {}, 30e3)).signalements || []; }
+  catch (e) { body.innerHTML = `<p class="hint">${esc(e.message)}</p>`; return; }
+  const joli = t => { try { return JSON.stringify(JSON.parse(t), null, 1); } catch { return t; } };
+  body.innerHTML = xs.length ? `<ul class="rg-card sig-list">${xs.map(s => `<li>
+      <p class="sig-l1"><b>${esc(SIG_MOTIFS[s.motif] || s.motif)}</b><span>${esc(new Date(s.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }))}</span></p>
+      <p class="sig-l2">${esc(SIG_QUOI[s.quoi] || s.quoi)} · ${esc(s.qui)}</p>
+      ${s.commentaire ? `<p class="sig-com">« ${esc(s.commentaire)} »</p>` : ''}
+      ${s.texte ? `<details class="sig-txt"><summary>La réponse de Pampre</summary><pre>${esc(joli(s.texte))}</pre></details>` : ''}</li>`).join('')}</ul>`
+    : "<p class=\"hint\">Aucun signalement pour l'instant.</p>";
+}
+
 async function openDepense() {
   const body = $('#depense-body');
   body.innerHTML = '<p class="hint">Lecture du relais…</p>';
@@ -3957,6 +4061,7 @@ function renderTasteBox() {
   if (!drive && S.routineOn) h += `<div class="rg-row"><span class="rg-txt"><b>Lecture des étiquettes</b><small>Chaque nuit, par la routine, ou tout de suite</small></span><button type="button" class="btn btn-sm" data-act="read-now">Lire maintenant</button></div>`;
   if (owner && !$('#credits-set').hidden) h += `<button type="button" class="rg-row rg-go" data-act="bouchons"><span class="rg-txt"><b>Réglages des bouchons</b><small>Limites, part de chacun, valeur du jour</small></span></button>`;
   // L'éditeur de l'appli (ADMINS du relais) : ce que Pampre coûte vraiment à sa clé Claude, toutes caves confondues.
+  if (drive && signalerOn() && S.editeur) h += `<button type="button" class="rg-row rg-go" data-act="signalements"><span class="rg-txt"><b>Signalements</b><small>Les réponses de Pampre que des personnes ont signalées</small></span></button>`;
   if (drive && relaisOn() && S.editeur) h += `<button type="button" class="rg-row rg-go" data-act="depense"><span class="rg-txt"><b>Coût réel de Pampre</b><small>Ce que dépense ta clé Claude chez Anthropic, toutes caves</small></span></button>`;
   $('#taste-box').innerHTML = h;
 }
@@ -4526,7 +4631,7 @@ function simClaudeHTML(w, sg) {
     ${r.intro ? `<p class="sim-intro">${esc(r.intro)}</p>` : ''}
     <div class="sim-list">${r.vins.map((v, i) => simItem(`g${i}`, { ...v, src: 'claude' }, v.appellation || v.domaine, [v.appellation ? v.domaine : '', v.cuvee].filter(Boolean).join(', '),
       `<span class="sim-why">${v.lien ? `<span class="sim-tag is-acc">${esc(SIM_LIENS[v.lien] || v.lien)}</span>` : ''}${v.budget ? `<span class="sim-tag">${esc(v.budget)}</span>` : ''}</span>${v.pourquoi ? `<span class="sim-pq">${esc(v.pourquoi)}</span>` : ''}`)).join('')}</div>
-    ${waiting ? wait : suggestOn() ? redemanderHTML(w, sg) : ''}</section>`;
+    ${signalerHTML('similaires', w.id)}${waiting ? wait : suggestOn() ? redemanderHTML(w, sg) : ''}</section>`;
 }
 // Même règle que le script (v16) : on redemande au bout de 30 jours, ou dès que la fiche ou ses avis ont changé.
 const SUGG_DELAI_JOURS = 30;
@@ -5477,10 +5582,10 @@ function ficheVinHTML(v, o = {}) {
     ${o.extra || ''}`;
 }
 /** L'avis de Pampre sur une bouteille photographiée : son avis, puis le prix (affiché par la personne, jugé par Pampre). */
-function avisPhotoHTML(r, b) {
+function avisPhotoHTML(r, b, ref) {
   const prix = [b.prix != null ? `${fmtMoney(b.prix)} affiché.` : '', r.prix].filter(Boolean).join(' ');
   if (!r.avis && !prix) return '';
-  return `<section class="an-tv"><p class="an-tv-h">${ICO_TV}<b>L'avis de Pampre</b></p>${r.avis ? `<p class="cs-avis an-avis">${esc(r.avis)}</p>` : ''}${prix ? `<dl class="ln-grid"><dt>Le prix</dt><dd>${esc(prix)}</dd></dl>` : ''}</section>`;
+  return `<section class="an-tv"><p class="an-tv-h">${ICO_TV}<b>L'avis de Pampre</b></p>${r.avis ? `<p class="cs-avis an-avis">${esc(r.avis)}</p>` : ''}${prix ? `<dl class="ln-grid"><dt>Le prix</dt><dd>${esc(prix)}</dd></dl>` : ''}${r.avis ? signalerHTML('conseil', ref) : ''}</section>`;
 }
 
 function renderConseil() {
@@ -5644,7 +5749,7 @@ function renderConseilDetail() {
   } else {
     // Chaque bouteille lue a sa fiche, comme un vin de la cave ; le conseil de Pampre entre plusieurs bouteilles vient d'abord.
     const rs = c.resultat.bouteilles, seul = rs.length === 1;
-    const reco = c.resultat.recommandation ? `<section class="an-tv an-reco"><p class="an-tv-h">${ICO_TV}<b>${seul ? 'Le conseil de Pampre' : 'Entre ces bouteilles'}</b></p><p class="an-avis">${esc(c.resultat.recommandation)}</p></section>` : '';
+    const reco = c.resultat.recommandation ? `<section class="an-tv an-reco"><p class="an-tv-h">${ICO_TV}<b>${seul ? 'Le conseil de Pampre' : 'Entre ces bouteilles'}</b></p><p class="an-avis">${esc(c.resultat.recommandation)}</p>${signalerHTML('conseil', `${c.id}:reco`)}</section>` : '';
     body = (busy ? `<div class="d-note is-wait cs-wait"><p>${esc(c.statut === 'envoi' ? prog || 'Envoi de la demande…' : 'Pampre met à jour son analyse avec tes corrections. ' + when.replace(/^Photos bien reçues\. /, ''))}</p></div>`
       : `<div class="d-note cs-relaunch" id="cs-relaunch"${c.modifie ? '' : ' hidden'}><p>Tu as complété cette analyse. Pampre peut la refaire en tenant compte de tes corrections.</p>
           <div class="btn-row"><button class="btn btn-primary" data-act="cs-relaunch" data-cid="${c.id}">Mettre à jour l'analyse</button></div></div>`)
@@ -5660,7 +5765,7 @@ function renderConseilDetail() {
             ${busy ? '' : csEditor(c, i, r0)}${rm(i)}</article>`;
         return `<article class="cs-bottle an-sec">${num}${ficheVinHTML(r, {
           photo: `${c.id}:${i}`, titreCle: `${c.id}:${i}`,
-          tastevin: avisPhotoHTML(r, b) + (seul ? reco : ''),
+          tastevin: avisPhotoHTML(r, b, `${c.id}:${i}`) + (seul ? reco : ''),
           tiles: [['Style', r.style], ['Cépages', r.cepages], ['Format', r.format], ['Prix affiché', b.prix != null ? fmtMoney(b.prix) : '']],
           cave: majuscule(caveLien(r)),
           details: [
@@ -6441,7 +6546,7 @@ function avisLienHTML(e) {
   const head = `<p class="an-tv-h">${ICO_TV}<b>L'avis de Pampre</b></p>`;
   const reste = resteMois(), n = e.avisCout || cout('lien');
   const bo = `<p class="ln-bo">${ICO_BOUCHON}${bouchons(n)} ${plural(n, 'utilisé', 'utilisés')}${reste != null ? ` · il t'en reste ${fmtCr(reste)} ce mois-ci` : ''}</p>`;
-  if (a.estVin === false) return `<section class="an-tv" id="ln-tv">${head}<p class="an-avis">${esc(a.avis || "Pampre n'a pas trouvé de vin précis sur cette page.")}</p></section>${bo}`;
+  if (a.estVin === false) return `<section class="an-tv" id="ln-tv">${head}<p class="an-avis">${esc(a.avis || "Pampre n'a pas trouvé de vin précis sur cette page.")}</p>${signalerHTML('lien', e.id)}</section>${bo}`;
   const g = a.genre || 0, gt = str(a.genreTexte).replace(/[.!]?$/, '.');
   // Sans assez de notes : une seule ligne, sans jauge ni raisons.
   const genre = g ? `<p class="ln-genre-h"><span>Ton genre ? ${esc(gt)}</span><small>${g} sur 5</small></p><div class="ln-genre" role="img" aria-label="Correspond à tes goûts : ${g} sur 5">${[1, 2, 3, 4, 5].map(i => `<i${i <= g ? ' class="on"' : ''}></i>`).join('')}</div>`
@@ -6450,7 +6555,7 @@ function avisLienHTML(e) {
   // Quand le boire et les accords ont leur place dans la fiche : ici, l'avis, le goût et le prix (en couleur).
   // Un avis gardé d'avant les pastilles n'a que son texte (a.prix).
   const prix = a.prixNiveau ? (e.page.prix || a.prixNiveau !== 'inconnu' ? `${pastillePrix(a.prixNiveau)}${a.prixHabituel ? ' ' + esc(`d'habitude ${a.prixHabituel}`) : ''}` : '') : a.prix ? esc(a.prix) : '';
-  return `<section class="an-tv" id="ln-tv">${head}${a.avis ? `<p class="an-avis ln-avis">${esc(a.avis)}</p>` : ''}${genre}${why}${prix ? `<dl class="ln-grid"><dt>Le prix</dt><dd>${prix}</dd></dl>` : ''}</section>${bo}`;
+  return `<section class="an-tv" id="ln-tv">${head}${a.avis ? `<p class="an-avis ln-avis">${esc(a.avis)}</p>` : ''}${genre}${why}${prix ? `<dl class="ln-grid"><dt>Le prix</dt><dd>${prix}</dd></dl>` : ''}${signalerHTML('lien', e.id)}</section>${bo}`;
 }
 
 function renderLien() {
@@ -8272,6 +8377,8 @@ function wire() {
         case 'invite-open': { const box = $('#drive-invite-box'), open = box.hidden; box.hidden = !open; act.setAttribute('aria-expanded', String(open)); if (open) $('#drive-invite').focus(); break; }
         case 'bouchons': openBouchons(); break;
         case 'depense': openDepense(); break;
+        case 'signaler': openSignaler(act.dataset.quoi, act.dataset.ref); break;
+        case 'signalements': openSignalements(); break;
         case 'google-in': connectGoogle(); break;
         case 'google-switch': connectGoogle(true); break;
         case 'google-out': disconnectGoogle(); break;
@@ -8603,6 +8710,8 @@ function wire() {
   $('#dlg-scan').addEventListener('close', () => scanReset());
   $('#dlg-similar').addEventListener('close', () => { if (!$('#dlg-similar').open) UI.simWine = null; });
   $('#dlg-conseil').addEventListener('close', () => { UI.openConseil = null; UI.csOpen.clear(); if (UI.view === 'conseil') renderConseil(); });
+  $('#sig-form').addEventListener('submit', envoyerSignalement);
+  $('#sig-form').addEventListener('change', () => { $('#sig-err').hidden = true; });
   $('#lien-card').addEventListener('submit', e => { e.preventDefault(); lireLien($('#lien-url').value); });
   $('#lien-url').addEventListener('input', () => { $('#lien-err').hidden = true; });
   $('#dlg-lien').addEventListener('close', () => { if (!$('#dlg-lien').open) LIEN.id = ''; if (UI.view === 'conseil') renderConseil(); });
