@@ -1977,6 +1977,8 @@ const Native = (() => {
    ne travaille que dans l'appli Android : la page web ne l'appelle jamais, ni par le relais ni par le script.
    Les tests automatisés (navigator.webdriver) se comportent comme l'appli, sauf avec window.__web. */
 const iaIci = () => Native.on || (!!navigator.webdriver && !window.__web);
+// Ce que la page web peut demander au relais : rien qui passe par l'IA.
+const RELAIS_SANS_IA = ['page'];
 const IA_APPLI = "Pampre, l'IA qui lit les étiquettes, conseille et propose des vins, travaille dans l'appli Android.";
 /* Pampre (l'IA de l'appli, propulsée par Claude) : la vrille du pampre et son étincelle ; le bouchon, l'unité de ses crédits. */
 const ICO_TV = '<svg class="ico-tv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20C6 13 9.5 9 14 9c3.5 0 5.5 2.5 4.3 5-1.1 2.2-4.5 2-4.5-.4 0-1.4 1.2-2 2.2-1.4"/><path class="ico-fill" d="M18.5 2.5c.3 1.7.8 2.2 2.5 2.5-1.7.3-2.2.8-2.5 2.5-.3-1.7-.8-2.2-2.5-2.5 1.7-.3 2.2-.8 2.5-2.5z"/></svg>';
@@ -5485,13 +5487,13 @@ function renderConseil() {
   const on = claudeOn();
   $('#v-conseil .conseil-intro').hidden = !on;
   $('#conseil-off').hidden = on;
-  if (!iaIci()) $('#conseil-off').innerHTML = `<p><strong>Les conseils de Pampre se demandent dans l'appli Android.</strong> Photographie une étiquette, ou partage la page d'un vin, depuis ton téléphone. Ici, tu retrouves tes analyses.</p>`;
+  if (!iaIci()) $('#conseil-off').innerHTML = `<p><strong>Les conseils de Pampre se demandent dans l'appli Android</strong>, en photographiant une étiquette depuis ton téléphone. Ici, tu retrouves tes analyses${lienOn() ? ", et tu peux lire gratuitement la page d'un vin vu en ligne" : ''}.</p>`;
   const list = db.conseils.filter(myConseil).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const others = db.conseils.length - list.length;
   const box = $('#conseil-list'), liens = mesLiens();
   $('#lien-card').hidden = !lienOn();
   $('#lien-share').hidden = !Partage.on;
-  $('#lien-hint').textContent = `Gratuit : la page est lue et comparée à ta cave.${relaisOn() ? ` L'avis de Pampre : ${bouchons(cout('lien'))}.` : ''}`;
+  $('#lien-hint').textContent = `Gratuit : la page est lue et comparée à ta cave.${relaisOn() ? ` L'avis de Pampre : ${bouchons(cout('lien'))}.` : !iaIci() ? " L'avis de Pampre se demande dans l'appli Android." : ''}`;
   const rows = list.map(c => {
     const rs = (c.resultat && c.resultat.bouteilles) || [], n = c.bouteilles.length;
     // Une analyse en cours de mise à jour garde son ancien résultat ; les corrections de la personne l'emportent.
@@ -5790,7 +5792,7 @@ const PAGE_REFUS = "Ce site refuse qu'une appli lise ses pages. Essaie la photo 
 const LIEN_CHAMPS = ['domaine', 'cuvee', 'appellation', 'couleur', 'millesime', 'region', 'cepages'];
 /** L'appli Android lit la page elle-même ; ailleurs, le relais des caves Google Drive la lit pour l'appli. */
 const lienNatif = () => !!(Native.on && Native.P.CapacitorHttp);
-const lienOn = () => lienNatif() || relaisOn();
+const lienOn = () => lienNatif() || (isDrive() && !!GOOGLE.relais);
 const liensKey = () => `macave:liens:${S.fileId || S.apiUrl || 'cave'}:${personId(S.device || '')}`;
 const mesLiens = () => { const xs = lsGet(liensKey(), []); return Array.isArray(xs) ? xs.filter(e => e && e.id && e.page && e.lu) : []; };
 const garderLiens = xs => lsSet(liensKey(), xs.slice(0, 30));
@@ -6462,7 +6464,8 @@ function renderLien() {
   const tv = e.avis ? avisLienHTML(e)
     : relaisOn() ? `<section class="an-tv is-ask"><p class="an-tv-h">${ICO_TV}<b>L'avis de Pampre</b></p><p class="an-avis">${notes >= 3 ? 'Ton genre, son prix, quand le boire et avec quoi : Pampre lit la page et te répond.'
         : `${notes ? `Tu as noté ${notes} ${plural(notes, 'vin', 'vins')}` : "Tu n'as encore noté aucun vin"} : trop tôt pour dire si c'est ton genre. Pampre te dira son prix, quand le boire et avec quoi.`}</p>
-        <button type="button" class="btn btn-primary ln-ask" data-act="lien-ask"${LIEN.ask ? ' disabled' : ''}>${ICO_TV}${LIEN.ask ? 'Pampre lit la page…' : `Demander l'avis de Pampre · ${bouchons(cout('lien'))}`}</button></section>` : '';
+        <button type="button" class="btn btn-primary ln-ask" data-act="lien-ask"${LIEN.ask ? ' disabled' : ''}>${ICO_TV}${LIEN.ask ? 'Pampre lit la page…' : `Demander l'avis de Pampre · ${bouchons(cout('lien'))}`}</button></section>`
+    : !iaIci() ? `<section class="an-tv"><p class="an-tv-h">${ICO_TV}<b>L'avis de Pampre</b></p><p class="an-avis">Ton genre, son prix, quand le boire et avec quoi : il se demande dans l'appli Android.</p></section>` : '';
   // Toute l'analyse : ce que l'appli a lu sur la page, le catalogue, les avis de la cave, la garde habituelle, la page.
   const lu = e.lu, c = e.cat, av = avisCave(v), garde = gardeLien(v);
   const luTxt = [lu.domaine, lu.cuvee, lu.appellation, lu.couleur ? colorOf(lu.couleur).label.toLowerCase() : '', lu.millesime, lu.cepages].filter(Boolean).join(' · ');
@@ -7124,7 +7127,7 @@ async function pullPhotosDrive() {
 const relaisOn = () => iaIci() && isDrive() && !!GOOGLE.relais;
 const plusTard = () => (relaisOn() ? 'dans un instant' : 'cette nuit');
 async function relais(action, p = {}, timeout = 150e3, again = true) {
-  if (!iaIci()) throw Object.assign(new Error(IA_APPLI), { code: 'web' });
+  if (!iaIci() && !RELAIS_SANS_IA.includes(action)) throw Object.assign(new Error(IA_APPLI), { code: 'web' });
   if (!GOOGLE.relais) throw Object.assign(new Error("Pampre n'est pas encore branché sur les caves Google Drive."), { code: 'drive' });
   if (!Drive.token || Date.now() > Drive.until) await Drive.signIn();
   const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), timeout);
