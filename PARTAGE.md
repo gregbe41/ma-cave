@@ -53,7 +53,7 @@ C'est le même APK que le générique, avec l'adresse et le code de ta cave int�
    Le fichier obtenu est `android-app/dist/ma-cave-maison.apk`.
 3. Installe-le : par câble avec `npm run install-phone` (voir [ANDROID.md](ANDROID.md)), ou envoie le fichier directement à tes proches.
 
-**APK maison et APK générique sont interchangeables.** Ils portent le même identifiant (`fr.macave.app`) et la même signature, donc on peut installer l'un par-dessus l'autre. L'appareil garde ses réglages et ses données, et le préréglage ne s'applique qu'à un appareil pas encore relié. Tes proches peuvent donc aussi prendre les mises à jour publiées dans les versions.
+**APK maison et APK générique sont interchangeables.** Ils portent le même identifiant (`fr.pampre.app`) et la même signature, donc on peut installer l'un par-dessus l'autre. L'appareil garde ses réglages et ses données, et le préréglage ne s'applique qu'à un appareil pas encore relié. Tes proches peuvent donc aussi prendre les mises à jour publiées dans les versions.
 
 ---
 

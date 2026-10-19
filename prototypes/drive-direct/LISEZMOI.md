@@ -37,7 +37,7 @@ C'est une page web. Le même prototype tourne aussi dans l'APK d'essai, pour une
 6. Sur l'accueil du projet, note le **numéro du projet** (« Project number », des chiffres seulement).
 7. Copie `config.example.js` en `config.local.js` et remplis les trois valeurs. Ce fichier n'est jamais publié.
 8. Pour l'appli Android, deux ajouts dans le même projet :
-   - **Clients › Créer un client**, type **Android** : nom du paquet `fr.macave.app.essai`, empreinte du certificat SHA-1 `74:59:60:62:67:BD:D8:B6:A1:A8:24:F2:93:93:AA:DC:6D:C6:01:02` (celle de la clé qui signe tes APK). Rien à recopier ensuite : Google reconnaît l'appli à son paquet et à sa signature. Tu peux créer tout de suite un second client Android pour `fr.macave.app`, avec la même empreinte : il servira à l'appli habituelle ;
+   - **Clients › Créer un client**, type **Android** : nom du paquet `fr.pampre.app.essai`, empreinte du certificat SHA-1 `74:59:60:62:67:BD:D8:B6:A1:A8:24:F2:93:93:AA:DC:6D:C6:01:02` (celle de la clé qui signe tes APK). Rien à recopier ensuite : Google reconnaît l'appli à son paquet et à sa signature. Tu peux créer tout de suite un second client Android pour `fr.macave.app`, avec la même empreinte : il servira à l'appli habituelle ;
    - dans les restrictions de la **clé API**, ajoute le site `https://localhost/*` (l'adresse des pages dans l'appli) à côté de `http://localhost:8765/*`.
 
 ## Lancer le test

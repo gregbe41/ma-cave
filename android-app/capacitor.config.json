@@ -1,6 +1,6 @@
 {
-  "appId": "fr.macave.app",
-  "appName": "Tastevin",
+  "appId": "fr.pampre.app",
+  "appName": "Pampre",
   "webDir": "www",
   "android": {
     "backgroundColor": "#F4F2EE"

@@ -1,4 +1,4 @@
-// Dessine l'icône de l'appli (le logo de Tastevin, scripts/logo.js) dans toutes les tailles Android, directement dans
+// Dessine l'icône de l'appli (le logo de Pampre, scripts/logo.js) dans toutes les tailles Android, directement dans
 // android/app/src/main/res/mipmap-* : ic_launcher (carré arrondi, Android 7 et avant), ic_launcher_round, et les deux
 // calques de l'icône adaptative (ic_launcher_foreground, ic_launcher_background) que mipmap-anydpi-v26 assemble.
 // Copie aussi le logo en 1024 px dans assets/. Usage : node scripts/make-icons.js "<chemin vers msedge.exe ou chrome.exe>"

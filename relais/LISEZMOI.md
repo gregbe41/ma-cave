@@ -9,9 +9,9 @@ Ce qu'il fait :
 - **il garde la clé Claude** : elle n'est jamais dans l'appli ;
 - **il vérifie qui demande**. L'appli envoie le jeton Google de la personne, avec l'accès « fichiers créés ou désignés
   dans l'appli » seulement, et l'identifiant de la cave. Le relais demande à Google trois choses : le jeton a-t-il été
-  délivré à l'appli Ma cave ? Ouvre-t-il le fichier `cave.json` de cette cave ? À qui appartient la cave ? Seul un
+  délivré à l'appli Pampre ? Ouvre-t-il le fichier `cave.json` de cette cave ? À qui appartient la cave ? Seul un
   membre qui a rejoint la cave avec l'appli passe ;
-- **il compte les bouchons de chaque cave** : l'unité des demandes à Tastevin, l'IA de l'appli (propulsée par Claude). Il y a une limite par jour et par mois, et une part par membre. Le
+- **il compte les bouchons de chaque cave** : l'unité des demandes à Pampre, l'IA de l'appli (propulsée par Claude). Il y a une limite par jour et par mois, et une part par membre. Le
   propriétaire de la cave règle ces limites, toujours sous le plafond fixé par le relais ; les caves de l'éditeur ont
   un plafond plus haut. Une demande qui échoue ne coûte rien ;
 - **il parle à Claude avec les consignes du script**. Elles sont recopiées de `apps-script/Code.gs` dans `regles.js`
@@ -26,16 +26,16 @@ Ce qu'il fait :
 | `similaires` | 1 | cinq vins à découvrir |
 | `cote` | 2 | valeur du jour, cherchée en ligne (trois recherches au plus) |
 | `portrait` | 2 | portrait de dégustateur d'une personne, d'après ses notes (« Mes stats ») |
-| `lien` | 1 | l'avis de Tastevin sur un vin vu en ligne (Conseil › « Vu en ligne ? »), d'après les goûts de la personne |
+| `lien` | 1 | l'avis de Pampre sur un vin vu en ligne (Conseil › « Vu en ligne ? »), d'après les goûts de la personne |
 | `page` | 0 | lit la page d'un site marchand pour l'appli, sans IA : le navigateur ne le peut pas. Liens publics seulement (ni adresse IP, ni réseau local, redirections vérifiées), 2 Mo lus au plus, `PAGES_JOUR` pages par jour et par cave |
 | `etat`, `reglages` | 0 | ce qui reste ; réglages du propriétaire |
-| `depense` | 0 | ce que Tastevin coûte vraiment chez Anthropic, en dollars, ce mois-ci et le mois d'avant : réservé à l'éditeur (`ADMINS`) |
+| `depense` | 0 | ce que Pampre coûte vraiment chez Anthropic, en dollars, ce mois-ci et le mois d'avant : réservé à l'éditeur (`ADMINS`) |
 
 **Coût réel** : après chaque réponse de Claude, le relais calcule son prix d'après l'usage renvoyé (jetons envoyés, reçus,
 mis en cache, recherches web) et les prix d'Anthropic, et l'ajoute au total du mois (`depense:<mois>`), demande par
 demande. Une réponse inutilisable (illisible, incomplète) est comptée aussi : elle coûte chez Anthropic, sans bouchon.
 L'éditeur voit le total, le prix moyen d'un bouchon et combien de bouchons tiennent dans sa limite de dépense, dans
-l'appli : Réglages › Tastevin › Coût réel de Tastevin.
+l'appli : Réglages › Pampre › Coût réel de Pampre.
 
 Chaque demande est un `POST /v1/<demande>` avec l'en-tête `Authorization: Bearer <jeton Google>` et un corps JSON
 `{ "cave": "<id de cave.json>", … }`.
@@ -69,7 +69,7 @@ puis `npm install` dans `relais/` et `node relais/serveur.js` : le relais répon
 ## Le mettre en ligne : Cloudflare Workers (choisi)
 
 L'offre gratuite ne demande pas de carte bancaire. Au-delà de ses quotas (100 000 demandes par jour, 1 000 écritures
-KV par jour, soit environ 500 demandes à Tastevin : chacune écrit les bouchons de la cave et le coût du mois), Cloudflare refuse les demandes : **il ne facture jamais rien**, même si le
+KV par jour, soit environ 500 demandes à Pampre : chacune écrit les bouchons de la cave et le coût du mois), Cloudflare refuse les demandes : **il ne facture jamais rien**, même si le
 relais est inondé de fausses demandes. Prends un compte Cloudflare réservé au relais : ses quotas ne sont pas partagés
 avec un autre service.
 
@@ -82,7 +82,7 @@ Conseil partent en 1024 px (environ 6 à 8 ms pour quatre photos).
    - Donne ton adresse Google (tes caves ont le plafond le plus haut), puis colle ta clé de l'API Claude quand elle est
      demandée : elle ne s'affiche pas.
 3. Le script recopie l'adresse du relais dans `prototypes/drive-direct/config.local.js` (ligne `relais`). La prochaine
-   construction de l'APK d'essai branche Tastevin sur les caves Google Drive.
+   construction de l'APK d'essai branche Pampre sur les caves Google Drive.
 
 Relancer le script met le relais à jour. Les fichiers qu'il écrit (`wrangler.toml`, `cloudflare.local.json`) ne sont
 jamais publiés.

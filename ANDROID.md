@@ -39,7 +39,7 @@ npm run apk
 npm run install-phone
 ```
 
-La première commande construit l'appli (l'APK). La seconde l'installe sur le téléphone. L'icône « Tastevin » (une bouteille et son tastevin) apparaît avec les autres applis.
+La première commande construit l'appli (l'APK). La seconde l'installe sur le téléphone. L'icône « Pampre » (une pousse de vigne sur fond nuit) apparaît avec les autres applis.
 
 > **Autre méthode, avec Android Studio** : **File › Open**, choisis le dossier `android-app/android`, sélectionne ton téléphone en haut de la fenêtre, puis clique sur ▶ **Run**.
 
@@ -70,7 +70,7 @@ Tu installes l'appli toi-même, à la main, chez tes proches ? Mets l'adresse du
 ## Différences avec la page web
 
 - **Photo** : « Photographier l'étiquette » ouvre le scanner de documents de Google. Il repère l'étiquette pendant qu'on vise, la recadre et la redresse, et on peut ajuster les coins à la main. Il en va de même pour « Prendre une photo » dans l'ajout par photos (plusieurs étiquettes d'un coup) et pour « Scanner une étiquette » dans Conseil. Réglages › Photos d'étiquettes permet de revenir à l'appareil photo habituel ; c'est aussi lui qui sert si le scanner manque sur l'appareil (pas de services Google). Le lien « Choisir dans la galerie » permet de prendre une photo déjà faite.
-- **Vu en ligne** : sur la page d'un vin, dans le navigateur du téléphone, Partager › Tastevin ouvre Conseil et lit la page aussitôt, gratuitement (catalogue, ta cave, vos avis). L'appli lit elle-même la page : pas besoin de relais, quelle que soit la cave. L'avis de Tastevin reste derrière son bouton.
+- **Vu en ligne** : sur la page d'un vin, dans le navigateur du téléphone, Partager › Pampre ouvre Conseil et lit la page aussitôt, gratuitement (catalogue, ta cave, vos avis). L'appli lit elle-même la page : pas besoin de relais, quelle que soit la cave. L'avis de Pampre reste derrière son bouton.
 - **Bouton retour d'Android** : il ferme la fenêtre ouverte, puis revient à la cave, puis quitte l'appli.
 - **Export des données** : le fichier passe par le menu de partage (Drive, e-mail…).
 - **Invitation** : le lien envoyé pointe vers la page web, dont l'adresse est retenue par le script dès qu'elle a été ouverte une fois. Tant que ce n'est pas le cas, l'appli envoie un code à coller dans le champ « Adresse du script ».

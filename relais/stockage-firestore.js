@@ -1,5 +1,5 @@
 /* Les bouchons de chaque cave dans Firestore, quand le relais tourne sur Cloud Run : la base « (default) » du projet,
-   offerte jusqu'à 50 000 lectures et 20 000 écritures par jour (une demande à Tastevin en fait une de chaque).
+   offerte jusqu'à 50 000 lectures et 20 000 écritures par jour (une demande à Pampre en fait une de chaque).
    Le jeton vient du serveur de métadonnées de Cloud Run : ni clé, ni bibliothèque. */
 const META = 'http://metadata.google.internal/computeMetadata/v1';
 

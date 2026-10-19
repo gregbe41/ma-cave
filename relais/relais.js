@@ -1,10 +1,10 @@
 /* Relais Claude des caves Google Drive de Ma cave.
    Il garde la clé de l'API Claude (jamais dans l'appli), vérifie que la personne fait partie de la cave, et compte les
-   bouchons de chaque cave (l'unité des demandes à Tastevin, l'IA de l'appli, propulsée par Claude). Les consignes données à Claude sont fixées ici (relais/regles.js, recopiées du script de la
+   bouchons de chaque cave (l'unité des demandes à Pampre, l'IA de l'appli, propulsée par Claude). Les consignes données à Claude sont fixées ici (relais/regles.js, recopiées du script de la
    cave) : le relais n'accepte que des données, jamais des consignes.
 
    Qui demande ? L'appli envoie le jeton Google de la personne (accès drive.file) et l'identifiant de la cave (son fichier
-   cave.json). Le relais demande à Google : ce jeton a-t-il été délivré à l'appli Ma cave ? ouvre-t-il ce cave.json ?
+   cave.json). Le relais demande à Google : ce jeton a-t-il été délivré à l'appli Pampre ? ouvre-t-il ce cave.json ?
    à qui appartient la cave ? Seul un membre qui a rejoint la cave avec l'appli passe.
 
    Indépendant de l'hébergeur : creerRelais() prend la configuration (env), un stockage (get/put JSON) et une fonction
@@ -100,7 +100,7 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
     const ti = await google(`${TOKENINFO}?access_token=${encodeURIComponent(jeton)}`);
     if (!ti.ok) throw erreur(401, 'Connexion à Google expirée : reconnecte-toi.', 'auth');
     // Un jeton délivré à une autre appli (même avec un accès plus large) ne passe pas.
-    if (!clientDeLAppli(ti.j.azp || ti.j.aud)) throw erreur(401, "Ce jeton n'a pas été délivré à l'appli Ma cave.", 'auth');
+    if (!clientDeLAppli(ti.j.azp || ti.j.aud)) throw erreur(401, "Ce jeton n'a pas été délivré à l'appli Pampre.", 'auth');
     if (!String(ti.j.scope || '').split(' ').includes(DRIVE_FILE)) throw erreur(401, 'Accès Google incomplet.', 'auth');
     const fic = await google(`${DRIVE}/files/${cave}?fields=id,name,ownedByMe,owners(emailAddress)`, jeton);
     if (fic.status === 401) throw erreur(401, 'Connexion à Google expirée : reconnecte-toi.', 'auth');
@@ -219,20 +219,20 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       }
     } catch (e) {
       if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) throw erreur(502, 'La clé Claude du relais est refusée.', 'cle');
-      if (e instanceof Anthropic.RateLimitError) throw erreur(503, 'Tastevin est très demandé en ce moment : réessaie dans un instant.', 'occupe');
-      if (e instanceof Anthropic.BadRequestError && /credit|balance|billing/i.test(e.message)) throw erreur(503, 'Tastevin est indisponible pour le moment (plafond de dépense atteint). Remplis la fiche à la main.', 'occupe');
-      if (e instanceof Anthropic.APIError) throw erreur(502, `Tastevin a répondu une erreur (${e.status || 'réseau'}).`, 'claude');
-      throw erreur(502, 'Tastevin ne répond pas. Réessaie plus tard.', 'claude');
+      if (e instanceof Anthropic.RateLimitError) throw erreur(503, 'Pampre est très demandé en ce moment : réessaie dans un instant.', 'occupe');
+      if (e instanceof Anthropic.BadRequestError && /credit|balance|billing/i.test(e.message)) throw erreur(503, 'Pampre est indisponible pour le moment (plafond de dépense atteint). Remplis la fiche à la main.', 'occupe');
+      if (e instanceof Anthropic.APIError) throw erreur(502, `Pampre a répondu une erreur (${e.status || 'réseau'}).`, 'claude');
+      throw erreur(502, 'Pampre ne répond pas. Réessaie plus tard.', 'claude');
     }
-    if (r.stop_reason === 'refusal') throw erreur(422, 'Tastevin a refusé de traiter cette demande.', 'refus');
-    if (r.stop_reason === 'max_tokens') throw erreur(422, 'Réponse incomplète de Tastevin. Réessaie, avec une photo plus nette si besoin.', 'incomplet');
+    if (r.stop_reason === 'refusal') throw erreur(422, 'Pampre a refusé de traiter cette demande.', 'refus');
+    if (r.stop_reason === 'max_tokens') throw erreur(422, 'Réponse incomplète de Pampre. Réessaie, avec une photo plus nette si besoin.', 'incomplet');
     const txt = r.content.filter(b => b.type === 'text').map(b => b.text).join('');
     try {
       if (schema) return { json: JSON.parse(txt), usage: r.usage };
       // Sans sortie structurée (recherche web) : le dernier objet JSON du texte.
       const m = txt.match(/\{[\s\S]*\}(?![\s\S]*\{)/);
       return { json: JSON.parse(m ? m[0] : txt), usage: r.usage };
-    } catch { throw erreur(502, 'La réponse de Tastevin est illisible. Réessaie.', 'illisible'); }
+    } catch { throw erreur(502, 'La réponse de Pampre est illisible. Réessaie.', 'illisible'); }
   }
 
   /* ---------- Vu en ligne : lire une page ---------- */
@@ -295,7 +295,7 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
   const ACTIONS = {
     async etat({ cave, qui }) { return { credits: statut(await etatCave(cave), qui), role: qui.proprio ? 'proprio' : 'membre', editeur: admins.includes(qui.email) }; },
 
-    /** Ce que Tastevin coûte vraiment chez Anthropic, ce mois-ci et le mois d'avant : réservé à l'éditeur (ADMINS). */
+    /** Ce que Pampre coûte vraiment chez Anthropic, ce mois-ci et le mois d'avant : réservé à l'éditeur (ADMINS). */
     async depense({ qui }) {
       if (!admins.includes(qui.email)) throw erreur(403, "Réservé à l'éditeur de l'appli.", 'editeur');
       const mois = aujourdhui(maintenant()).mois, avant = moisAvant(mois), vide = m => ({ mois: m, usd: 0, bouchons: 0, demandes: 0, actions: {} });
@@ -384,7 +384,7 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       return { page: await lirePage(p.url) };
     },
 
-    /** Vu en ligne : l'avis de Tastevin sur le vin de la page (ce que l'appli en a extrait) et les goûts de la personne. */
+    /** Vu en ligne : l'avis de Pampre sur le vin de la page (ce que l'appli en a extrait) et les goûts de la personne. */
     async lien({ cave, qui, p, suivi }) {
       const pg = p.page && typeof p.page === 'object' ? p.page : {};
       const page = {

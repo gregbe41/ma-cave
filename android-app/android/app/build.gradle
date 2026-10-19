@@ -5,7 +5,7 @@ android {
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         // Installer à côté de l'appli habituelle, pour essayer une nouvelle version : node scripts/apk.js essai
-        applicationId "fr.macave.app" + (project.findProperty('macaveSuffix') ?: '')
+        applicationId "fr.pampre.app" + (project.findProperty('macaveSuffix') ?: '')
         manifestPlaceholders = [appLabel: project.findProperty('macaveLabel') ?: '@string/app_name']
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Tastevin</string>
-    <string name="title_activity_main">Tastevin</string>
-    <string name="package_name">fr.macave.app</string>
-    <string name="custom_url_scheme">fr.macave.app</string>
+    <string name="app_name">Pampre</string>
+    <string name="title_activity_main">Pampre</string>
+    <string name="package_name">fr.pampre.app</string>
+    <string name="custom_url_scheme">fr.pampre.app</string>
 </resources>
