@@ -3466,11 +3466,13 @@ function noterVite(mvId, n, ecart = '') {
   const m = db.moves.find(x => x.id === mvId), me = S.device;
   if (!m || !me || (!ecart && !(n >= 1 && n <= 5)) || (ecart && !ecartLabel(ecart))) return;
   const now = nowISO(), id = avisId(m.id, me), a = db.avis.find(x => x.id === id), note = ecart ? null : n;
+  const tropVieux = ecart === 'vieux' && !(a && a.ecart === 'vieux');
   if (a) { Object.assign(a, { note, updatedAt: now }); if (ecart) a.ecart = ecart; else delete a.ecart; }
   else db.avis.push({ id, mvId: m.id, vinId: m.vinId, date: m.date, qui: me, note, commentaire: '', ...(ecart ? { ecart } : {}), updatedAt: now });
   commit();
   const w = wineTitle(db.wines.find(x => x.id === m.vinId) || {});
   toast(ecart ? `${ecartLabel(ecart)}, sans note : ${w} ne compte pas dans tes goûts` : `Noté ${n} sur 5 : ${w}`);
+  if (tropVieux) proposerSansTarder(m.vinId);
 }
 
 function debloqueHTML(d) {
@@ -6684,6 +6686,8 @@ function submitMove(e) {
   let mv = old;
   if (old) Object.assign(old, rec);
   else db.moves.push(mv = { id: uid(), vinId: MF.wineId, type: MF.type, par: S.device, ...rec });
+  // « Trop vieux » cochée à l'instant (pas déjà enregistrée sur cette sortie) : on proposera de prévenir pour les autres bouteilles.
+  const tropVieux = MF.type === 'sortie' && TASTE.some(t => t.ecart === 'vieux') && !avisOf(mv.id).some(a => a.ecart === 'vieux');
   if (MF.type === 'sortie') {
     $$('#mf-tasters .taste-row').forEach(r => { TASTE[+r.dataset.i].commentaire = $('.taste-com', r).value; });
     saveAvis(mv);
@@ -6696,6 +6700,17 @@ function submitMove(e) {
   toast(old ? 'Modifications enregistrées' : MF.type === 'sortie'
     ? (qte > 1 ? `${qte} bouteilles débouchées` : 'Bouteille débouchée, santé !')
     : `${qte} ${plural(qte, 'bouteille ajoutée', 'bouteilles ajoutées')}${forTxt(owner)}`);
+  if (tropVieux) proposerSansTarder(mv.vinId);
+}
+
+/** Une bouteille trouvée trop vieille : s'il en reste du même vin, proposer (rien n'est fait sans le bouton) de les marquer
+    « À boire sans tarder ». C'est la personne qui le décide : l'alerte n'est pas comptée comme remplie par Tastevin. */
+async function proposerSansTarder(vinId) {
+  const w = db.wines.find(x => x.id === vinId), n = stockMap().get(vinId) || 0;
+  if (!w || n <= 0 || w.alerte === 'passe') return;
+  const ok = await confirmer(`Il reste ${n} ${plural(n, 'bouteille', 'bouteilles')} de ${wineTitle(w)}`,
+    `Celle-ci était trop vieille. ${n > 1 ? 'Les' : 'La'} marquer « À boire sans tarder » ?`, { ok: 'Marquer', annuler: 'Pas maintenant' });
+  if (ok) setReading(w.id, x => ({ alerte: 'passe', claude: claudeKeys(x).filter(k => k !== 'alerte').join(',') }), `À boire sans tarder : ${plural(n, "la bouteille qui reste est marquée", 'les bouteilles qui restent sont marquées')}`);
 }
 
 async function deleteMove() {
