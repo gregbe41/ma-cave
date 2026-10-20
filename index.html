@@ -8,6 +8,13 @@
 <script>
 /* Thème choisi sur cet appareil (Réglages › Affichage), posé avant le premier affichage pour éviter un éclair de l'autre thème. */
 try { const t = JSON.parse(localStorage.getItem('macave:theme')); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+/* La page publiée (GitHub Pages) et ses caves Google Drive : identifiant du client web, clé API (limitée à ce site),
+   numéro du projet Google et adresse du relais. Ils sont publics par nature, comme dans toute page qui se connecte à
+   Google. Ailleurs, la configuration vient d'à côté : l'APK l'ajoute (android-app/scripts/copy-web.js), les tests aussi. */
+if (location.hostname === 'gregbe41.github.io' && !window.MACAVE_GOOGLE) window.MACAVE_GOOGLE = {
+  clientId: '635442301695-9lakqqfdvcn109434g132qv4ridps1o1.apps.googleusercontent.com', apiKey: 'AIzaSyBRuPxpQW2uk3Nncxt2O0OTFSLjUHVmLjs',
+  appId: '635442301695', relais: 'https://ma-cave-relais.ma-cave-tastevin.workers.dev',
+};
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
