@@ -2924,7 +2924,8 @@ function provHTML(w) {
     ${g.length ? `<p><b>Estimé, à vérifier :</b> ${esc(g.map(k => FIELD_NAMES[k]).join(', '))}.</p>` : ''}
     ${note ? `<p>${esc(note)}</p>` : ''}
     <p class="hint">${mine.length ? "Pampre ne touche jamais à ce que tu as saisi. Modifie un de ses champs pour le garder, ou vide-le pour le lui rendre." : 'Pampre ne remplit que les champs laissés vides.'}</p>
-    ${check || ask ? `<div class="btn-row">${check ? `<button class="btn" data-act="verify" data-id="${w.id}">Vérifier la fiche</button>` : ''}${ask ? `<button class="btn" data-act="ask-claude" data-id="${w.id}">Demander l'avis de Pampre</button>` : ''}</div>` : ''}
+    ${check || ask ? `<div class="btn-row">${check ? `<button class="btn" data-act="verify" data-id="${w.id}">${g.length ? 'Vérifier les estimations' : 'Vérifier la lecture'}</button>
+      <button class="btn" data-act="guess-ok" data-id="${w.id}" title="${g.length ? 'Confirmer les estimations de Pampre, sans rien changer' : 'Confirmer la lecture de Pampre, sans rien changer'}">C'est juste</button>` : ''}${ask ? `<button class="btn" data-act="ask-claude" data-id="${w.id}">Demander l'avis de Pampre</button>` : ''}</div>` : ''}
   </div>`;
 }
 
@@ -8428,6 +8429,12 @@ function wire() {
         case 'read-now': readNow(); break;
         case 'dup-add': addToDuplicate(); break;
         case 'verify': openWineForm(id); break;
+        // Confirmé d'un geste, comme « Enregistrer » sans rien changer : les champs restent à Pampre, la marque s'en va.
+        case 'guess-ok': {
+          const g = guessList(db.wines.find(x => x.id === id) || {}).length;
+          setReading(id, { aVerifier: '', lectureNote: '' }, g ? 'Noté : les estimations de Pampre sont confirmées.' : 'Noté : la lecture de Pampre est confirmée.');
+          break;
+        }
         case 'reread': setReading(id, { lecture: 'attente', lectureNote: '' }, `L'étiquette sera relue ${plusTard()}.`); break;
         case 'not-dup': setReading(id, { doublonDe: '', doublonType: '' }, 'Noté : ce sont deux vins différents.'); break;
         // Alerte retirée par la personne : « non », que Claude ne remettra pas.
