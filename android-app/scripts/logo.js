@@ -1,19 +1,22 @@
-// Logo de Pampre : une jeune pousse de vigne ambre (le pampre), deux feuilles, sa vrille, et l'étincelle de l'IA, sur
-// fond nuit. Dessin sur 100×100 = la zone visible d'une icône Android (le cercle inscrit) ; réduit à 85 % autour du
-// centre, tout tient dans un rayon de 42, la zone sûre de tous les masques.
+// Logo de Pampre : une bouteille crème, et la pousse de vigne ambre (le pampre) qui grimpe le long de son flanc, pose
+// une feuille sur elle et enroule sa vrille autour du col ; l'étincelle de l'IA en haut à droite ; fond nuit.
+// Dessin sur 100×100 = la zone visible d'une icône Android (le cercle inscrit) ; tout tient dans un rayon de 42 autour
+// du centre, la zone sûre de tous les masques. Là où la pousse passe devant la bouteille, un liseré nuit les sépare.
 // Le même dessin est recopié dans index.html (en-tête du grand écran et icône de l'onglet).
-const COULEURS = { bg: '#0E1311', pousse: '#E8A13A', nervure: '#0E1311', etincelle: '#F4F2EE' };
+const COULEURS = { bg: '#0E1311', bouteille: '#EFE6D4', pousse: '#E8A13A', etincelle: '#F4F2EE' };
 
 function dessin(c = COULEURS) {
-  return `<g transform="translate(7.5 7.5) scale(.85)">
-    <path d="M50 88 C50 72 46 60 51 46 C55 37 55 31 52 26" fill="none" stroke="${c.pousse}" stroke-width="5" stroke-linecap="round"/>
-    <path d="M52 55 C59 42 73 37 85 41 C81 55 67 62 52 55 Z" fill="${c.pousse}"/>
-    <path d="M55 53 C64 49 72 46 80 43" fill="none" stroke="${c.nervure}" stroke-width="1.8" stroke-linecap="round"/>
-    <path d="M49 41 C42 31 31 28 19 32 C24 45 37 48 49 41 Z" fill="${c.pousse}"/>
-    <path d="M46 40 C39 37 32 35 24 34" fill="none" stroke="${c.nervure}" stroke-width="1.8" stroke-linecap="round"/>
-    <path d="M52 26 C49 19 55 13 61 16 C66 19 64 26 59 25 C56.5 24.5 56.8 21.5 59 21.5" fill="none" stroke="${c.pousse}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M74 9 C75 14 77 16 82 17 C77 18 75 20 74 25 C73 20 71 18 66 17 C71 16 73 14 74 9 Z" fill="${c.etincelle}"/>
-  </g>`;
+  const tige = 'M62 88 C60 79 57.5 71 57.5 62 C57.5 53 55.5 45 50 38.5 C47.5 35.5 46 33 45.5 30.5';
+  const vrille = 'M45.5 30.5 C42 27.5 36.5 28.5 34.5 25 C33 22 36.5 19.5 39.2 21 C41.2 22.2 40.4 24.8 38.6 24.6';
+  const feuille = 'M0 0 C7 -13 21 -18 33 -14 C29 0 15 7 0 0 Z';
+  const nervure = `<path d="M3 -2 C12 -6 20 -9 28 -12" fill="none" stroke="${c.bg}" stroke-width="1.8" stroke-linecap="round"/>`;
+  const trait = (d, w, lisere) => `<path d="${d}" fill="none" stroke="${c.bg}" stroke-width="${w + lisere}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${c.pousse}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return `<path d="M35.8 11 H46.2 V14.2 H45.3 V33 C45.3 40 53.5 40 53.5 47 V84 Q53.5 88 49.5 88 H32.5 Q28.5 88 28.5 84 V47 C28.5 40 36.7 40 36.7 33 V14.2 H35.8 Z" fill="${c.bouteille}"/>
+    ${trait(tige, 4, 3.2)}
+    <g transform="translate(58.5 74) scale(.62) rotate(-18)"><path d="${feuille}" fill="${c.pousse}"/>${nervure}</g>
+    <g transform="translate(57.5 60) scale(-.6 .6) rotate(-26)"><path d="${feuille}" fill="none" stroke="${c.bg}" stroke-width="4.33" stroke-linejoin="round"/><path d="${feuille}" fill="${c.pousse}"/>${nervure}</g>
+    ${trait(vrille, 3, 3)}
+    <path d="M70 23 C71 28 73 30 78 31 C73 32 71 34 70 39 C69 34 67 32 62 31 C67 30 69 28 70 23 Z" fill="${c.etincelle}"/>`;
 }
 /** fond : 'carre' (plein), 'rond', 'arrondi' (icône d'avant Android 8, avec une petite marge) ou '' (dessin seul). */
 function svg(px, fond = 'carre', c = COULEURS) {
