@@ -1371,7 +1371,7 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
           </div>
           <div id="sync-box"></div>
           <label class="rg-row rg-switch" id="drive-set" hidden>
-            <span class="rg-txt"><b>Partager mes photos d'étiquettes</b><small>Dans le Drive de la cave, par un lien impossible à deviner. Sinon, elles restent sur cet appareil.</small></span>
+            <span class="rg-txt"><b>Partager mes photos d'étiquettes</b><small>Celles de la cave et du Conseil, dans le Drive de la cave, par un lien impossible à deviner. Sinon, elles restent sur cet appareil.</small></span>
             <input type="checkbox" id="drive-photos" class="sw" role="switch">
           </label>
           <details class="rg-fold" id="script-set">
@@ -5488,7 +5488,7 @@ async function processConseils() {
       const step = txt => { UI.csProgress = { id: c.id, txt }; if (UI.openConseil === c.id && $('#dlg-conseil').open) renderConseilDetail(); };
       const n = c.bouteilles.length;
       for (const [i, b] of c.bouteilles.entries()) {
-        // Cave Google Drive : les photos d'un conseil restent sur l'appareil, le relais les transmet à Claude.
+        // Cave Google Drive : le relais transmet les photos à Claude ; elles partent dans le Drive après l'analyse.
         if (b.photoId || isDrive()) continue;
         const rec = await Photos.get(scanKey(c.id, i)).catch(() => null);
         if (!rec || !rec.blob) throw new Error("une photo n'est plus sur cet appareil");
@@ -5840,7 +5840,7 @@ function renderConseilDetail() {
   hydrateScans(det);
 }
 
-/** Photo d'un conseil : sur cet appareil, sinon téléchargée une fois depuis le script. */
+/** Photo d'un conseil : sur cet appareil, sinon téléchargée une fois (dossier Photos de la cave Drive, ou script). */
 const scanFetching = new Map();
 async function scanBlob(c, i) {
   const k = scanKey(c.id, i), rec = await Photos.get(k).catch(() => null);
@@ -5848,8 +5848,8 @@ async function scanBlob(c, i) {
   const b = c.bouteilles[i];
   if (!b || !b.photoId || !API.ready()) return null;
   if (!scanFetching.has(k)) scanFetching.set(k, (async () => {
-    const res = await API.call('photoGet', { id: b.photoId }, 90e3);
-    const blob = b64ToBlob(res.data, res.mime);
+    // Cave Google Drive : la photo est dans le dossier Photos de la cave, partagée par lien.
+    const blob = isDrive() ? await drivePublicBlob(b.photoId) : await API.call('photoGet', { id: b.photoId }, 90e3).then(res => b64ToBlob(res.data, res.mime));
     await Photos.put({ id: k, blob, driveId: b.photoId, dirty: false });
     Photos.forget(k);
     return blob;
@@ -7165,7 +7165,8 @@ const Drive = {
    Photos de la cave et partagée par lien : les autres membres la lisent avec la clé de l'appli, sans aucun accès au Drive
    de celui qui l'a prise. Une photo d'invité reste à son nom : l'appli du propriétaire la recopie à son nom (adoption),
    puis l'appli de l'invité supprime l'original. db.photos note chaque photo envoyée : qui, pour quel vin, et où en est
-   l'adoption ('' à adopter, 'proprio' au propriétaire, 'adoptee' recopiée, 'supprimee'). */
+   l'adoption ('' à adopter, 'proprio' au propriétaire, 'adoptee' recopiée, 'supprimee' ; 'conseil' pour une photo du
+   Conseil, qui reste à celui qui l'a prise). */
 async function drivePublicBlob(id) {
   let r;
   try { r = await fetch(`${DRIVE_API}/files/${id}?alt=media&key=${encodeURIComponent(GOOGLE.apiKey)}`); }
@@ -7226,6 +7227,19 @@ async function pushPhotosDrive() {
     const cur = await Photos.get(r.id).catch(() => null);
     if (cur && cur.v === r.v) await Photos.put({ ...cur, driveId: id, dirty: false });
   }
+  // Les photos du Conseil partent aussi, une fois l'analyse faite (l'avis de Pampre n'attend pas l'envoi) : on les
+  // retrouve sur un autre appareil, ou après avoir réinstallé l'appli.
+  for (const r of recs.filter(x => isScanKey(x.id) && !x.driveId)) {
+    const m = /^cs-(.+)-(\d+)$/.exec(r.id), i = m ? +m[2] : -1, c = m && db.conseils.find(x => x.id === m[1]), b = c && c.bouteilles[i];
+    if (!b || b.photoId || c.statut === 'envoi') continue;
+    const id = await driveUploadPhoto(`conseil-${c.id}-${i + 1}.jpg`, r.blob, S.photosId);
+    // Analyse supprimée ou bouteille retirée pendant l'envoi : la photo ne sert plus.
+    if (!db.conseils.includes(c) || c.bouteilles[i] !== b) { S.photoDeletes.push(id); saveSettings(); continue; }
+    b.photoId = id; c.updatedAt = nowISO();
+    notePhoto(id, '', me, 'conseil');
+    await Photos.put({ ...r, driveId: id });
+    persist(); saveSettings();
+  }
   return sent;
 }
 /** Après la fusion : le propriétaire adopte les photos des invités ; chacun retire de son Drive ses photos qui ne servent
@@ -7249,7 +7263,7 @@ async function pullPhotosDrive() {
       changed = true;
     }
   }
-  const used = new Set(db.wines.map(w => w.photoId).filter(Boolean));
+  const used = new Set([...db.wines.map(w => w.photoId), ...db.conseils.flatMap(c => c.bouteilles.map(b => b.photoId))].filter(Boolean));
   for (const e of (db.photos || []).filter(p => p.par === me && p.etat !== 'supprimee' && !used.has(p.id))) {
     try { await Drive.req('DELETE', `${DRIVE_API}/files/${e.id}`); } catch (err) { if (err.status !== 404) continue; }
     Object.assign(e, { etat: 'supprimee', updatedAt: nowISO() });
