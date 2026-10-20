@@ -1909,7 +1909,7 @@ function canonGrape(s) {
 const splitGrapes = s => [...new Set(str(s).split(/[,;/+]| et /).map(canonGrape).filter(Boolean))];
 const PAYS = ['France','Italie','Espagne','Portugal','Allemagne','Autriche','Suisse','Grèce','Hongrie','États-Unis','Argentine','Chili','Afrique du Sud','Australie','Nouvelle-Zélande'];
 const FORMATS = ['37,5 cl','50 cl','75 cl','Magnum 1,5 l','Jéroboam 3 l'];
-const TITLES = { cave: 'Ce soir, on ouvre quoi ?', boire: 'À boire', conseil: 'Conseil', stats: 'Statistiques', reglages: 'Réglages' };
+const TITLES = { cave: "Qu'ouvre-t-on ce soir ?", boire: 'À boire', conseil: 'Conseil', stats: 'Statistiques', reglages: 'Réglages' };
 const LABEL_FIELDS = ['domaine', 'cuvee', 'appellation', 'region', 'pays', 'cepages', 'millesime', 'gardeDe', 'gardeA'];
 // Accords mets et vins : une liste fixe de catégories (la même que dans le script), pour pouvoir filtrer.
 const ACCORDS = ['Apéritif', 'Entrées', 'Poissons', 'Fruits de mer', 'Volailles', 'Viandes blanches', 'Viandes rouges', 'Gibier', 'Charcuterie', 'Fromages', 'Plats épicés', 'Cuisine végétarienne', 'Desserts'];
