@@ -2,7 +2,8 @@
 //   node scripts/apk.js maison     → dist/ma-cave-maison.apk
 //   node scripts/apk.js generique  → dist/ma-cave.apk (aujourd'hui identique à « maison » : Pampre n'intègre plus aucune cave)
 //   node scripts/apk.js essai ["Pampre v2"] → dist/ma-cave-essai.apk : s'installe À CÔTÉ de l'appli habituelle
-//                                    (identifiant fr.pampre.app.essai, nom à part) pour essayer une nouvelle version
+//                                    (identifiant fr.pampre.app.essai) pour essayer une nouvelle version ; il s'appelle
+//                                    « Pampre » comme l'autre, sauf si on lui donne un nom à part
 // Tous ouvrent les caves Google Drive (configuration de prototypes/drive-direct/config.local.js, sur ce PC).
 // « maison » et « generique » portent le même identifiant (fr.pampre.app) et doivent être signés avec la même clé : on peut alors
 // installer l'un par-dessus l'autre sans rien perdre (les réglages et les données de l'appareil sont gardés).
@@ -12,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 const kind = ['generique', 'essai'].includes(process.argv[2]) ? process.argv[2] : 'maison';
-const label = kind === 'essai' ? (process.argv[3] || 'Pampre (essai)').replace(/"/g, '') : '';
+const label = kind === 'essai' ? (process.argv[3] || 'Pampre').replace(/"/g, '') : '';
 const root = path.join(__dirname, '..');
 const android = path.join(root, 'android');
 const run = (cmd, cwd = root) => { console.log(`\n> ${cmd}`); execSync(cmd, { cwd, stdio: 'inherit' }); };
