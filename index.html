@@ -5522,15 +5522,26 @@ async function pollConseils() {
   watchConseils();
 }
 
-/* ---------- Historique et résultat ---------- */
+/* ---------- Historique et résultat ----------
+   Un résultat ouvert est vu (c.vu, la date) : dans une cave Google Drive, c'est écrit dans la cave, si bien qu'un autre
+   appareil, ou la cave retrouvée avec le compte Google, ne le redonne pas comme nouveau. Une cave à script ne garde pas
+   ce champ : chaque appareil s'en souvient pour lui. Les analyses d'avant ce suivi partagé comptent comme vues. */
+const VU_PARTAGE = '2026-10-20T11:00:00.000Z';
 const seenConseils = new Set(lsGet('macave:conseils-vus', []));
 function markSeen(id) {
-  if (seenConseils.has(id)) return;
-  seenConseils.add(id);
-  lsSet('macave:conseils-vus', [...seenConseils].slice(-300));
-  updateConseilBadge();
+  const c = db.conseils.find(x => x.id === id);
+  let fresh = false;
+  // Sans changer la version de l'analyse : à version égale, la fusion garde le champ rempli d'un côté.
+  if (c && !c.vu) { c.vu = nowISO(); persist(); scheduleSync(); fresh = true; }
+  if (!seenConseils.has(id)) {
+    seenConseils.add(id);
+    lsSet('macave:conseils-vus', [...seenConseils].slice(-300));
+    fresh = true;
+  }
+  if (fresh) updateConseilBadge();
 }
-const unseenConseils = () => db.conseils.filter(c => c.par === S.device && ['fait', 'echec'].includes(c.statut) && !seenConseils.has(c.id));
+const conseilVu = c => !!c.vu || (c.date || '') < VU_PARTAGE || (!isDrive() && seenConseils.has(c.id));
+const unseenConseils = () => db.conseils.filter(c => c.par === S.device && ['fait', 'echec'].includes(c.statut) && !conseilVu(c));
 function updateConseilBadge() {
   const n = unseenConseils().length, b = $('#conseil-badge');
   b.hidden = !n;
@@ -5726,7 +5737,7 @@ function relaunchConseil(id) {
   const c = db.conseils.find(x => x.id === id);
   if (!c || csBusy(c)) return;
   if (!API.ready()) { toast("Relie d'abord l'appli au script (Réglages) : c'est lui qui transmet les photos à Pampre."); return; }
-  Object.assign(c, { statut: 'envoi', note: '', modifie: false, updatedAt: nowISO() });
+  Object.assign(c, { statut: 'envoi', note: '', modifie: false, vu: '', updatedAt: nowISO() });
   seenConseils.delete(id);
   lsSet('macave:conseils-vus', [...seenConseils].slice(-300));
   UI.csOpen.clear();
