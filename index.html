@@ -335,7 +335,9 @@ legend{padding:0;margin:0 0 8px;font-size:.88rem;font-weight:500;color:var(--mut
 .tab[aria-selected="true"] .tab-n{background:var(--accent);color:var(--on-accent)}
 .tab-desc{margin:10px 2px 14px;font-size:.9rem;color:var(--muted)}
 .tab-desc b{color:var(--ink)}
-.feat{margin:0 0 14px;padding:16px;border-radius:20px;background:var(--surface);box-shadow:var(--card-shadow)}
+.feat{position:relative;margin:8px 0 10px;padding:16px;border-radius:20px;background:var(--surface);box-shadow:var(--card-shadow)}
+.feat .tn-fold{top:2px;height:40px}
+#boire-tabs .tabs{margin-top:8px}
 .feat-k{margin:0 0 10px;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sfg)}
 .feat-id{display:flex;gap:14px;align-items:center}
 .feat-id > div{min-width:0}
@@ -1292,6 +1294,8 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
     </section>
 
     <section class="view" id="v-boire" hidden>
+      <!-- Le vin à ouvrir en premier, au-dessus de l'en-tête collant (comme l'idée du soir) -->
+      <div id="boire-feat"></div>
       <div class="tools boire-tools">
         <div class="search-row">
           <p class="boire-sum" id="boire-sum"></p>
@@ -1307,6 +1311,8 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
             <label class="accord-pick" hidden>Accord <select class="accord-select"></select></label>
           </div>
         </div>
+        <!-- Priorité, Prêts, À attendre : collés avec les filtres, on change de liste sans remonter -->
+        <div id="boire-tabs"></div>
       </div>
       <div id="boire-body"></div>
     </section>
@@ -2129,6 +2135,8 @@ let STOCK = new Map(), BY_OWNER = new Map();
 const photoIds = new Set();
 const UI = { view: 'cave', q: '', color: '', sort: 'nom', showEmpty: false, period: '12m', openWine: null, owner: lsGet('macave:owner', ''), lastOwner: null, whoAsked: '', review: false, region: '', taster: '', filtersOpen: false, openConseil: null,
   csOpen: new Set(), alerteOpen: '', csDeferred: false, csProgress: null, accord: '', boireFiltersOpen: false, compact: lsGet('macave:compact', false) === true, periodKey: '', boireTab: 'prio', idea: 0, tonightClosed: lsGet('macave:tonightClosed', false) === true, tnAnim: false,
+  // « À ouvrir en premier » replié ou non ; tant qu'on n'a pas choisi, replié seulement en vue compacte.
+  featFerme: lsGet('macave:featFerme', null),
   statsQui: lsGet('macave:statsQui', ''), msCouleur: '', msPref: 'cepages', msDuo: '', msNoterTout: false, msPortrait: false };
 
 function loadAll() {
@@ -2987,6 +2995,7 @@ function renderBoire() {
   renderViewSeg();
   const nb = ws.reduce((a, w) => a + stockOf(w), 0);
   $('#boire-sum').textContent = ws.length ? `${ws.length} ${plural(ws.length, 'vin', 'vins')}, ${nb} ${plural(nb, 'bouteille', 'bouteilles')}${filterCount() ? ' avec ces filtres' : ''}` : '';
+  $('#boire-feat').innerHTML = $('#boire-tabs').innerHTML = '';
   if (!all.length && !filterCount()) {
     box.innerHTML = `<div class="empty"><p class="lead">Aucune bouteille en cave.</p><p>Ajoute des vins avec leur fenêtre de garde pour savoir lesquels ouvrir en premier.</p><button class="btn btn-primary" data-act="new">Ajouter un vin</button></div>`;
     return;
@@ -3012,12 +3021,20 @@ function renderBoire() {
   const tabs = `<div class="tabs" role="tablist" aria-label="Catégories">${BOIRE_TABS.filter(([k]) => k !== 'none' || g.none.length).map(([k, label]) =>
     `<button type="button" role="tab" class="tab" data-btab="${k}" aria-selected="${k === tab}"${g[k].length ? '' : ' disabled'}>${label}<span class="tab-n">${g[k].length}</span></button>`).join('')}</div>`;
 
-  // En tête de « Priorité », le vin à ouvrir en premier.
-  const feat = tab === 'prio' && !UI.compact ? list[0] : null, rest = feat ? list.slice(1) : list;
+  // Tout en haut, quel que soit l'onglet, le vin le plus pressé de la cave (pas avec des filtres, comme l'idée du soir).
+  // Repliée, la carte tient en une ligne ; dépliée, ce vin quitte la liste « Priorité » pour n'y être qu'une fois.
+  const feat = filterCount() ? null : g.prio[0], ferme = UI.featFerme ?? UI.compact;
+  const rest = feat && !ferme && tab === 'prio' ? list.slice(1) : list;
   let featHTML = '';
-  if (feat) {
+  if (feat && ferme) {
+    const st = gardeStatus(feat);
+    featHTML = `<button type="button" class="tn-mini st-${st.key}" data-act="feat-open" aria-expanded="false" aria-label="${esc(`Afficher le vin à ouvrir en premier : ${wineTitle(feat)}`)}">${bottleSvg(colorOf(feat.couleur))}
+      <span class="tn-mini-txt"><small>À ouvrir en premier</small><b>${esc(wineTitle(feat))}${feat.millesime ? ' ' + feat.millesime : ''}</b></span>
+      <span class="tn-mini-more">Afficher${ICO_CHEV_BAS}</span></button>`;
+  } else if (feat) {
     const st = gardeStatus(feat), n = stockOf(feat);
     featHTML = `<section class="feat st-${st.key}" aria-label="À ouvrir en premier">
+      <button type="button" class="tn-fold" data-act="feat-fold" aria-expanded="true" aria-label="Réduire le vin à ouvrir en premier">Réduire${ICO_CHEV_HAUT}</button>
       <p class="feat-k">À ouvrir en premier</p>
       <div class="feat-id">${robe(feat)}<div>
         <p class="feat-name">${esc(wineTitle(feat))}<small>${feat.millesime || 'NM'}</small></p>
@@ -3046,9 +3063,9 @@ function renderBoire() {
       </button>`;
   };
 
-  box.innerHTML = tabs
-    + `<p class="tab-desc"><b>${title}</b> : ${desc.charAt(0).toLowerCase() + desc.slice(1)} ${list.length} ${plural(list.length, 'vin', 'vins')}, ${bt} ${plural(bt, 'bouteille', 'bouteilles')}.</p>`
-    + featHTML
+  $('#boire-feat').innerHTML = featHTML;
+  $('#boire-tabs').innerHTML = tabs;
+  box.innerHTML = `<p class="tab-desc"><b>${title}</b> : ${desc.charAt(0).toLowerCase() + desc.slice(1)} ${list.length} ${plural(list.length, 'vin', 'vins')}, ${bt} ${plural(bt, 'bouteille', 'bouteilles')}.</p>`
     + (rest.length ? `<section class="frise${UI.compact ? ' is-compact' : sc ? ' is-common' : ''}" aria-label="${title}">${sc ? friseAxis(sc) : ''}${rest.map(row).join('')}</section>` : '');
   hydratePhotos(box);
 }
@@ -8502,6 +8519,15 @@ function wire() {
           if (f) f.focus();
           break;
         }
+        // « Réduire » le vin à ouvrir en premier (« À boire »), puis « Afficher » : le choix reste sur l'appareil.
+        case 'feat-fold': case 'feat-open': {
+          UI.featFerme = act.dataset.act === 'feat-fold';
+          lsSet('macave:featFerme', UI.featFerme);
+          renderBoire();
+          const f = $(UI.featFerme ? '#boire-feat .tn-mini' : '#boire-feat .tn-fold');
+          if (f) f.focus();
+          break;
+        }
         case 'sync-now': sync({ interactive: true }); break;
         case 'invite': invite(); break;
         case 'read-now': readNow(); break;
@@ -8579,7 +8605,13 @@ function wire() {
     const chip = e.target.closest('[data-color]');
     if (chip) { UI.color = chip.dataset.color; render(); return; }
     const bt = e.target.closest('[data-btab]');
-    if (bt) { UI.boireTab = bt.dataset.btab; renderBoire(); return; }
+    if (bt) {
+      UI.boireTab = bt.dataset.btab; renderBoire();
+      // En-tête collé (on était descendu dans la liste) : la nouvelle liste repart de son début, juste sous l'en-tête.
+      const t = $('#v-boire > .tools'), y = $('#boire-feat').getBoundingClientRect().bottom + window.scrollY - (parseFloat(getComputedStyle(t).top) || 0);
+      if (window.scrollY > y) window.scrollTo(0, y);
+      return;
+    }
     const cv = e.target.closest('[data-cave]');
     if (cv) { openCave(cv.dataset.cave); return; }
     const cd = e.target.closest('[data-cave-del]');
