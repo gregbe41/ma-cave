@@ -2642,7 +2642,7 @@ function renderCave() {
   const prio = inStock.filter(w => ['late', 'urgent'].includes(gardeStatus(w).key)).length;
   const pending = db.wines.filter(w => w.lecture === 'attente').length, revue = db.wines.filter(w => w.lecture === 'revoir').length;
   const night = [pending && `${pending} ${plural(pending, 'étiquette sera lue', 'étiquettes seront lues')}`, revue && `${revue} ${plural(revue, 'fiche sera revue', 'fiches seront revues')}`].filter(Boolean);
-  const nightTxt = night.length ? ` ${night.join(' et ').replace(/^./, c => c.toUpperCase())}${iaIci() ? ' cette nuit.' : " par Pampre, dans l'appli Android."}` : '';
+  const nightTxt = night.length ? ` ${night.join(' et ').replace(/^./, c => c.toUpperCase())}${iaIci() ? ` ${plusTard()}.${pampreAttend() ? ` ${esc(pampreAttend())}` : ''}` : " par Pampre, dans l'appli Android."}` : '';
   const review = db.wines.filter(toReview).length;
   if (!review) UI.review = false;
 
@@ -2832,8 +2832,10 @@ const twinOf = w => (w.doublonDe && db.wines.find(x => x.id === w.doublonDe)) ||
 const toReview = w => w.lecture === 'echec' || (w.lecture === 'faite' && (!!twinOf(w) || guessList(w).length > 0));
 
 function readBadge(w) {
-  if (w.lecture === 'attente') return `<span class="badge is-wait">${w.domaine ? 'Lecture cette nuit' : 'À identifier'}</span>`;
-  if (w.lecture === 'revoir') return `<span class="badge is-wait">Revue cette nuit</span>`;
+  // Cave Drive : Pampre lit dans un instant, ou la fiche attend (bouchons, connexion) ; cave à script : la nuit.
+  const quand = pampreBloque() ? '' : plusTard();
+  if (w.lecture === 'attente') return `<span class="badge is-wait">${!w.domaine ? 'À identifier' : quand ? `Lecture ${quand}` : 'En attente'}</span>`;
+  if (w.lecture === 'revoir') return `<span class="badge is-wait">${quand ? `Revue ${quand}` : 'En attente'}</span>`;
   if (w.lecture === 'echec') return `<span class="badge is-fail">Lecture échouée</span>`;
   if (twinOf(w)) return `<span class="badge">${w.doublonType === 'bouteille' ? 'Même bouteille ?' : 'Doublon ?'}</span>`;
   if (w.lecture === 'faite' && guessList(w).length) return `<span class="badge">À vérifier</span>`;
@@ -2846,11 +2848,12 @@ function readNote(w) {
     <p>Avant de l'ouvrir, regarde :</p>
     <ul><li>le niveau : dans le col ou en haut de l'épaule, c'est bon signe ;</li><li>la couleur à travers le verre : brune, c'est mauvais signe ;</li><li>le bouchon : sec, poussé ou qui a coulé, c'est mauvais signe.</li></ul>
     <div class="btn-row"><button class="btn" data-act="clear-alert" data-id="${w.id}">Il va bien, retirer l'alerte</button></div></details>`);
-  if (w.lecture === 'attente') out.push(`<div class="d-note is-wait"><p>L'étiquette sera lue ${plusTard()} : la fiche sera complétée automatiquement.</p></div>`);
-  if (w.lecture === 'revoir') out.push(`<div class="d-note is-wait"><p>Pampre repassera sur cette fiche ${plusTard()} : il remplira les champs vides et mettra à jour ses propres estimations, sans toucher à ce qui a été saisi à la main.</p>
+  const attend = pampreAttend() ? ` ${esc(pampreAttend())}` : '';
+  if (w.lecture === 'attente') out.push(`<div class="d-note is-wait"><p>L'étiquette sera lue ${plusTard()} : la fiche sera complétée automatiquement.${attend}</p></div>`);
+  if (w.lecture === 'revoir') out.push(`<div class="d-note is-wait"><p>Pampre repassera sur cette fiche ${plusTard()} : il remplira les champs vides et mettra à jour ses propres estimations, sans toucher à ce qui a été saisi à la main.${attend}</p>
     <div class="btn-row">${S.routineOn && iaIci() ? `<button class="btn" data-act="read-now">Maintenant</button>` : ''}<button class="btn" data-act="cancel-review" data-id="${w.id}">Annuler</button></div></div>`);
   if (w.lecture === 'echec') out.push(`<div class="d-note is-fail"><p>La lecture de l'étiquette a échoué${w.lectureNote ? ` : ${esc(w.lectureNote)}` : '.'}</p>
-    <div class="btn-row"><button class="btn" data-act="reread" data-id="${w.id}">Relancer la lecture cette nuit</button></div></div>`);
+    <div class="btn-row"><button class="btn" data-act="reread" data-id="${w.id}">Relancer la lecture${relaisOn() ? '' : ' cette nuit'}</button></div></div>`);
   if (twin) {
     // Trois issues : deux lots du même vin (on additionne, nombre ajustable), la même bouteille photographiée deux fois, ou deux vins différents.
     const s1 = STOCK.get(twin.id) || 0, s2 = STOCK.get(w.id) || 0, same = w.doublonType === 'bouteille', keepN = Math.max(s1, s2);
@@ -3653,7 +3656,8 @@ function renderReglages() {
   const drive = isDrive(), ready = API.ready();
   // Cave Google Drive : ni adresse de script ni code, la cave est un fichier du Drive de la personne qui l'a créée.
   // Cave à script : l'adresse et le code restent repliés une fois l'appareil relié, sauf si le code est refusé.
-  $('#script-set').hidden = drive;
+  // Pampre (caves Google Drive) ne propose plus d'en relier une.
+  $('#script-set').hidden = drive || !scriptOn();
   if (!ready || syncState.k === 'auth') $('#script-set').open = true;
   if (!ready) $('#howto').open = true;
   $('#drive-set').hidden = !drive;
@@ -4631,7 +4635,7 @@ function simClaudeHTML(w, sg) {
   const hasAvis = db.avis.some(a => a.vinId === w.id && (a.note || a.commentaire || a.ecart));
   if (!r) {
     let body;
-    if (!API.ready()) body = '<p class="hint">Relie l\'appli à la cave (Réglages) pour demander aussi l\'avis de Pampre.</p>';
+    if (!API.ready()) body = `<p class="hint">${scriptOn() ? "Relie l'appli à la cave (Réglages)" : 'Crée ou rejoins une cave dans « Mes caves »'} pour demander aussi l'avis de Pampre.</p>`;
     else if ((S.serverVersion || 0) < 15) body = '<p class="hint">L\'avis de Pampre sera disponible quand le script de la cave sera passé en version 15 (Réglages).</p>';
     else if (!claudeOn()) return '';
     else body = waiting ? wait : `<button type="button" class="btn btn-primary" data-act="sim-ask">Demander à Pampre · ${bouchons(cout('suggest'))}</button>`;
@@ -4845,7 +4849,7 @@ function openWineForm(id) {
   FORM = { id: w ? w.id : null, blob: null, removed: false, tmpUrl: null, token: uid(), reading: false, readDone: false, requestRead: false, colorTouched: false, fmtTouched: false, dup: null,
     claude: new Set(claudeKeys(w)), orig: {}, grapes: [], allGrapes: false };
   $$('.is-guess', f).forEach(el => el.classList.remove('is-guess'));
-  setAiStatus(!w ? '' : w.lecture === 'attente' ? "L'étiquette sera lue cette nuit."
+  setAiStatus(!w ? '' : w.lecture === 'attente' ? `L'étiquette sera lue ${plusTard()}.`
     : w.lecture === 'faite' && guessList(w).length ? 'Les champs en orange ont été estimés par Pampre : vérifie-les, puis enregistre.' : '');
   $('#wf-dup').hidden = true;
   $('#wf-cat').hidden = true;
@@ -4907,7 +4911,7 @@ async function updateFormPreview() {
   const btn = $('#wf-read');
   btn.hidden = !url || FORM.readDone || willRead || (!instant && !claudeOn());
   btn.disabled = FORM.reading;
-  btn.textContent = instant ? "Lire l'étiquette" : 'Faire lire cette nuit';
+  btn.textContent = instant ? "Lire l'étiquette" : `Faire lire ${plusTard()}`;
   $('#wf-photo-label').textContent = url ? 'Changer la photo' : "Photographier l'étiquette";
 }
 
@@ -4921,7 +4925,7 @@ function setAiStatus(msg, kind = '') {
 
 async function readLabel() {
   if (FORM.reading || FORM.readDone) return;
-  if (!API.ready()) { setAiStatus("Relie l'appli au script (Réglages) pour lire les étiquettes."); return; }
+  if (!API.ready()) { setAiStatus(`${relierTxt()} pour lire les étiquettes.`); return; }
   if (!navigator.onLine) { setAiStatus("Hors ligne : tu pourras lire l'étiquette plus tard depuis « Modifier la fiche »."); return; }
   let blob = FORM.blob;
   if (!blob && !FORM.removed && FORM.id && photoIds.has(FORM.id)) { const r = await Photos.get(FORM.id).catch(() => null); blob = r && r.blob; }
@@ -4948,7 +4952,7 @@ function requestNightRead() {
 }
 
 function photoStatus() {
-  if (!API.ready()) setAiStatus("Photo prête. Relie l'appli au script (Réglages) pour faire lire les étiquettes.");
+  if (!API.ready()) setAiStatus(`Photo prête. ${relierTxt()} pour faire lire les étiquettes.`);
   else if (S.labelOn && navigator.onLine) readLabel();
   else if (!iaIci()) setAiStatus("Photo enregistrée : remplis la fiche à la main. Pampre lit les étiquettes dans l'appli Android.");
   else if (!claudeOn()) setAiStatus("Photo enregistrée. Pampre n'est pas branché sur cette cave : remplis la fiche à la main.");
@@ -5347,7 +5351,7 @@ async function submitBulk(e) {
   const lost = items.length - saved;
   const msg = `${saved} ${plural(saved, 'fiche créée', 'fiches créées')}${forTxt(owner)}${lost ? ` (${lost} ${plural(lost, 'photo perdue', 'photos perdues')})` : ''}.`;
   if (now2) readNow(msg);
-  else toast(`${msg} Les étiquettes seront lues cette nuit.`);
+  else toast(`${msg} Les étiquettes seront lues ${plusTard()}.`);
 }
 
 /* =========================================================
@@ -5423,7 +5427,7 @@ async function submitScan(e) {
   e.preventDefault();
   const err = msg => { const p = $('#scan-err'); p.textContent = msg; p.hidden = false; };
   if (!SCAN.items.length || SCAN.busy) return;
-  if (!API.ready()) return err("Relie d'abord l'appli au script (Réglages) : c'est lui qui transmet les photos à Pampre.");
+  if (!API.ready()) return err(sansCaveConseil());
   const y = thisYear();
   for (const [i, it] of SCAN.items.entries()) {
     const m = int(it.millesime);
@@ -5737,7 +5741,7 @@ function editConseil(el) {
 function relaunchConseil(id) {
   const c = db.conseils.find(x => x.id === id);
   if (!c || csBusy(c)) return;
-  if (!API.ready()) { toast("Relie d'abord l'appli au script (Réglages) : c'est lui qui transmet les photos à Pampre."); return; }
+  if (!API.ready()) { toast(sansCaveConseil()); return; }
   Object.assign(c, { statut: 'envoi', note: '', modifie: false, vu: '', updatedAt: nowISO() });
   seenConseils.delete(id);
   lsSet('macave:conseils-vus', [...seenConseils].slice(-300));
@@ -6595,7 +6599,10 @@ function renderLien() {
     : relaisOn() ? `<section class="an-tv is-ask"><p class="an-tv-h">${ICO_TV}<b>L'avis de Pampre</b></p><p class="an-avis">${notes >= 3 ? 'Ton genre, son prix, quand le boire et avec quoi : Pampre lit la page et te répond.'
         : `${notes ? `Tu as noté ${notes} ${plural(notes, 'vin', 'vins')}` : "Tu n'as encore noté aucun vin"} : trop tôt pour dire si c'est ton genre. Pampre te dira son prix, quand le boire et avec quoi.`}</p>
         <button type="button" class="btn btn-primary ln-ask" data-act="lien-ask"${LIEN.ask ? ' disabled' : ''}>${ICO_TV}${LIEN.ask ? 'Pampre lit la page…' : `Demander l'avis de Pampre · ${bouchons(cout('lien'))}`}</button></section>`
-    : !iaIci() ? `<section class="an-tv"><p class="an-tv-h">${ICO_TV}<b>L'avis de Pampre</b></p><p class="an-avis">Ton genre, son prix, quand le boire et avec quoi : il se demande dans l'appli Android.</p></section>` : '';
+    // Sinon, pourquoi on ne peut pas le demander d'ici : jamais un encart qui disparaît sans un mot.
+    : `<section class="an-tv"><p class="an-tv-h">${ICO_TV}<b>L'avis de Pampre</b></p><p class="an-avis">${!iaIci() ? "Ton genre, son prix, quand le boire et avec quoi : il se demande dans l'appli Android."
+      : !isDrive() ? `Ton genre, son prix, quand le boire et avec quoi : pour le demander, ${scriptOn() ? 'ouvre une cave Google Drive' : 'crée ou rejoins une cave'} dans « Mes caves ».`
+      : "Pampre n'est pas encore branché sur cette version de l'appli : l'avis ne peut pas se demander d'ici."}</p></section>`;
   // Toute l'analyse : ce que l'appli a lu sur la page, le catalogue, les avis de la cave, la garde habituelle, la page.
   const lu = e.lu, c = e.cat, av = avisCave(v), garde = gardeLien(v);
   const luTxt = [lu.domaine, lu.cuvee, lu.appellation, lu.couleur ? colorOf(lu.couleur).label.toLowerCase() : '', lu.millesime, lu.cepages].filter(Boolean).join(' · ');
@@ -7255,7 +7262,21 @@ async function pullPhotosDrive() {
    pour la même fiche, donc jamais deux paiements), et l'appareil du propriétaire cherche la valeur du jour, en gardant
    au moins la moitié des crédits du mois pour le reste. */
 const relaisOn = () => iaIci() && isDrive() && !!GOOGLE.relais;
-const plusTard = () => (relaisOn() ? 'dans un instant' : 'cette nuit');
+/** Quand Pampre lira ce qui attend. Cave Drive : dans un instant, ou dès que possible quand il manque des bouchons ou
+    la connexion (driveClaude a gardé la raison). Cave à script : au passage de la routine, la nuit. */
+const pampreBloque = () => relaisOn() && (!!driveClaudeStop || !navigator.onLine);
+const plusTard = () => (!relaisOn() ? 'cette nuit' : pampreBloque() ? 'dès que possible' : 'dans un instant');
+/** Pourquoi Pampre attend, en une phrase ; vide s'il n'attend pas. */
+const pampreAttend = () => (!pampreBloque() ? '' : !navigator.onLine ? "Pas de connexion pour l'instant." : driveClaudeStop);
+/* Pampre ne gère plus les caves à script (Google Sheet et Apps Script) dès qu'il sait ouvrir les caves Google Drive :
+   plus d'adresse de script ni de code à saisir, plus de lien d'invitation vers un script, et celles qui restaient sur
+   l'appareil le quittent au démarrage (leur Google Sheet ne change pas). Sans configuration Google (la page servie
+   seule, comme dans les essais de l'ancienne version), rien ne change. */
+const scriptOn = () => !Drive.available();
+/** Ce qu'il faut faire tant que l'appareil n'a pas de cave. */
+const relierTxt = () => (scriptOn() ? "Relie l'appli au script (Réglages)" : 'Crée ou rejoins une cave dans « Mes caves »');
+const sansCaveConseil = () => (scriptOn() ? "Relie d'abord l'appli au script (Réglages) : c'est lui qui transmet les photos à Pampre."
+  : "Crée ou rejoins d'abord une cave dans « Mes caves » : c'est par elle que Pampre te répond.");
 async function relais(action, p = {}, timeout = 150e3, again = true) {
   if (!iaIci() && !RELAIS_SANS_IA.includes(action)) throw Object.assign(new Error(IA_APPLI), { code: 'web' });
   if (!GOOGLE.relais) throw Object.assign(new Error("Pampre n'est pas encore branché sur les caves Google Drive."), { code: 'drive' });
@@ -7424,7 +7445,7 @@ function applyCote(w, r) {
   if (!mine.includes('cote')) mine.push('cote');
   w.claude = mine.join(',');
 }
-let driveClaudeBusy = false, driveClaudeDit = '';
+let driveClaudeBusy = false, driveClaudeDit = '', driveClaudeStop = '';
 async function driveClaude() {
   if (!relaisOn() || driveClaudeBusy || syncing || !navigator.onLine) return;
   driveClaudeBusy = true;
@@ -7470,7 +7491,11 @@ async function driveClaude() {
     }
   } finally {
     driveClaudeBusy = false;
+    // La raison d'attendre (bouchons, panne), affichée sur les fiches en attente jusqu'à un passage sans accroc.
+    const avant = driveClaudeStop;
+    driveClaudeStop = stop;
     if (changed) { persist(); render(); scheduleSync(800); }
+    else if (avant !== stop) render();
     // Une seule fois par raison : pas de message à chaque synchro.
     if (stop && driveClaudeDit !== stop) { driveClaudeDit = stop; toast(`Pampre n'a pas encore pu lire toutes les fiches : ${stop}`); }
   }
@@ -8125,7 +8150,7 @@ function parseInvite(text) {
    à l'APK (android-app/cave.local.json). Un appareil déjà relié garde ses réglages. */
 function applyPreset() {
   const p = window.MACAVE_PRESET;
-  if (!p || !p.u || !p.s || caveRef() || CAVES.length) return false;
+  if (!scriptOn() || !p || !p.u || !p.s || caveRef() || CAVES.length) return false;
   S.apiUrl = p.u; S.secret = p.s; saveSettings();
   return true;
 }
@@ -8145,6 +8170,7 @@ async function acceptInvite() {
     }, 300);
     return false;
   }
+  if (!scriptOn()) { toast(ANCIENNE_INVIT); return false; }
   if (S.apiUrl === d.u && S.secret === d.s) return false;
   return (await addCave({ apiUrl: d.u, secret: d.s, nom: d.n })) !== 'no';
 }
@@ -8204,7 +8230,14 @@ async function openCave(key) {
   if (!caveRef() && db.wines.length && !(await confirmer("Ouvrir quand même l'autre cave ?", 'Les vins de cet appareil ne sont reliés à aucune cave : ils seront effacés.', { ok: 'Ouvrir quand même', grave: true }))) return false;
   if (!(await quietSync())) { toast(BUSY_MSG); return false; }
   if (!stashCave()) return false;  // stockage plein : on reste sur la cave ouverte, rien n'est perdu
-  const st = lsGet('macave:cave:' + key, {});
+  chargerCave(e);
+  enterCave();
+  toast(`« ${caveName(S)} » est ouverte.`);
+  return true;
+}
+/** Fait de la cave mise de côté `e` la cave ouverte : ses données, ses réglages, ce qu'on y a déjà vu. */
+function chargerCave(e) {
+  const st = lsGet('macave:cave:' + e.key, {});
   db = { ...emptyDb(), ...(st.db || {}) };
   S = { ...S_DEFAULTS, photoDeletes: [] };
   CAVE_FIELDS.forEach(k => { if (e[k] !== undefined) S[k] = e[k]; });
@@ -8212,10 +8245,7 @@ async function openCave(key) {
   seenConseils.clear(); (st.vus || []).forEach(v => seenConseils.add(v)); lsSet('macave:conseils-vus', [...seenConseils]);
   UI.owner = st.owner || ''; lsSet('macave:owner', UI.owner);
   persist(); saveSettings();
-  try { localStorage.removeItem('macave:cave:' + key); } catch {}
-  enterCave();
-  toast(`« ${caveName(S)} » est ouverte.`);
-  return true;
+  try { localStorage.removeItem('macave:cave:' + e.key); } catch {}
 }
 /** Une cave de plus sur l'appareil : { apiUrl, secret, nom } pour une cave à script (lien d'invitation, ou adresse et
     code), { kind: 'drive', fileId, … } pour une cave Google Drive. La cave ouverte est mise de côté, rien n'est
@@ -8260,12 +8290,52 @@ async function removeCave(key) {
     ? confirmer(`Retirer « ${caveName(e)} » de ${e.compte ? `ton compte ${e.compte}` : 'tes caves'} ?`, `${lost.trim()} Elle quitte « Mes caves », et « Retrouver mes caves » ne la ramènera plus. Ses vins restent dans Google Drive : un lien d'invitation permet de la rejoindre de nouveau.`.trim(), { ok: 'Retirer', grave: true })
     : confirmer(`Retirer « ${caveName(e)} » de cet appareil ?`, `${lost.trim()} Ses vins restent dans son Google Sheet : tu pourras la rejoindre de nouveau avec un lien d'invitation.`.trim(), { ok: 'Retirer', grave: true })))) return;
   if (e.kind === 'drive' && e.fileId) Compte.dissocier(e.compte || Compte.email(), e.fileId);
-  const ids = [...(d.wines || []).map(w => w.id), ...(d.conseils || []).flatMap(c => (c.bouteilles || []).map((_, i) => scanKey(c.id, i)))];
-  for (const id of ids) { try { await Photos.del(id); photoIds.delete(id); Photos.forget(id); } catch {} }
+  await oublierPhotos(photosDe(d), [key]);
   try { localStorage.removeItem('macave:cave:' + key); } catch {}
   CAVES = CAVES.filter(c => c.key !== key);
   saveCaves();
   renderCaves();
+}
+/** Les identifiants des photos d'une cave : ses vins et les bouteilles de ses conseils. */
+const photosDe = d => [...(d.wines || []).map(w => w.id), ...(d.conseils || []).flatMap(c => (c.bouteilles || []).map((_, i) => scanKey(c.id, i)))];
+/** Efface ces photos de l'appareil, sauf celles qu'une autre cave utilise encore : une cave passée sur Google Drive
+    garde les identifiants de ses vins, donc les mêmes photos. `partent` : les clés des caves qu'on retire. */
+async function oublierPhotos(ids, partent) {
+  const gardees = new Set(photosDe(db));
+  CAVES.forEach(c => { if (!partent.includes(c.key) && c.key !== curKey()) photosDe(lsGet('macave:cave:' + c.key, {}).db || {}).forEach(id => gardees.add(id)); });
+  for (const id of ids) {
+    if (gardees.has(id)) continue;
+    try { await Photos.del(id); photoIds.delete(id); Photos.forget(id); } catch {}
+  }
+}
+const ANCIENNE_INVIT = "Ce lien mène à une ancienne cave (Google Sheet), que Pampre n'ouvre plus : demande un nouveau lien d'invitation.";
+/** Pampre (caves Google Drive) au démarrage : les caves à script quittent l'appareil, leur Google Sheet ne change pas.
+    Si l'une était ouverte, la cave Google Drive vue le plus récemment prend sa place ; sinon, l'appareil reste sans
+    cave. Vrai si une cave a été retirée. */
+async function retirerCavesScript() {
+  if (scriptOn()) return false;
+  const ouverte = !isDrive() && !!S.apiUrl, cur = curKey();
+  const parties = CAVES.filter(c => c.kind !== 'drive' && c.key !== cur);
+  if (!ouverte && !parties.length) return false;
+  const ids = parties.flatMap(c => photosDe(lsGet('macave:cave:' + c.key, {}).db || {}));
+  parties.forEach(c => { try { localStorage.removeItem('macave:cave:' + c.key); } catch {} });
+  const keys = parties.map(c => c.key);
+  if (ouverte) {
+    ids.push(...photosDe(db));
+    keys.push(cur);
+    const suivante = CAVES.filter(c => c.kind === 'drive').sort((a, b) => (b.vu || '').localeCompare(a.vu || ''))[0];
+    if (suivante) chargerCave(suivante);
+    else {
+      db = emptyDb(); S = { ...S_DEFAULTS, photoDeletes: [] };
+      seenConseils.clear(); lsSet('macave:conseils-vus', []);
+      UI.owner = ''; lsSet('macave:owner', '');
+      persist(); saveSettings();
+    }
+  }
+  CAVES = CAVES.filter(c => !keys.includes(c.key));
+  saveCaves();
+  await oublierPhotos(ids, keys);
+  return true;
 }
 function otherCaveIds() {
   const cur = curKey(), ids = [];
@@ -8330,7 +8400,8 @@ async function joinFromMenu() {
     const btn = $('[data-act="caves-join"]');
     btn.disabled = true;
     try { r = await joinDriveCave(d); } finally { btn.disabled = false; }
-  } else r = await addCave({ apiUrl: d.u, secret: d.s, nom: d.n });
+  } else if (!scriptOn()) { toast(ANCIENNE_INVIT); return; }
+  else r = await addCave({ apiUrl: d.u, secret: d.s, nom: d.n });
   if (r === 'no') return;
   toast(r === 'same' ? 'Cette cave est déjà ouverte.' : r === 'known' ? 'Cette cave était déjà sur cet appareil : elle est ouverte.' : 'Cave ajoutée à « Mes caves ». Synchronisation…');
 }
@@ -8919,9 +8990,11 @@ function wire() {
   try { (await Photos.keys()).forEach(k => photoIds.add(k)); } catch {}
   wire();
   rememberCave();
+  const retiree = await retirerCavesScript();
   const joined = await acceptInvite(), preset = !joined && applyPreset();
   setView(joined ? 'reglages' : 'cave');
   Partage.ecouter();
+  if (retiree) toast("L'ancienne cave (Google Sheet) a quitté Pampre : ses vins restent dans son Google Sheet.");
   if (joined) toast('Invitation acceptée. Synchronisation…');
   if (preset) toast('Appli reliée à la cave. Synchronisation…');
   if (API.ready()) sync();

@@ -54,18 +54,9 @@ Indique aussi ton prénom : il apparaît dans l'historique des bouteilles.
 
 ### Appli déjà reliée, pour tes proches
 
-Tu installes l'appli toi-même, à la main, chez tes proches ? Mets l'adresse du script et le code des appareils dans un fichier `android-app/cave.local.json` :
+Pampre n'ouvre plus les caves à script (Google Sheet) : `android-app/cave.local.json` ne sert plus, et aucun APK n'intègre d'adresse de script ni de code. Une cave à script encore sur un appareil le quitte au premier lancement de Pampre ; son Google Sheet ne change pas.
 
-```json
-{ "adresse": "https://script.google.com/macros/s/…/exec", "code": "1a2b-3c4d-5e6f-7a8b" }
-```
-
-`npm run apk` les intègre alors à l'APK. Au premier lancement, l'appli est déjà reliée à la cave et demande seulement « Qui es-tu ? ». Un appareil déjà relié garde ses réglages.
-
-- **Le code reste sur ce PC** : le fichier n'est copié ni dans la page web ni ailleurs que dans l'APK.
-- **N'envoie pas l'APK par message ni par un lien public** : quiconque l'installe a accès à la cave. Installe-le toi-même avec le câble.
-- **Si l'APK a circulé** : change le code dans les propriétés du script (efface `SECRET`, puis exécute `installer`), mets le nouveau code dans `cave.local.json`, reconstruis l'APK et réinstalle-le partout.
-- C'est le code des **appareils**. Le jeton de la routine (`ROUTINE_TOKEN`) n'est jamais mis dans l'appli : il reste dans le script.
+Pour tes proches, crée la cave dans « Mes caves », puis partage-la depuis **Réglages › Inviter quelqu'un** avec leur compte Google.
 
 ## Différences avec la page web
 
@@ -81,7 +72,7 @@ Quand `index.html` change, reprends l'étape 3 (`npm run apk` puis `npm run inst
 
 L'appli est signée avec la clé de développement du PC : `~/.android/debug.keystore`. C'est aussi celle qui signe l'APK publié sur GitHub (secret `ANDROID_KEYSTORE_B64` du dépôt), si bien qu'on peut installer l'un par-dessus l'autre. **Sauvegarde ce fichier.** Un APK signé avec une autre clé ne peut pas mettre à jour l'appli : il faudrait d'abord la désinstaller, puis tout récupérer à la synchro après l'avoir reliée de nouveau.
 
-`npm run apk` construit l'APK de ta famille (`dist/ma-cave-maison.apk`, relié à ta cave si `cave.local.json` existe) ; `npm run apk:generique` construit l'APK vierge (`dist/ma-cave.apk`).
+`npm run apk` construit `dist/ma-cave-maison.apk` ; `npm run apk:generique` construit `dist/ma-cave.apk`, aujourd'hui identique. Les deux ouvrent les caves Google Drive, avec la configuration de `prototypes/drive-direct/config.local.js`.
 
 ## En cas de problème
 
