@@ -802,6 +802,7 @@ legend .by-claude,.check .by-claude{margin-left:8px;vertical-align:1px}
 .d-prov p{margin:0}
 .d-prov p + p{margin-top:6px}
 .d-prov .btn-row{margin:10px 0 0}
+.d-prov.is-check{border-style:solid;border-color:color-mix(in srgb,var(--warn) 35%,var(--line));background:color-mix(in srgb,var(--warn) 8%,transparent)}
 .sans-tarder input{flex:none;margin-top:1px}
 .sans-tarder.is-guess{color:var(--warn);font-weight:600}
 .split-row{display:grid;grid-template-columns:minmax(0,1fr) 150px;align-items:center;gap:12px;margin:0 0 8px}
@@ -996,6 +997,16 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
 .d-note p{margin:0}
 .d-note p + p{margin-top:6px}
 .d-note .btn-row{margin:10px 0 0}
+.d-alert{padding:10px 14px}
+.d-alert > summary{display:flex;align-items:baseline;gap:10px;cursor:pointer;list-style:none;color:var(--late-fg)}
+.d-alert > summary::-webkit-details-marker{display:none}
+.d-alert > summary b{flex:1;min-width:0;font-weight:600}
+.da-more{flex:none;color:var(--accent-ink);font-weight:600;font-size:.86rem;text-decoration:underline;text-underline-offset:3px}
+.da-more::after{content:"En savoir plus"}
+.d-alert[open] .da-more::after{content:"Réduire"}
+.d-alert[open] > summary{margin-bottom:8px}
+.d-alert ul{margin:4px 0 0;padding-left:20px}
+.d-alert li + li{margin-top:2px}
 
 /* Mouvement */
 .qty{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--field);overflow:hidden}
@@ -2110,7 +2121,7 @@ let S = { ...S_DEFAULTS, photoDeletes: [] };
 let STOCK = new Map(), BY_OWNER = new Map();
 const photoIds = new Set();
 const UI = { view: 'cave', q: '', color: '', sort: 'nom', showEmpty: false, period: '12m', openWine: null, owner: lsGet('macave:owner', ''), lastOwner: null, whoAsked: '', review: false, region: '', taster: '', filtersOpen: false, openConseil: null,
-  csOpen: new Set(), csDeferred: false, csProgress: null, accord: '', boireFiltersOpen: false, compact: lsGet('macave:compact', false) === true, periodKey: '', boireTab: 'prio', idea: 0, tonightClosed: lsGet('macave:tonightClosed', false) === true, tnAnim: false,
+  csOpen: new Set(), alerteOpen: '', csDeferred: false, csProgress: null, accord: '', boireFiltersOpen: false, compact: lsGet('macave:compact', false) === true, periodKey: '', boireTab: 'prio', idea: 0, tonightClosed: lsGet('macave:tonightClosed', false) === true, tnAnim: false,
   statsQui: lsGet('macave:statsQui', ''), msCouleur: '', msPref: 'cepages', msDuo: '', msNoterTout: false, msPortrait: false };
 
 function loadAll() {
@@ -2830,17 +2841,16 @@ function readBadge(w) {
 }
 
 function readNote(w) {
-  const out = [], g = guessList(w), twin = twinOf(w);
-  if (w.alerte === 'passe') out.push(`<div class="d-note is-fail"><p><strong>Ce vin a peut-être déjà dépassé son apogée : à boire sans tarder.</strong> Avant de l'ouvrir, regarde le niveau du vin dans la bouteille (dans le col ou en haut de l'épaule, c'est bon signe), sa couleur à travers le verre (brune, c'est mauvais signe) et le bouchon (sec, poussé ou qui a coulé, c'est mauvais signe).</p>
-    <div class="btn-row"><button class="btn" data-act="clear-alert" data-id="${w.id}">Il va bien, retirer l'alerte</button></div></div>`);
+  const out = [], twin = twinOf(w);
+  if (w.alerte === 'passe') out.push(`<details class="d-note is-fail d-alert"${UI.alerteOpen === w.id ? ' open' : ''}><summary><b>Apogée peut-être dépassée</b><span class="da-more" aria-hidden="true"></span></summary>
+    <p>Avant de l'ouvrir, regarde :</p>
+    <ul><li>le niveau : dans le col ou en haut de l'épaule, c'est bon signe ;</li><li>la couleur à travers le verre : brune, c'est mauvais signe ;</li><li>le bouchon : sec, poussé ou qui a coulé, c'est mauvais signe.</li></ul>
+    <div class="btn-row"><button class="btn" data-act="clear-alert" data-id="${w.id}">Il va bien, retirer l'alerte</button></div></details>`);
   if (w.lecture === 'attente') out.push(`<div class="d-note is-wait"><p>L'étiquette sera lue ${plusTard()} : la fiche sera complétée automatiquement.</p></div>`);
   if (w.lecture === 'revoir') out.push(`<div class="d-note is-wait"><p>Pampre repassera sur cette fiche ${plusTard()} : il remplira les champs vides et mettra à jour ses propres estimations, sans toucher à ce qui a été saisi à la main.</p>
     <div class="btn-row">${S.routineOn && iaIci() ? `<button class="btn" data-act="read-now">Maintenant</button>` : ''}<button class="btn" data-act="cancel-review" data-id="${w.id}">Annuler</button></div></div>`);
   if (w.lecture === 'echec') out.push(`<div class="d-note is-fail"><p>La lecture de l'étiquette a échoué${w.lectureNote ? ` : ${esc(w.lectureNote)}` : '.'}</p>
     <div class="btn-row"><button class="btn" data-act="reread" data-id="${w.id}">Relancer la lecture cette nuit</button></div></div>`);
-  if (w.lecture === 'faite' && (g.length || w.lectureNote)) out.push(`<div class="d-note"><p>Fiche complétée par Pampre à partir de l'étiquette.${g.length ? ` Estimé, à vérifier : ${g.map(k => FIELD_NAMES[k]).join(', ')}.` : ''}</p>
-    ${w.lectureNote ? `<p>${esc(w.lectureNote)}</p>` : ''}
-    <div class="btn-row"><button class="btn" data-act="verify" data-id="${w.id}">Vérifier la fiche</button></div></div>`);
   if (twin) {
     // Trois issues : deux lots du même vin (on additionne, nombre ajustable), la même bouteille photographiée deux fois, ou deux vins différents.
     const s1 = STOCK.get(twin.id) || 0, s2 = STOCK.get(w.id) || 0, same = w.doublonType === 'bouteille', keepN = Math.max(s1, s2);
@@ -2902,16 +2912,19 @@ function saveProfil() {
   toast('Profil enregistré.');
 }
 
-/** Qui a rempli la fiche : Claude ou une personne. La personne garde la main. */
+/** Qui a rempli la fiche : Claude ou une personne. La personne garde la main. Après la lecture de l'étiquette, ses estimations à vérifier. */
 function provHTML(w) {
   const mine = claudeKeys(w).filter(k => hasVal(w, k));
   const any = CLAUDE_FIELDS.some(k => hasVal(w, k));
   if (!any && w.lecture !== 'faite') return '';
   const ask = reviewOn() && !['attente', 'revoir'].includes(w.lecture) && claudeRoom(w);
-  return `<div class="d-prov">
+  const g = w.lecture === 'faite' ? guessList(w) : [], note = w.lecture === 'faite' ? w.lectureNote : '', check = g.length > 0 || !!note;
+  return `<div class="d-prov${check ? ' is-check' : ''}">
     <p>${mine.length ? `<span class="by-claude">${ICO_TV}Pampre</span> a rempli : ${esc(provNames(mine))}. Le reste a été saisi à la main.` : 'Tout ce qui figure sur cette fiche a été saisi à la main.'}</p>
+    ${g.length ? `<p><b>Estimé, à vérifier :</b> ${esc(g.map(k => FIELD_NAMES[k]).join(', '))}.</p>` : ''}
+    ${note ? `<p>${esc(note)}</p>` : ''}
     <p class="hint">${mine.length ? "Pampre ne touche jamais à ce que tu as saisi. Modifie un de ses champs pour le garder, ou vide-le pour le lui rendre." : 'Pampre ne remplit que les champs laissés vides.'}</p>
-    ${ask ? `<div class="btn-row"><button class="btn" data-act="ask-claude" data-id="${w.id}">Demander l'avis de Pampre</button></div>` : ''}
+    ${check || ask ? `<div class="btn-row">${check ? `<button class="btn" data-act="verify" data-id="${w.id}">Vérifier la fiche</button>` : ''}${ask ? `<button class="btn" data-act="ask-claude" data-id="${w.id}">Demander l'avis de Pampre</button>` : ''}</div>` : ''}
   </div>`;
 }
 
@@ -8518,7 +8531,8 @@ function wire() {
   // Fiche du vin et détail d'une période des stats : toucher en dehors de la fenêtre la ferme.
   ['#dlg-wine', '#dlg-period'].forEach(s => $(s).addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.close(); }));
   // L'événement « close » arrive après coup : si la fiche a déjà été rouverte (autre vin), on ne l'oublie pas.
-  $('#dlg-wine').addEventListener('close', () => { if (!$('#dlg-wine').open) UI.openWine = null; });
+  $('#dlg-wine').addEventListener('close', () => { if (!$('#dlg-wine').open) { UI.openWine = null; UI.alerteOpen = ''; } });
+  $('#wine-detail').addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('d-alert')) UI.alerteOpen = e.target.open ? UI.openWine : ''; }, true);
   $('#dlg-form').addEventListener('close', () => { if (FORM.tmpUrl) { URL.revokeObjectURL(FORM.tmpUrl); FORM.tmpUrl = null; } });
 
   $('#q').addEventListener('input', e => { UI.q = e.target.value; renderCave(); });
