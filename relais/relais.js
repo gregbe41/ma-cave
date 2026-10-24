@@ -18,6 +18,9 @@ const DRIVE_FILE = 'https://www.googleapis.com/auth/drive.file';
 // Ce que coûte chaque demande, en bouchons (2 bouchons ≈ une lecture d'étiquette, quelques centimes). Entiers : pas de demi-bouchon.
 // Le portrait et l'avis sur un vin vu en ligne (lien) sont des demandes « pour moi » (comme Conseil), et non pour la cave :
 // leur clé à part permettra de les faire payer un jour par la personne plutôt que par la cave.
+/** Version des règles de Pampre que ce relais applique. 2 (24/10/2026) : la fenêtre d'un vin « à boire sans tarder »
+    n'est plus ramenée à l'année en cours. */
+export const REGLES = 2;
 export const COUTS = { etiquette: 2, conseil: 2, similaires: 1, revoir: 1, cote: 2, portrait: 2, lien: 1 };
 // Prix de Claude Opus 5.5 chez Anthropic, en dollars (page « Pricing » relue le 18 octobre 2026) : par million de jetons,
 // et pour 1 000 recherches web. Réglables par la configuration (PRIX_ENTREE, PRIX_SORTIE…) s'ils changent.
@@ -293,7 +296,7 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
 
   /* ---------- Actions ---------- */
   const ACTIONS = {
-    async etat({ cave, qui }) { return { credits: statut(await etatCave(cave), qui), role: qui.proprio ? 'proprio' : 'membre', editeur: admins.includes(qui.email) }; },
+    async etat({ cave, qui }) { return { credits: statut(await etatCave(cave), qui), role: qui.proprio ? 'proprio' : 'membre', editeur: admins.includes(qui.email), regles: REGLES }; },
 
     /** Ce que Pampre coûte vraiment chez Anthropic, ce mois-ci et le mois d'avant : réservé à l'éditeur (ADMINS). */
     async depense({ qui }) {

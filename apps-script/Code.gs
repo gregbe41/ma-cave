@@ -535,7 +535,7 @@ const LABEL_PROMPT = [
   "- cepages : les cépages séparés par des virgules (ex. « Syrah, Grenache »), écrits sur l'étiquette ou déduits de l'appellation quand c'est sans ambiguïté. Sinon null.",
   '- format : la contenance, seulement si elle est lisible, parmi les valeurs autorisées. Sinon null.',
   "- gardeDe et gardeA : la fenêtre de consommation que tu estimes, en années complètes. gardeDe = « boire à partir de », gardeA = « boire jusqu'en » (inclus). Appuie-toi sur l'appellation, la couleur, le millésime et la réputation du producteur. null si le millésime est inconnu.",
-  "- peutEtrePasse : true si le vin doit être bu sans tarder parce qu'il a peut-être déjà dépassé son apogée (vin âgé pour son appellation, producteur ou négociant inconnu, millésime faible). Dans ce cas, gardeA = l'année en cours, jamais une année future, et la remarque explique pourquoi et rappelle de vérifier avant d'ouvrir le niveau du vin, sa couleur et le bouchon. Sinon false.",
+  "- peutEtrePasse : true si le vin doit être bu sans tarder parce qu'il a peut-être déjà dépassé son apogée (vin âgé pour son appellation, producteur ou négociant inconnu, millésime faible). Dans ce cas, gardeDe et gardeA restent la fenêtre que tu estimes vraiment pour ce vin, même si elle est terminée depuis longtemps (pour un Santenay village 1988, par exemple 1993 à 2005) : ne la décale jamais vers l'année en cours, et gardeA n'est jamais une année future. La remarque explique pourquoi et rappelle de vérifier avant d'ouvrir le niveau du vin, sa couleur et le bouchon. Sinon false.",
   "- style : en une ou deux phrases, le vin qu'on peut en attendre (corps, fruit, tanins ou acidité, élevage), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. null si le vin n'est pas identifié.",
   "- accords : de une à quatre catégories de plats, parmi les valeurs autorisées, celles qui lui vont le mieux. Liste vide si le vin n'est pas identifié.",
   "- profil : le profil probable du vin, en crans de 1 (le moins) à 5 (le plus), d'après l'appellation, la couleur, le millésime, les cépages et le producteur. Rouge : corps (léger → puissant), tanins (souples → fermes), acidite (douce → vive), boise (aucun → marqué), fruit (frais → mûr). Blanc : sucre (sec → moelleux), acidite, mineralite (discrète → marquée), boise, aromes (discrets → exubérants). Rosé : sucre (sec → tendre), acidite, fruit (discret → intense), corps (léger → vineux). Effervescent : dosage (brut nature → doux), bulle (crémeuse → vive), vinosite (légère → ample), evolution (fraîche → briochée). Liquoreux : sucre (moelleux → liquoreux), fraicheur (faible → vive), botrytis (discret → marqué), evolution (fruit frais → confit). Les autres jauges à 0 (sans objet) ; toutes à 0 si le vin n'est pas identifié.",
@@ -1502,8 +1502,8 @@ function tidyLabel(r) {
     remarque: typeof r.remarque === 'string' ? r.remarque.trim().slice(0, 300) : '',
   };
   if (o.gardeDe && o.gardeA && o.gardeA < o.gardeDe) { o.gardeDe = null; o.gardeA = null; }
-  if (o.peutEtrePasse) {
-    // À boire sans tarder : la fenêtre se termine cette année.
+  if (o.peutEtrePasse && o.gardeA && o.gardeA > y) {
+    // À boire sans tarder : la fenêtre ne se prolonge pas au-delà de cette année, mais une fenêtre déjà terminée le reste.
     o.gardeA = y;
     if (o.gardeDe && o.gardeDe > y) o.gardeDe = y;
   }

@@ -2970,6 +2970,12 @@ const BOIRE_TABS = [
   ['none', 'Sans date', 'Sans fenêtre de garde', "Indique « boire à partir de » et « boire jusqu'en » dans leur fiche pour les placer sur une frise."],
 ];
 
+/** Vins « à boire sans tarder » dont Pampre avait ramené la fin de garde à 2026, l'année de leur lecture (règle retirée
+    le 24/10/2026) : à ré-estimer, dans l'appli, une fois le relais à jour. */
+function fenetresAReviser() {
+  if (!isDrive() || !relaisOn() || !iaIci() || (S.reglesRelais || 1) < 2) return [];
+  return db.wines.filter(w => stockOf(w) > 0 && w.alerte === 'passe' && w.gardeA === 2026 && claudeKeys(w).includes('gardeA') && !['attente', 'revoir'].includes(w.lecture));
+}
 /** Échelle commune d'une liste « À boire » : les années qui couvrent les fenêtres de garde, sans remonter ni avancer trop loin. */
 function friseScale(ws) {
   const y = thisYear(), dated = ws.filter(w => gardeStatus(w).key !== 'none');
@@ -3079,7 +3085,9 @@ function renderBoire() {
 
   $('#boire-feat').innerHTML = featHTML;
   $('#boire-tabs').innerHTML = tabs;
-  box.innerHTML = `<p class="tab-desc"><b>${title}</b> : ${desc.charAt(0).toLowerCase() + desc.slice(1)} ${list.length} ${plural(list.length, 'vin', 'vins')}, ${bt} ${plural(bt, 'bouteille', 'bouteilles')}.</p>`
+  const fen = fenetresAReviser(), nf = fen.length;
+  box.innerHTML = (nf ? `<div class="d-note fen-note"><p><b>${nf > 1 ? `${nf} vins « à boire sans tarder » finissent leur fenêtre` : 'Un vin « à boire sans tarder » finit sa fenêtre'} en 2026 par erreur.</b> Une ancienne règle ramenait la fin de garde à l'année de la lecture. Pampre peut estimer la vraie : ${bouchons(nf * cout('revoir'))}.</p>
+      <div class="btn-row"><button class="btn" data-act="fen-revoir">Ré-estimer avec Pampre</button></div></div>` : '') + `<p class="tab-desc"><b>${title}</b> : ${desc.charAt(0).toLowerCase() + desc.slice(1)} ${list.length} ${plural(list.length, 'vin', 'vins')}, ${bt} ${plural(bt, 'bouteille', 'bouteilles')}.</p>`
     + (rest.length ? `<section class="frise${UI.compact ? ' is-compact' : sc ? ' is-common' : ''}" aria-label="${title}">${sc ? friseAxis(sc) : ''}${rest.map(row).join('')}</section>` : '');
   hydratePhotos(box);
 }
@@ -5088,12 +5096,12 @@ async function submitWineForm(e) {
   // Le profil se corrige dans la fiche : le formulaire le garde tel quel.
   const oldW = FORM.id ? db.wines.find(x => x.id === FORM.id) : null;
   data.profil = oldW ? oldW.profil || '' : '';
-  // « Sans tarder » : la fenêtre se termine au plus tard cette année.
+  // « Sans tarder » : une fenêtre qui finirait plus tard se termine cette année ; une fenêtre déjà terminée ne bouge pas.
   const old = FORM.id ? db.wines.find(x => x.id === FORM.id) : null;
   if (f.elements.sansTarder.checked) {
     data.alerte = 'passe';
-    if (data.gardeA == null || data.gardeA > y) data.gardeA = y;
-    if (data.gardeDe && data.gardeDe > data.gardeA) data.gardeDe = data.gardeA;
+    if (data.gardeA != null && data.gardeA > y) data.gardeA = y;
+    if (data.gardeDe && data.gardeA && data.gardeDe > data.gardeA) data.gardeDe = data.gardeA;
   } else data.alerte = old && ['passe', 'non'].includes(old.alerte) ? 'non' : '';  // décochée : Claude ne la remettra pas
   const hasPhoto = !!FORM.blob || (!FORM.removed && !!FORM.id && photoIds.has(FORM.id));
   const pending = ((!!FORM.blob && !FORM.readDone) || FORM.requestRead) && claudeOn();
@@ -7167,7 +7175,7 @@ const Drive = {
     if (merged) r.db = merged;
     // Ce qui reste des crédits Claude de la cave (sans le relais, ou s'il ne répond pas, la carte reste masquée).
     if (GOOGLE.relais && iaIci()) {
-      try { const e = await relais('etat', {}, 30e3); r.credits = creditsRelais(e.credits); r.coteMois = e.credits.coteMois; S.editeur = !!e.editeur; }
+      try { const e = await relais('etat', {}, 30e3); r.credits = creditsRelais(e.credits); r.coteMois = e.credits.coteMois; S.editeur = !!e.editeur; S.reglesRelais = +e.regles || 1; }
       catch { /* sans crédits affichés */ }
     }
     return r;
@@ -8587,6 +8595,16 @@ function wire() {
         case 'profil-save': saveProfil(); break;
         case 'profil-reset': resetProfil(); break;
         case 'ask-claude': setReading(id, { lecture: 'revoir' }, `Pampre repassera sur cette fiche ${plusTard()}.`); break;
+        // Fin de garde imposée par l'ancienne règle : effacée (seulement celle de Pampre), puis Pampre revoit la fiche.
+        case 'fen-revoir': {
+          const l = fenetresAReviser(), t = nowISO();
+          for (const w of l) Object.assign(w, { gardeA: null, lecture: 'revoir', updatedAt: t }, claudeKeys(w).includes('gardeDe') ? { gardeDe: null } : {});
+          if (!l.length) break;
+          queueClaude(l.map(w => w.id));
+          commit();
+          toast(`Pampre revoit la fenêtre de ${l.length} ${plural(l.length, 'vin', 'vins')} ${plusTard()}.`);
+          break;
+        }
         case 'cancel-review': setReading(id, w => ({ lecture: claudeKeys(w).length ? 'faite' : '' }), 'Demande annulée'); break;
         case 'merge': mergeTwin(id); break;
         case 'same-bottle': mergeTwin(id, true); break;
