@@ -657,6 +657,12 @@ dialog.ask{max-width:480px}
 .cv-sub{font-size:.85rem;color:var(--muted)}
 .cave-row.is-cur .cv-name{color:var(--accent-ink)}
 .cave-del{flex:none;font-size:.9rem}
+.cave-go{flex:none}
+/* Cave vide sur un appareil qui connaît déjà une cave Google Drive : elle d'abord, avec son bouton « Ouvrir » */
+.empty-caves{display:grid;gap:10px;max-width:420px;margin:0 auto 18px}
+.cave-pick{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--card-shadow);color:var(--ink);text-align:left}
+.cave-pick .cp-txt{flex:1;min-width:0;display:grid;gap:2px}
+.cave-pick .btn{flex:none;pointer-events:none}
 .caves-add{margin-top:18px;display:grid;gap:8px}
 .caves-find{margin:12px 0 0}
 .optin{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:12px 14px;border-radius:12px;background:var(--accent-tint);font-size:.92rem;line-height:1.45}
@@ -2712,8 +2718,15 @@ function renderCave() {
   ws.sort(sorts[UI.sort] || byName);
 
   const list = $('#cave-list');
-  if (!db.wines.length) {
-    list.innerHTML = `<div class="empty"><p class="lead">Ta cave est vide.</p><p>Ajoute ton premier vin : une photo de l'étiquette et le nom du domaine suffisent pour commencer.</p><div class="btn-row"><button class="btn btn-primary" data-act="new">Ajouter un vin</button>${claudeOn() ? '<button class="btn" data-act="bulk">Ajouter par photos</button>' : ''}</div></div>`;
+  const attente = !db.wines.length && !caveRef() ? cavesEnAttente() : [];
+  if (attente.length) {
+    list.innerHTML = `<div class="empty"><p class="lead">${attente.length > 1 ? 'Tes caves t\'attendent' : 'Ta cave t\'attend'} dans Google Drive.</p><p>${attente.length > 1 ? 'Ouvre celle de ton choix' : 'Ouvre-la'} pour retrouver tes vins sur cet appareil.</p>
+      <div class="empty-caves">${attente.slice(0, 4).map(c => `<button type="button" class="cave-pick" data-cave="${c.key}"><span class="cp-txt"><span class="cv-name">${esc(caveName(c))}</span><span class="cv-sub">${fmtNum(c.bouteilles || 0)} ${plural(c.bouteilles || 0, 'bouteille', 'bouteilles')} · Google Drive</span></span><span class="btn btn-primary btn-sm">Ouvrir</span></button>`).join('')}</div>
+      <p class="hint">Ou commence une autre cave : <button type="button" class="link" data-act="new">ajoute un vin</button></p></div>`;
+  } else if (!db.wines.length) {
+    const retrouver = Drive.available() && !caveRef()
+      ? `<p class="hint">Ta cave est déjà dans Google Drive ? ${Compte.email() ? '<button type="button" class="link" data-act="caves">Retrouve-la dans « Mes caves »</button>.' : '<button type="button" class="link" data-act="google-in">Connecte-toi avec Google</button> pour la retrouver.'}</p>` : '';
+    list.innerHTML = `<div class="empty"><p class="lead">Ta cave est vide.</p><p>Ajoute ton premier vin : une photo de l'étiquette et le nom du domaine suffisent pour commencer.</p><div class="btn-row"><button class="btn btn-primary" data-act="new">Ajouter un vin</button>${claudeOn() ? '<button class="btn" data-act="bulk">Ajouter par photos</button>' : ''}</div>${retrouver}</div>`;
   } else if (!ws.length) {
     list.innerHTML = `<div class="empty"><p>${UI.q || UI.color || UI.region || UI.accord ? 'Aucun vin ne correspond à ta recherche.' : 'Toutes tes bouteilles ont été bues. Coche « Afficher les vins épuisés » pour retrouver leurs fiches.'}</p></div>`;
   } else {
@@ -7780,7 +7793,19 @@ async function connectGoogle(change = false) {
   render();
   await findDriveCaves({ quiet: true });
   if (isDrive()) sync({ interactive: true });
+  else await proposerCave();
   return true;
+}
+/** Les caves Google Drive du compte connecté, mises de côté sur l'appareil, qu'on peut ouvrir à la place de la cave vide. */
+function cavesEnAttente() { return CAVES.filter(c => c.kind === 'drive' && c.key !== curKey() && (!Compte.email() || !c.compte || Compte.same(c.compte, Compte.email()))); }
+/** Appareil encore sur une cave vide, reliée à rien : une cave retrouvée se propose aussitôt (plusieurs : « Mes caves »). */
+async function proposerCave() {
+  if (db.wines.length || caveRef()) return;
+  const l = cavesEnAttente();
+  if (!l.length) return;
+  if (l.length > 1) { openCaves(); toast('Choisis la cave à ouvrir.'); return; }
+  const c = l[0], n = c.bouteilles || 0;
+  if (await confirmer(`Ouvrir « ${caveName(c)} » ?`, `${fmtNum(n)} ${plural(n, 'bouteille', 'bouteilles')}, dans ton Google Drive.`, { ok: 'Ouvrir', annuler: 'Plus tard' })) await openCave(c.key);
 }
 /** Se déconnecter : l'appli oublie le compte sur cet appareil et ne se reconnecte plus d'elle-même. Les caves restent,
     avec leurs vins, et l'accès donné à l'appli dans le compte Google n'est pas retiré. */
@@ -8397,7 +8422,7 @@ function renderCaves() {
   const row = e => {
     const role = e.role === 'proprio' ? 'propriétaire' : e.proprioActif ? 'participant' : '';
     const sub = [`${fmtNum(e.bouteilles || 0)} ${plural(e.bouteilles || 0, 'bouteille', 'bouteilles')}`, role, ailleurs(e) ? e.compte : e.kind === 'drive' ? 'Google Drive' : 'Google Sheet', e.key === cur ? 'ouverte' : ''].filter(Boolean).join(' · ');
-    return `<div class="cave-row${e.key === cur ? ' is-cur' : ''}"><button type="button" class="cave-open" data-cave="${e.key}"><span class="cv-name">${esc(caveName(e))}</span><span class="cv-sub">${esc(sub)}</span></button>${e.key === cur ? '' : `<button type="button" class="link cave-del" data-cave-del="${e.key}">Retirer</button>`}</div>`;
+    return `<div class="cave-row${e.key === cur ? ' is-cur' : ''}"><button type="button" class="cave-open" data-cave="${e.key}"><span class="cv-name">${esc(caveName(e))}</span><span class="cv-sub">${esc(sub)}</span></button>${e.key === cur ? '' : `<button type="button" class="btn btn-sm cave-go" data-cave="${e.key}">Ouvrir</button><button type="button" class="link cave-del" data-cave-del="${e.key}">Retirer</button>`}</div>`;
   };
   const sorted = CAVES.slice().sort((a, b) => (b.key === cur) - (a.key === cur) || (b.vu || '').localeCompare(a.vu || ''));
   const mine = sorted.filter(e => !ailleurs(e)), others = sorted.filter(ailleurs);
