@@ -12,7 +12,8 @@
     "phones": "\"%LOCALAPPDATA%\\Android\\Sdk\\platform-tools\\adb.exe\" devices -l",
     "apk:generique": "node scripts/apk.js generique",
     "web:generique": "node scripts/copy-web.js --generique",
-    "apk:essai": "node scripts/apk.js essai"
+    "apk:essai": "node scripts/apk.js essai",
+    "play": "node scripts/apk.js play"
   },
   "dependencies": {
     "@capacitor/android": "8.5.2",

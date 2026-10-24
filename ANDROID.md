@@ -74,6 +74,15 @@ L'appli est signée avec la clé de développement du PC : `~/.android/debug.key
 
 `npm run apk` construit `dist/ma-cave-maison.apk` ; `npm run apk:generique` construit `dist/ma-cave.apk`, aujourd'hui identique. Les deux ouvrent les caves Google Drive, avec la configuration de `prototypes/drive-direct/config.local.js`.
 
+## Google Play
+
+Pour Google Play, on dépose un Android App Bundle (`.aab`) signé avec une **clé d'envoi**, propre à Pampre. Google refuse la clé de développement. Il signe ensuite lui-même l'appli avec sa propre clé avant de la distribuer.
+
+- La clé d'envoi tient en deux fichiers d'`android-app/`, qui restent sur le PC et hors de Git : `pampre-upload.jks` (la clé) et `keystore.properties` (son mot de passe). **Sauvegarde-les ensemble hors du PC.** Si la clé se perd, Google peut la remplacer sur demande (Play Console › Intégrité de l'application).
+- `npm run play` construit `dist/pampre.aab` : l'identifiant `fr.pampre.app`, aucune cave préréglée, un numéro de version qui monte à chaque envoi, la date en guise de nom de version.
+- Comme l'appli distribuée par Google Play est signée avec la clé de Google, la connexion Google demande un client OAuth Android de plus dans Google Cloud : paquet `fr.pampre.app`, avec l'empreinte SHA-1 de la clé de signature d'application (Play Console › Intégrité de l'application).
+- Un téléphone qui a déjà `fr.pampre.app` installé à la main (APK de ce PC) doit le désinstaller avant d'installer l'appli du Play Store : les signatures diffèrent. L'appli d'essai (`fr.pampre.app.essai`) peut rester à côté.
+
 ## En cas de problème
 
 | Problème | Solution |

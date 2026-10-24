@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+// Version pour Google Play (node scripts/apk.js play) : signée avec la clé d'envoi de Pampre, que décrit
+// android-app/keystore.properties (storeFile, storePassword, keyAlias, keyPassword). Ce fichier et la clé restent sur le
+// PC, hors de Git ; sans eux, la version « release » n'est pas signée et Google Play la refuse.
+def cleEnvoi = new Properties()
+def cleEnvoiFichier = rootProject.file('../keystore.properties')
+if (cleEnvoiFichier.exists()) cleEnvoiFichier.withInputStream { cleEnvoi.load(it) }
+
 android {
     namespace = "fr.macave.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -9,8 +16,9 @@ android {
         manifestPlaceholders = [appLabel: project.findProperty('macaveLabel') ?: '@string/app_name']
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Pour Google Play, apk.js donne un numéro qui monte à chaque envoi et le nom de version (la date).
+        versionCode((project.findProperty('macaveVersionCode') ?: '1') as int)
+        versionName project.findProperty('macaveVersionName') ?: "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -18,8 +26,19 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (cleEnvoi['storeFile']) {
+            envoi {
+                storeFile rootProject.file('../' + cleEnvoi['storeFile'])
+                storePassword cleEnvoi['storePassword']
+                keyAlias cleEnvoi['keyAlias']
+                keyPassword cleEnvoi['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (cleEnvoi['storeFile']) signingConfig signingConfigs.envoi
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

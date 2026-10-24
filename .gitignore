@@ -5,6 +5,8 @@ android-app/dist/
 *.keystore
 *.jks
 *.apk
+*.aab
+android-app/keystore.properties
 
 # Fichiers de travail
 node_modules/
