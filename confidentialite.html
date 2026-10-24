@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pampre : politique de confidentialité</title>
+<meta name="description" content="Comment l'appli Pampre traite tes données : ta cave reste dans ton Google Drive, l'IA ne sert que quand tu la demandes, sans publicité ni traçage.">
+<style>
+  :root { --bg:#F4F2EE; --ink:#1E211F; --muted:#5E655F; --line:#DED9CF; --accent:#A8670F; --card:#FFFFFF }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0E1311; --ink:#ECE8E0; --muted:#A4ABA5; --line:#2A332F; --accent:#E8A13A; --card:#161D1A } }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif }
+  main { max-width:720px; margin:0 auto; padding:32px max(18px, env(safe-area-inset-left)) 64px }
+  h1 { font-size:1.9rem; line-height:1.2; margin:0 0 6px }
+  h2 { font-size:1.2rem; margin:34px 0 8px }
+  .date { color:var(--muted); margin:0 0 24px }
+  .bref { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px 20px }
+  .bref ul { margin:8px 0 0; padding-left:20px }
+  ul { padding-left:22px }
+  li + li { margin-top:6px }
+  a { color:var(--accent) }
+  table { width:100%; border-collapse:collapse; font-size:.95rem }
+  th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--line) }
+  th { font-weight:600 }
+  .tab { overflow-x:auto }
+  footer { margin-top:40px; color:var(--muted); font-size:.9rem }
+</style>
+</head>
+<body>
+<main>
+<h1>Pampre : politique de confidentialité</h1>
+<p class="date">En vigueur le 24 octobre 2026</p>
+
+<p>Pampre est une appli pour tenir sa cave à vin, seul ou à plusieurs, sur Android et sur le web, avec un assistant d'intelligence artificielle (lui aussi appelé Pampre). Elle est éditée par napcodegames, l'éditeur de Pampre sur Google Play. Pour toute question sur tes données : <a href="mailto:napcodegames75@gmail.com">napcodegames75@gmail.com</a>.</p>
+
+<div class="bref">
+  <strong>En bref</strong>
+  <ul>
+    <li>Ta cave est rangée sur ton appareil et dans <strong>ton</strong> Google Drive, pas sur nos serveurs.</li>
+    <li>Pampre ne voit dans ton Drive que les fichiers qu'il a créés ou que tu as ouverts avec lui.</li>
+    <li>L'intelligence artificielle ne reçoit tes données que quand tu lui demandes quelque chose.</li>
+    <li>Pas de publicité, pas de mesure d'audience, pas de traçage. Aucune donnée n'est vendue ni louée.</li>
+  </ul>
+</div>
+
+<h2>1. Ce qui reste sur ton appareil</h2>
+<p>Les vins de ta cave, les entrées et sorties de bouteilles, tes notes et avis de dégustation, les prénoms des personnes de la cave, les photos d'étiquettes et tes réglages sont enregistrés dans le stockage de l'appli sur ton appareil. Tu peux tout effacer dans Réglages › Sauvegarde et effacement, ou en désinstallant l'appli.</p>
+
+<h2>2. Ce qui va dans ton Google Drive</h2>
+<p>Quand tu crées ou rejoins une cave, elle est enregistrée dans ton Google Drive : un dossier à son nom, avec un fichier de données et un dossier pour les photos. Pampre utilise l'autorisation Google la plus restreinte possible (« drive.file ») : il n'a accès qu'aux fichiers qu'il a créés ou que tu as ouverts avec lui, et à rien d'autre de ton Drive.</p>
+<ul>
+  <li>Les personnes que tu invites dans ta cave y ont accès par le partage de Google Drive.</li>
+  <li>Si tu actives « Partager mes photos d'étiquettes », tes photos sont rangées dans le dossier Photos de la cave et partagées par un lien impossible à deviner, pour que les autres membres les voient. Sinon, elles restent sur ton appareil.</li>
+</ul>
+
+<h2>3. Ton compte Google</h2>
+<p>Pour ouvrir tes caves, Pampre te demande de te connecter avec Google. Il lit alors ton adresse e-mail et ton nom, qui servent à retrouver tes caves, à indiquer qui a ajouté ou ouvert une bouteille, et à vérifier qui fait une demande au relais (voir plus bas). Tu peux retirer cet accès à tout moment depuis <a href="https://myaccount.google.com/permissions">la page des autorisations de ton compte Google</a>.</p>
+
+<h2>4. L'intelligence artificielle</h2>
+<p>Certaines fonctions font appel à l'IA, toujours derrière un bouton : lire une étiquette, compléter ou revoir une fiche, conseiller entre plusieurs bouteilles en magasin, proposer des vins similaires, donner l'avis de Pampre sur un vin vu en ligne, rechercher la valeur du jour d'un vin, décrire tes goûts dans « Mes stats ». Pour y répondre, l'appli envoie à notre relais, qui transmet à <a href="https://www.anthropic.com/legal/privacy">Anthropic</a> (le modèle Claude), seulement ce dont la demande a besoin :</p>
+<ul>
+  <li>la ou les photos concernées ;</li>
+  <li>les informations de la fiche du vin (domaine, appellation, millésime…) ;</li>
+  <li>pour « C'est ton genre ? » et le portrait de « Mes stats » : tes notes et avis de dégustation ;</li>
+  <li>pour un vin vu en ligne : le texte de la page que tu as partagée ;</li>
+  <li>pour la valeur du jour : le nom du vin, qu'Anthropic cherche sur le web.</li>
+</ul>
+<p>Anthropic traite ces données pour produire la réponse. Selon ses conditions commerciales, elles ne servent pas à entraîner ses modèles et ne sont conservées que pour une durée limitée. Une réponse qui te paraît choquante ou fausse peut être signalée depuis l'appli, avec le bouton « Signaler ».</p>
+
+<h2>5. Le relais de Pampre</h2>
+<p>Le relais est un petit service hébergé chez <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a>. Il vérifie ta connexion Google, transmet les demandes à l'IA et décompte les « bouchons », les crédits qui limitent l'usage de l'IA. Il ne garde ni tes photos, ni tes fiches, ni les pages lues. Il conserve seulement :</p>
+<div class="tab"><table>
+  <tr><th>Quoi</th><th>Contenu</th><th>Combien de temps</th></tr>
+  <tr><td>Bouchons</td><td>Ce qui a été dépensé par la cave et par chaque membre (son adresse e-mail), et les limites réglées par le propriétaire</td><td>Tant que la cave utilise l'IA</td></tr>
+  <tr><td>Dépense totale</td><td>Le coût total de l'IA par mois, toutes caves confondues, sans donnée personnelle</td><td>Pour suivre le budget</td></tr>
+  <tr><td>Invitations</td><td>Une empreinte du lien d'invitation, le nom de qui invite, les dates</td><td>Jusqu'à l'expiration du lien</td></tr>
+  <tr><td>Demandes pour rejoindre une cave</td><td>L'adresse e-mail et le nom de la personne, la date, la réponse donnée</td><td>Les 50 dernières par cave</td></tr>
+  <tr><td>Signalements</td><td>La date, ton adresse e-mail, le motif, ton commentaire et la réponse signalée</td><td>Les 200 derniers</td></tr>
+</table></div>
+<p>Sur le web, la lecture d'une page vue en ligne passe aussi par le relais, sans être conservée. L'appli Android lit elle-même la page.</p>
+
+<h2>6. Les services utilisés</h2>
+<ul>
+  <li><a href="https://policies.google.com/privacy">Google</a> : connexion avec Google, Google Drive, sélecteur de fichiers, scanner d'étiquettes (il fonctionne sur l'appareil), Google Play, et les polices de caractères (Google Fonts) ;</li>
+  <li><a href="https://www.anthropic.com/legal/privacy">Anthropic</a> : l'intelligence artificielle ;</li>
+  <li><a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a> : le relais ;</li>
+  <li><a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub</a> : l'hébergement de la page web de Pampre.</li>
+</ul>
+<p>Ces données ne sont utilisées pour rien d'autre que le fonctionnement de Pampre.</p>
+
+<h2>7. Sécurité</h2>
+<p>Tous les échanges passent par des connexions chiffrées (HTTPS). Le relais n'accepte que des demandes accompagnées d'une connexion Google valide, et seulement de la part des membres de la cave concernée.</p>
+
+<h2>8. Tes droits</h2>
+<p>Tu peux à tout moment consulter, corriger ou supprimer tes données :</p>
+<ul>
+  <li>ta cave : depuis l'appli, ou en supprimant son dossier dans ton Google Drive ;</li>
+  <li>les données de ton appareil : Réglages › Sauvegarde et effacement ;</li>
+  <li>l'accès de Pampre à ton compte Google : <a href="https://myaccount.google.com/permissions">autorisations de ton compte Google</a> ;</li>
+  <li>ce que garde le relais : écris à <a href="mailto:napcodegames75@gmail.com">napcodegames75@gmail.com</a>, une réponse t'est apportée dans un délai d'un mois.</li>
+</ul>
+<p>Si tu estimes que tes droits ne sont pas respectés, tu peux t'adresser à la <a href="https://www.cnil.fr/fr/plaintes">CNIL</a>.</p>
+
+<h2>9. Réservé aux adultes</h2>
+<p>Pampre parle de vin : il s'adresse aux personnes majeures et ne collecte sciemment aucune donnée d'enfant. L'abus d'alcool est dangereux pour la santé, à consommer avec modération.</p>
+
+<h2>10. Changements</h2>
+<p>Si cette politique change, la nouvelle version est publiée sur cette page, avec sa date d'entrée en vigueur.</p>
+
+<footer>Pampre · <a href="./">la page web de Pampre</a></footer>
+</main>
+</body>
+</html>
