@@ -95,27 +95,47 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
     try { j = t ? JSON.parse(t) : {}; } catch { /* réponse illisible : traitée par l'appelant */ }
     return { ok: r.ok, status: r.status, j };
   }
-  async function verifier(jeton, cave) {
+  /** membre : faux pour qui n'a pas encore accès à la cave (rejoindre par un lien) ; on sait seulement qui il est. */
+  async function verifier(jeton, cave, membre = true) {
     if (!jeton) throw erreur(401, 'Connexion à Google nécessaire.', 'auth');
     if (!/^[\w-]{10,200}$/.test(cave || '')) throw erreur(400, 'Cave inconnue.');
-    const cle = jeton.slice(-24) + '|' + cave, deja = verifies.get(cle);
+    const cle = jeton.slice(-24) + '|' + cave + (membre ? '' : '|invite'), deja = verifies.get(cle);
     if (deja && deja.jusqua > Date.now()) return deja.qui;
     const ti = await google(`${TOKENINFO}?access_token=${encodeURIComponent(jeton)}`);
     if (!ti.ok) throw erreur(401, 'Connexion à Google expirée : reconnecte-toi.', 'auth');
     // Un jeton délivré à une autre appli (même avec un accès plus large) ne passe pas.
     if (!clientDeLAppli(ti.j.azp || ti.j.aud)) throw erreur(401, "Ce jeton n'a pas été délivré à l'appli Pampre.", 'auth');
     if (!String(ti.j.scope || '').split(' ').includes(DRIVE_FILE)) throw erreur(401, 'Accès Google incomplet.', 'auth');
-    const fic = await google(`${DRIVE}/files/${cave}?fields=id,name,ownedByMe,owners(emailAddress)`, jeton);
-    if (fic.status === 401) throw erreur(401, 'Connexion à Google expirée : reconnecte-toi.', 'auth');
-    if (!fic.ok || fic.j.name !== 'cave.json') throw erreur(403, "Tu ne fais pas partie de cette cave (ou tu ne l'as pas encore rejointe dans l'appli).", 'membre');
+    let fic = { j: {} };
+    if (membre) {
+      fic = await google(`${DRIVE}/files/${cave}?fields=id,name,ownedByMe,owners(emailAddress)`, jeton);
+      if (fic.status === 401) throw erreur(401, 'Connexion à Google expirée : reconnecte-toi.', 'auth');
+      if (!fic.ok || fic.j.name !== 'cave.json') throw erreur(403, "Tu ne fais pas partie de cette cave (ou tu ne l'as pas encore rejointe dans l'appli).", 'membre');
+    }
     const ab = await google(`${DRIVE}/about?fields=user(emailAddress,displayName)`, jeton);
     const email = String((ab.j.user && ab.j.user.emailAddress) || '').toLowerCase();
     if (!email) throw erreur(401, 'Compte Google illisible.', 'auth');
     const proprietaire = String((fic.j.owners && fic.j.owners[0] && fic.j.owners[0].emailAddress) || '').toLowerCase();
-    const qui = { email, nom: (ab.j.user && ab.j.user.displayName) || '', proprio: !!fic.j.ownedByMe, admin: admins.includes(proprietaire) };
+    const qui = { email, nom: (ab.j.user && ab.j.user.displayName) || '', proprio: !!fic.j.ownedByMe, admin: membre && admins.includes(proprietaire) };
     verifies.set(cle, { qui, jusqua: Date.now() + Math.min(5 * 60e3, (entier(ti.j.expires_in, 300)) * 1e3) });
     return qui;
   }
+
+  /* ---------- Invitations par lien ----------
+     Un membre crée un lien (un code, gardé ici sous forme d'empreinte, valable 30 jours). Qui l'ouvre n'a pas encore
+     accès à la cave : il laisse une demande, avec son adresse Google. Un membre la voit dans l'appli, partage la cave
+     avec cette adresse dans Google Drive, puis l'accepte ici ; chez l'invité, la cave s'ouvre alors. */
+  const empreinte = async code => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(code)))].map(b => b.toString(16).padStart(2, '0')).join('');
+  const JOURS_INVITATION = 30, MAX_INVITATIONS = 20, MAX_DEMANDES = 20;
+  async function invitations(cave) {
+    const t = maintenant().getTime();
+    return ((await store.get('invitations:' + cave)) || []).filter(i => Date.parse(i.expire) > t);
+  }
+  async function demandesDe(cave) {
+    const t = maintenant().getTime() - JOURS_INVITATION * 864e5;
+    return ((await store.get('demandes:' + cave)) || []).filter(d => Date.parse(d.date) > t);
+  }
+  const vueDemande = d => (d ? { statut: d.statut, date: d.date, par: d.par || '' } : null);
 
   /* ---------- Crédits de la cave ---------- */
   async function etatCave(cave) {
@@ -328,6 +348,44 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
       return { signalements: ((await store.get('signalements')) || []).slice(0, 100) };
     },
 
+    /** Membre : un lien d'invitation pour cette cave (le code n'est renvoyé qu'ici, une fois). */
+    async inviter({ cave, qui }) {
+      const code = [...crypto.getRandomValues(new Uint8Array(18))].map(b => b.toString(16).padStart(2, '0')).join('');
+      const expire = new Date(maintenant().getTime() + JOURS_INVITATION * 864e5).toISOString();
+      const l = await invitations(cave);
+      l.unshift({ empreinte: await empreinte(code), par: qui.nom || qui.email, date: maintenant().toISOString(), expire });
+      await store.put('invitations:' + cave, l.slice(0, MAX_INVITATIONS));
+      return { invitation: { code, expire } };
+    },
+    /** Qui a ouvert un lien d'invitation (sans accès à la cave) : sa demande, ou celle qu'il avait déjà faite. */
+    async rejoindre({ cave, qui, p }) {
+      const code = texte(p.code, 80), h = /^[0-9a-f]{36}$/.test(code) ? await empreinte(code) : '';
+      const valide = !!h && (await invitations(cave)).some(i => i.empreinte === h);
+      const l = await demandesDe(cave), deja = l.find(d => d.email === qui.email);
+      if (deja && deja.statut !== 'refusee') return { demande: vueDemande(deja) };
+      if (!valide) throw erreur(410, "Ce lien d'invitation n'est plus valable : demande-en un nouveau.", 'invitation');
+      if (l.filter(d => d.statut === 'attente').length >= MAX_DEMANDES) throw erreur(429, "Trop de demandes attendent déjà pour cette cave. Réessaie plus tard.", 'quota');
+      const d = { email: qui.email, nom: texte(qui.nom, 80), date: maintenant().toISOString(), statut: 'attente' };
+      await store.put('demandes:' + cave, [d, ...l.filter(x => x.email !== qui.email)].slice(0, 50));
+      return { demande: vueDemande(d) };
+    },
+    /** Où en est ma demande (acceptée, refusée, en attente) ? */
+    async maDemande({ cave, qui }) {
+      return { demande: vueDemande((await demandesDe(cave)).find(d => d.email === qui.email)) };
+    },
+    /** Membre : les demandes qui attendent une réponse. */
+    async demandes({ cave }) {
+      return { demandes: (await demandesDe(cave)).filter(d => d.statut === 'attente').map(d => ({ email: d.email, nom: d.nom, date: d.date })) };
+    },
+    /** Membre : accepter une demande (une fois la cave partagée avec cette adresse dans Google Drive) ou la refuser. */
+    async repondre({ cave, qui, p }) {
+      const email = texte(p.email, 200).trim().toLowerCase(), l = await demandesDe(cave), d = l.find(x => x.email === email);
+      if (!d || d.statut !== 'attente') throw erreur(404, 'Cette demande a déjà reçu une réponse.', 'demande');
+      Object.assign(d, { statut: p.accepte === true ? 'acceptee' : 'refusee', par: qui.nom || qui.email, le: maintenant().toISOString() });
+      await store.put('demandes:' + cave, l);
+      return { demande: vueDemande(d) };
+    },
+
     async reglages({ cave, qui, p }) {
       if (!qui.proprio) throw erreur(403, 'Seul le propriétaire de la cave règle ses bouchons.', 'proprio');
       const e = await etatCave(cave), L = limites(e, qui);
@@ -476,7 +534,8 @@ export function creerRelais({ env = {}, store, fetch: f = globalThis.fetch, main
         let p;
         try { p = JSON.parse(brut || '{}'); } catch { throw erreur(400, 'Demande illisible.'); }
         const jeton = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
-        const qui = await verifier(jeton, p.cave);
+        // Rejoindre par un lien, et suivre sa demande : la personne n'a pas encore accès à la cave.
+        const qui = await verifier(jeton, p.cave, !['rejoindre', 'maDemande'].includes(action));
         try {
           const r = await ACTIONS[action]({ cave: p.cave, qui, p, suivi });
           return repondre(request, 200, { ok: true, ...r });

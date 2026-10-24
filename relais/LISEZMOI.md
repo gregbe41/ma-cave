@@ -31,6 +31,11 @@ Ce qu'il fait :
 | `etat`, `reglages` | 0 | ce qui reste ; réglages du propriétaire |
 | `signaler` | 0 | signaler une réponse de Pampre (choquante, fausse…), comme Google Play l'exige des applis d'IA : gardée pour l'éditeur avec le mot de la personne et son adresse Google ; `SIGNALEMENTS_JOUR` par jour et par cave |
 | `signalements` | 0 | les 100 derniers signalements, toutes caves : réservé à l'éditeur (`ADMINS`) |
+| `inviter` | 0 | un lien d'invitation pour la cave : le code n'est renvoyé qu'une fois, le relais n'en garde que l'empreinte, 30 jours |
+| `rejoindre` | 0 | qui a ouvert le lien, sans accès à la cave : sa demande, avec son adresse Google (seule action, avec `maDemande`, ouverte à qui n'est pas encore membre) |
+| `maDemande` | 0 | où en est sa demande : en attente, acceptée, refusée |
+| `demandes` | 0 | pour les membres : les demandes en attente |
+| `repondre` | 0 | pour les membres : accepter une demande (l'appli a d'abord partagé la cave avec cette adresse dans Google Drive) ou la refuser |
 | `depense` | 0 | ce que Pampre coûte vraiment chez Anthropic, en dollars, ce mois-ci et le mois d'avant : réservé à l'éditeur (`ADMINS`) |
 
 **Coût réel** : après chaque réponse de Claude, le relais calcule son prix d'après l'usage renvoyé (jetons envoyés, reçus,

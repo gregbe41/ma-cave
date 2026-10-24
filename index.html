@@ -223,6 +223,13 @@ legend{padding:0;margin:0 0 8px;font-size:.88rem;font-weight:500;color:var(--mut
 .web-ia > .ico-tv{flex:none;width:26px;height:26px;color:var(--accent-ink)}
 .web-ia p{flex:1;margin:0;font-size:.88rem;line-height:1.4}
 .web-ia .btn{flex:none}
+/* Inviter par un lien : une demande à accepter (chez les membres), ou l'attente de l'invité */
+.rj-note{display:grid;gap:10px;margin:8px 0 10px;padding:12px 14px;border-radius:18px;background:var(--accent-tint);color:var(--ink)}
+.rj-note p{margin:0;font-size:.9rem;line-height:1.4}
+.rj-note small{color:var(--muted)}
+.rj-act{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+#invites-box .rj-note,#caves-attente .rj-note{margin:0 0 10px}
+.rg-ou{margin:14px 0 6px}
 /* « Réduire » : l'idée du soir tient alors sur une ligne, qui la rappelle ; touchée, la carte revient. */
 .tonight{position:relative}
 .tonight .tn-bottle{margin-top:30px}
@@ -1267,6 +1274,8 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
 
     <section class="view" id="v-cave">
       <div id="web-note"></div>
+      <!-- Inviter par un lien : les demandes à accepter (membres), ou l'attente de l'invité -->
+      <div id="rejoindre-note"></div>
       <div id="tonight"></div>
       <div id="tally"></div>
       <div class="tools">
@@ -1407,6 +1416,7 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
         <!-- Les personnes de la cave ; inviter quelqu'un ou ajouter un prénom -->
         <h2 class="rg-h" id="people-h">Personnes</h2>
         <section class="rg-card" aria-labelledby="people-h">
+          <div id="invites-box"></div>
           <div id="people-box"></div>
           <div class="rg-actions">
             <div class="rg-2">
@@ -1414,6 +1424,11 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
               <button type="button" class="btn" data-act="add-person">Ajouter un prénom</button>
             </div>
             <div class="rg-invite-box" id="drive-invite-box" hidden>
+              <div id="invite-lien">
+                <button class="btn btn-primary" data-act="drive-invite-lien">Envoyer un lien d'invitation</button>
+                <p class="hint">La personne ouvre le lien et se connecte à Google : elle peut créer son compte à ce moment-là. Tu acceptes ensuite son arrivée dans l'appli. Le lien sert 30 jours.</p>
+                <p class="rg-label rg-ou">Ou, si tu connais son adresse Google, partage la cave tout de suite :</p>
+              </div>
               <label class="f">Adresse du compte Google de la personne
                 <input id="drive-invite" type="email" placeholder="prenom@gmail.com" autocomplete="off" spellcheck="false" autocapitalize="off" inputmode="email">
               </label>
@@ -1766,6 +1781,7 @@ dialog.fiche .d-top .ln-site{margin-left:10px}
     <div class="sheet-body">
       <div class="caves-compte" id="caves-compte" hidden></div>
       <div class="caves-list" id="caves-list"></div>
+      <div id="caves-attente"></div>
       <p class="caves-find" id="caves-find" hidden><button type="button" class="link" data-act="caves-find">Retrouver mes caves Google Drive</button> <span class="hint">celles créées ou rejointes sur un autre appareil</span></p>
       <div class="caves-add" id="caves-new" hidden>
         <h3 class="cv-h">Créer une cave</h3>
@@ -2055,7 +2071,7 @@ const Native = (() => {
    Les tests automatisés (navigator.webdriver) se comportent comme l'appli, sauf avec window.__web. */
 const iaIci = () => Native.on || (!!navigator.webdriver && !window.__web);
 // Ce que la page web peut demander au relais : rien qui passe par l'IA.
-const RELAIS_SANS_IA = ['page', 'signaler', 'signalements'];
+const RELAIS_SANS_IA = ['page', 'signaler', 'signalements', 'inviter', 'rejoindre', 'maDemande', 'demandes', 'repondre'];
 const IA_APPLI = "Pampre, l'IA qui lit les étiquettes, conseille et propose des vins, travaille dans l'appli Android.";
 /* Pampre (l'IA de l'appli, propulsée par Claude) : la vrille du pampre et son étincelle ; le bouchon, l'unité de ses crédits. */
 const ICO_TV = '<svg class="ico-tv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20C6 13 9.5 9 14 9c3.5 0 5.5 2.5 4.3 5-1.1 2.2-4.5 2-4.5-.4 0-1.4 1.2-2 2.2-1.4"/><path class="ico-fill" d="M18.5 2.5c.3 1.7.8 2.2 2.5 2.5-1.7.3-2.2.8-2.5 2.5-.3-1.7-.8-2.2-2.5-2.5 1.7-.3 2.2-.8 2.5-2.5z"/></svg>';
@@ -2681,6 +2697,7 @@ function renderCave() {
   // Sur la page web, une fois : ce qu'on y fait, et où se trouve l'IA.
   $('#web-note').innerHTML = !iaIci() && !lsGet('macave:web-ia-vu', false)
     ? `<div class="web-ia" role="note">${ICO_TV}<p><b>Sur le web, tu consultes et gères ta cave.</b> ${IA_APPLI}</p><button type="button" class="btn btn-sm" data-act="web-ia-ok">Compris</button></div>` : '';
+  renderRejoindre();
   $('#tally').innerHTML = db.wines.length ? `<section class="summary" aria-label="Résumé de la cave">
     <div class="cave-head"><h2 class="cave-h">La cave</h2><p class="tally"><span class="tally-n">${fmtNum(bottles)}</span> ${plural(bottles, 'bouteille', 'bouteilles')}</p></div>
     <p class="tally-sub">${inStock.length} ${plural(inStock.length, 'vin', 'vins')} en cave${whose}${value ? ` · achat ${fmtMoney(value, 0)}` : ''}${today ? ` · <span title="Valeur du jour : estimation de Pampre pour ${valued.length} ${plural(valued.length, 'vin', 'vins')}, prix d'achat pour les autres">aujourd'hui ~${fmtMoney(today, 0)}</span>` : ''}</p>
@@ -3707,6 +3724,9 @@ function renderReglages() {
   if (!ready || syncState.k === 'auth') $('#script-set').open = true;
   if (!ready) $('#howto').open = true;
   $('#drive-set').hidden = !drive;
+  // Le lien seul passe par le relais de Pampre : sans lui, on invite par l'adresse Google.
+  $('#invite-lien').hidden = !GOOGLE.relais;
+  suivreInvites();
   $('#drive-photos').checked = !!S.photoShare;
   const n = db.wines.filter(w => (STOCK.get(w.id) || 0) > 0).length, vins = `${fmtNum(n)} ${plural(n, 'vin', 'vins')}`;
   $('#rg-cave-name').textContent = S.nom || (ready ? 'Ma cave' : 'Aucune cave reliée');
@@ -6772,6 +6792,14 @@ const Partage = {
 function recevoirPartage(texte) {
   const t = str(texte).slice(0, 2100);
   if (!t) return;
+  // Un lien d'invitation partagé vers Pampre (depuis la messagerie) : « Rejoindre », pas « Vu en ligne ? ».
+  const inv = /rejoindre=/.test(t) && parseInvite(t);
+  if (inv && inv.d) {
+    openCaves();
+    $('#caves-link').value = (t.match(/\S*rejoindre=\S+/) || [t])[0];
+    toast(`Invitation dans « ${inv.n || 'une cave'} » : touche « Rejoindre ».`);
+    return;
+  }
   setView('conseil');
   $('#lien-url').value = t;
   if (lienPropre(t)) { lireLien(t); return; }
@@ -7703,6 +7731,12 @@ async function joinDriveCave(d) {
     try { got = await Drive.read(d.d); }
     catch (e) {
       if (e.code !== 'notfound') throw e;
+      // Lien seul (avec un code) : tant qu'aucun membre n'a accepté, la cave n'est pas partagée avec ce compte. On laisse
+      // une demande sur le relais, et la cave s'ouvrira quand un membre l'aura acceptée.
+      if (d.c) {
+        const r = await relais('rejoindre', { cave: d.d, code: d.c });
+        if (r.demande.statut !== 'acceptee') { garderDemande(d, r.demande); return 'no'; }
+      }
       let picked;
       try { picked = await Drive.pick(d.d); }
       catch (e2) {
@@ -7716,17 +7750,126 @@ async function joinDriveCave(d) {
     // Rejoindre par un lien la réassocie au compte, même si on l'avait retirée.
     const me = await Drive.whoami();
     Compte.dissocier(me, d.d, false);
+    oublierDemande(d.d);
     return addCave({ kind: 'drive', fileId: d.d, folderId: cave.dossier || '', photosId: cave.dossierPhotos || '', nom: cave.nom || d.n || '', role: meta.ownedByMe ? 'proprio' : 'app', proprioActif: true, compte: me });
   } catch (e) {
     toast(e.auth ? 'Connexion à Google annulée : la cave n\'a pas été rejointe.' : e.message);
     return 'no';
   }
 }
+
+/* ---------- Inviter par un lien seul ----------
+   Le membre envoie un lien qui porte un code (gardé par le relais, 30 jours). L'invité l'ouvre, se connecte à Google et
+   laisse une demande ; un membre la voit en haut de « Ce soir » et dans les Réglages, partage la cave avec son adresse
+   et l'accepte ; chez l'invité, « Ouvrir la cave » la rejoint alors comme avant (sélecteur de Google). */
+const LS_DEMANDES = 'macave:demandes';
+let DEMANDES = lsGet(LS_DEMANDES, []);
+const saveDemandes = () => lsSet(LS_DEMANDES, DEMANDES);
+function garderDemande(d, dem) {
+  DEMANDES = [{ d: d.d, n: d.n || '', c: d.c, p: d.p || '', statut: dem.statut, par: dem.par || '' }, ...DEMANDES.filter(x => x.d !== d.d)].slice(0, 10);
+  saveDemandes(); render();
+  toast(`Demande envoyée${d.p ? ` à ${d.p}` : ''} : « ${d.n || 'la cave'} » s'ouvrira ici dès qu'un membre aura accepté.`);
+}
+function oublierDemande(id) {
+  if (!DEMANDES.some(x => x.d === id)) return;
+  DEMANDES = DEMANDES.filter(x => x.d !== id); saveDemandes(); renderRejoindre();
+}
+/** Où en sont mes demandes ? Au plus une fois par minute, sans écran de connexion. */
+let demandesVu = 0;
+async function suivreDemandes(force = false) {
+  const att = DEMANDES.filter(x => x.statut === 'attente');
+  if (!att.length || !GOOGLE.relais || !navigator.onLine || !Compte.email() || (!force && Date.now() - demandesVu < 60e3)) return;
+  demandesVu = Date.now();
+  let change = false;
+  for (const x of att) {
+    let r;
+    try { r = await relais('maDemande', { cave: x.d }); } catch { break; }
+    const st = r.demande ? r.demande.statut : 'perdue';
+    if (st !== x.statut) { Object.assign(x, { statut: st, par: (r.demande && r.demande.par) || '' }); change = true; }
+  }
+  if (change) { saveDemandes(); renderRejoindre(); }
+}
+/** Membre d'une cave Drive : les demandes à accepter. Au plus toutes les 5 minutes, sauf à l'ouverture des Réglages. */
+let invitesVu = 0;
+async function suivreInvites(force = false) {
+  if (!isDrive() || !GOOGLE.relais || !navigator.onLine || (!force && Date.now() - invitesVu < 5 * 60e3)) return;
+  invitesVu = Date.now();
+  const cave = S.fileId;
+  try {
+    const r = await relais('demandes');
+    if (S.fileId !== cave) return;
+    Object.assign(UI, { invites: r.demandes || [], invitesCave: cave });
+    renderRejoindre();
+  } catch { /* hors ligne, connexion à refaire : on réessaiera */ }
+}
+const invitesIci = () => (isDrive() && UI.invitesCave === S.fileId ? UI.invites || [] : []);
+/** Les bandeaux : en haut de « Ce soir » (tout), dans les Réglages (les demandes de la cave), dans « Mes caves » (mes demandes). */
+function renderRejoindre() {
+  const cave = esc(S.nom || 'la cave');
+  const invites = invitesIci().map(x => `<div class="rj-note" role="status"><p><b>${esc(x.nom || x.email)}</b>${x.nom ? ` <small>${esc(x.email)}</small>` : ''} demande à rejoindre « ${cave} ».</p>
+    <div class="rj-act"><button type="button" class="btn btn-sm" data-act="invite-refuser" data-email="${esc(x.email)}">Refuser</button><button type="button" class="btn btn-sm btn-primary" data-act="invite-accepter" data-email="${esc(x.email)}">Accepter</button></div></div>`).join('');
+  const miennes = DEMANDES.map(x => {
+    const n = esc(x.n || 'la cave'), b = (act, txt, prim = false) => `<button type="button" class="btn btn-sm${prim ? ' btn-primary' : ''}" data-act="${act}" data-cave-id="${esc(x.d)}">${txt}</button>`;
+    const [txt, btns] = x.statut === 'acceptee' ? [`<b>${esc(x.par || 'Un membre')} a accepté</b> : « ${n} » t'attend.`, b('demande-ouvrir', 'Ouvrir la cave', true)]
+      : x.statut === 'refusee' ? [`Ta demande pour « ${n} » n'a pas été acceptée.`, b('demande-oublier', 'OK')]
+      : x.statut === 'perdue' ? [`Ta demande pour « ${n} » a expiré : demande un nouveau lien.`, b('demande-oublier', 'OK')]
+      : [`Demande envoyée pour rejoindre « ${n} »${x.p && !x.n.includes(x.p) ? `, la cave de ${esc(x.p)}` : ''} : elle s'ouvrira ici dès qu'un membre aura accepté.`, b('demande-oublier', 'Ne plus attendre')];
+    return `<div class="rj-note" role="status"><p>${txt}</p><div class="rj-act">${btns}</div></div>`;
+  }).join('');
+  $('#rejoindre-note').innerHTML = invites + miennes;
+  $('#invites-box').innerHTML = invites;
+  $('#caves-attente').innerHTML = miennes;
+}
+/** Inviter par un lien seul : le relais crée le code, l'appli prépare le message. */
+async function inviteLien() {
+  const btn = $('[data-act="drive-invite-lien"]');
+  btn.disabled = true;
+  try {
+    const r = await relais('inviter');
+    await shareInvite({ d: S.fileId, n: S.nom || '', c: r.invitation.code, p: S.device || Compte.nom() || '' },
+      `Rejoins ma cave « ${S.nom || 'Ma cave'} » dans Pampre : ouvre ce lien, ou colle-le dans Pampre › Mes caves › « Rejoindre une autre cave ». J'accepterai ton arrivée dans l'appli.`);
+  } catch (e) {
+    toast(e.auth ? 'Connexion à Google annulée.' : e.message);
+  } finally { btn.disabled = false; }
+}
+/** Accepter une demande : la cave est partagée avec cette adresse dans Google Drive, puis le relais le dit à l'invité. */
+async function accepterInvite(email) {
+  const x = invitesIci().find(i => i.email === email);
+  if (!x) return;
+  const nom = x.nom || x.email;
+  try {
+    await Drive.connected();
+    if (!S.folderId) throw new Error('Le dossier de la cave est inconnu : synchronise, puis réessaie.');
+    await Drive.share(S.folderId, email);
+    await relais('repondre', { email, accepte: true });
+    UI.invites = (UI.invites || []).filter(i => i.email !== email); renderRejoindre();
+    toast(`${nom} fait partie de la cave : elle s'ouvrira chez ${nom} à sa prochaine visite dans Pampre.`);
+  } catch (e) {
+    toast(e.auth ? 'Connexion à Google annulée.' : e.message);
+  }
+}
+async function refuserInvite(email) {
+  const x = invitesIci().find(i => i.email === email);
+  if (!x) return;
+  const nom = x.nom || x.email;
+  if (!(await confirmer(`Refuser la demande de ${nom} ?`, `${nom} ne pourra pas ouvrir la cave. Un nouveau lien permettra de redemander.`, { ok: 'Refuser', grave: true }))) return;
+  try {
+    await relais('repondre', { email, accepte: false });
+    UI.invites = (UI.invites || []).filter(i => i.email !== email); renderRejoindre();
+  } catch (e) { toast(e.message); }
+}
+async function ouvrirDemande(id) {
+  const x = DEMANDES.find(d => d.d === id);
+  if (!x) return;
+  const r = await joinDriveCave({ d: x.d, n: x.n, c: x.c, p: x.p });
+  if (r !== 'no') oublierDemande(id);
+  if (r !== 'no') toast(r === 'same' ? 'Cette cave est déjà ouverte.' : 'Cave ajoutée à « Mes caves ». Synchronisation…');
+}
 /** Inviter dans une cave Drive : partager son dossier avec le compte Google de la personne, puis lui envoyer le lien. */
 async function inviteDrive() {
   const input = $('#drive-invite'), email = input.value.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("Indique l'adresse du compte Google de la personne (souvent son adresse Gmail)."); input.focus(); return; }
-  const btn = $('[data-act="drive-invite"]');
+  const btn = $('[data-act="drive-invite"]'), libelle = btn.textContent;
   btn.disabled = true; btn.textContent = 'Partage…';
   try {
     await Drive.connected();
@@ -7738,7 +7881,7 @@ async function inviteDrive() {
   } catch (e) {
     toast(e.auth ? 'Connexion à Google annulée.' : e.message);
   } finally {
-    btn.disabled = false; btn.textContent = 'Partager la cave';
+    btn.disabled = false; btn.textContent = libelle;
   }
 }
 /** « Mes caves » › Retrouver : les caves Drive de ce compte Google, créées ou rejointes sur un autre appareil, sauf celles
@@ -8179,7 +8322,7 @@ async function sync({ interactive = false } = {}) {
     syncing = false; Drive.gesture = false;
     render();
     if (syncAgain || more) { syncAgain = false; scheduleSync(more ? 1500 : 600); }
-    if (syncState.k === 'ok') { maybeAskWho(); processConseils(); watchSuggestions(); driveClaude(); }
+    if (syncState.k === 'ok') { maybeAskWho(); processConseils(); watchSuggestions(); driveClaude(); suivreInvites(); suivreDemandes(); }
   }
 }
 
@@ -8459,6 +8602,7 @@ function renderCompte() {
 }
 function openCaves() {
   renderCaves();
+  renderRejoindre(); suivreDemandes(true);
   $('#caves-link').value = '';
   $('#caves-new').hidden = !Drive.available();
   $('#caves-find').hidden = !Drive.available();
@@ -8541,8 +8685,13 @@ function wire() {
         case 'bascule-go': basculer(); break;
         case 'bascule-ouvrir': { const k = lsGet(basculeCle(), {}).key; $('#dlg-bascule').close(); if (k) openCave(k); break; }
         case 'drive-invite': inviteDrive(); break;
+        case 'drive-invite-lien': inviteLien(); break;
+        case 'invite-accepter': accepterInvite(act.dataset.email); break;
+        case 'invite-refuser': refuserInvite(act.dataset.email); break;
+        case 'demande-ouvrir': ouvrirDemande(act.dataset.caveId); break;
+        case 'demande-oublier': oublierDemande(act.dataset.caveId); break;
         // Cave Google Drive : « Inviter quelqu'un » déplie l'adresse à saisir.
-        case 'invite-open': { const box = $('#drive-invite-box'), open = box.hidden; box.hidden = !open; act.setAttribute('aria-expanded', String(open)); if (open) $('#drive-invite').focus(); break; }
+        case 'invite-open': { const box = $('#drive-invite-box'), open = box.hidden; box.hidden = !open; act.setAttribute('aria-expanded', String(open)); if (open) ($('#invite-lien').hidden ? $('#drive-invite') : $('[data-act="drive-invite-lien"]')).focus(); break; }
         case 'bouchons': openBouchons(); break;
         case 'depense': openDepense(); break;
         case 'signaler': openSignaler(act.dataset.quoi, act.dataset.ref); break;
@@ -9063,8 +9212,8 @@ function wire() {
   window.addEventListener('offline', () => { if (API.ready()) setSync('offline', 'Tes modifications sont gardées sur cet appareil.'); });
   // Récupère les changements des autres appareils : au retour sur la page, puis toutes les 5 minutes.
   const stale = ms => API.ready() && !syncing && document.visibilityState === 'visible' && (!S.lastSync || Date.now() - Date.parse(S.lastSync) > ms);
-  document.addEventListener('visibilitychange', () => { if (stale(120e3)) sync(); });
-  setInterval(() => { updateSyncUI(); if (stale(300e3)) sync(); }, 60e3);
+  document.addEventListener('visibilitychange', () => { if (stale(120e3)) sync(); if (!document.hidden) suivreDemandes(); });
+  setInterval(() => { updateSyncUI(); if (stale(300e3)) sync(); if (document.visibilityState === 'visible') suivreDemandes(); }, 60e3);
 
   if (Native.on && Native.P.App) {
     // Bouton retour d'Android : ferme la fenêtre ouverte, puis revient à la cave, puis quitte.
@@ -9074,7 +9223,7 @@ function wire() {
       else if (UI.view !== 'cave') setView('cave');
       else Native.P.App.exitApp();
     });
-    Native.P.App.addListener('resume', () => { PhotoWait.back(); if (stale(120e3)) sync(); watchConseils(0); });
+    Native.P.App.addListener('resume', () => { PhotoWait.back(); if (stale(120e3)) sync(); watchConseils(0); suivreDemandes(true); suivreInvites(); });
   }
 }
 
@@ -9094,6 +9243,7 @@ function wire() {
   if (retiree) toast("L'ancienne cave (Google Sheet) a quitté Pampre : ses vins restent dans son Google Sheet.");
   if (joined) toast('Invitation acceptée. Synchronisation…');
   if (preset) toast('Appli reliée à la cave. Synchronisation…');
+  suivreDemandes(true);
   if (API.ready()) sync();
   else setSync('off');
   // Lien d'invitation ouvert alors que la page est déjà là : même accueil qu'au démarrage.
